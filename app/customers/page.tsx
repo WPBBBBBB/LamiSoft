@@ -1,0 +1,506 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Printer,
+  FileText,
+  Search,
+  X,
+  RefreshCw,
+  Eye,
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight,
+  ArrowRight,
+} from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
+import { getCustomersWithBalances, deleteCustomer, deleteCustomers, type Customer } from "@/lib/supabase-operations"
+import { toast } from "sonner"
+
+interface CustomerWithBalance extends Customer {
+  balance_iqd: number
+  balance_usd: number
+}
+
+export default function CustomersPage() {
+  const router = useRouter()
+  const [customers, setCustomers] = useState<CustomerWithBalance[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [notesModalOpen, setNotesModalOpen] = useState(false)
+  const [selectedNotes, setSelectedNotes] = useState("")
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [customerToDelete, setCustomerToDelete] = useState<string | null>(null)
+  const itemsPerPage = 20
+
+  useEffect(() => {
+    loadCustomers()
+  }, [])
+
+  async function loadCustomers() {
+    try {
+      setIsLoading(true)
+      const data = await getCustomersWithBalances()
+      setCustomers(data)
+    } catch (error) {
+      console.error(error)
+      toast.error("حدث خطأ أثناء تحميل البيانات")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Filter customers based on search
+  const filteredCustomers = customers.filter((customer) =>
+    customer.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    customer.phone_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    customer.address?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  // Pagination
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentCustomers = filteredCustomers.slice(startIndex, endIndex)
+
+  // Handle select all
+  const handleSelectAll = () => {
+    if (selectedCustomers.length === currentCustomers.length) {
+      setSelectedCustomers([])
+    } else {
+      setSelectedCustomers(currentCustomers.map((c) => c.id))
+    }
+  }
+
+  // Handle individual selection
+  const handleSelectCustomer = (id: string) => {
+    if (selectedCustomers.includes(id)) {
+      setSelectedCustomers(selectedCustomers.filter((cId) => cId !== id))
+    } else {
+      setSelectedCustomers([...selectedCustomers, id])
+    }
+  }
+
+  // Handle refresh
+  const handleRefresh = () => {
+    loadCustomers()
+    toast.success("تم تحديث البيانات")
+  }
+
+  // Handle clear search
+  const handleClearSearch = () => {
+    setSearchQuery("")
+  }
+
+  // Open notes modal
+  const handleViewNotes = (notes: string) => {
+    setSelectedNotes(notes)
+    setNotesModalOpen(true)
+  }
+
+  // Handle delete single customer
+  const handleDeleteClick = (id: string) => {
+    setCustomerToDelete(id)
+    setDeleteConfirmOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!customerToDelete) return
+
+    try {
+      await deleteCustomer(customerToDelete)
+      toast.success("تم حذف الزبون بنجاح")
+      setDeleteConfirmOpen(false)
+      setCustomerToDelete(null)
+      loadCustomers()
+    } catch (error) {
+      console.error(error)
+      toast.error("حدث خطأ أثناء الحذف")
+    }
+  }
+
+  // Handle delete multiple customers
+  const handleDeleteSelected = async () => {
+    if (selectedCustomers.length === 0) {
+      toast.error("يرجى تحديد عملاء للحذف")
+      return
+    }
+
+    try {
+      await deleteCustomers(selectedCustomers)
+      toast.success("تم حذف " + selectedCustomers.length + " زبون بنجاح")
+      setSelectedCustomers([])
+      loadCustomers()
+    } catch (error) {
+      console.error(error)
+      toast.error("حدث خطأ أثناء الحذف")
+    }
+  }
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return amount.toLocaleString("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto p-6">
+          <Card className="p-6">
+            <p className="text-center text-muted-foreground">جاري التحميل...</p>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex-1 overflow-auto">
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
+              إدارة الأشخاص
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              إدارة قائمة الزبائن والعملاء
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => router.back()}
+            title="رجوع"
+            className="shrink-0"
+          >
+            <ArrowRight className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <Card className="p-6">
+          <div className="flex flex-wrap gap-3 mb-6">
+            <Link href="/customers/add">
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                إضافة
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              className="gap-2"
+              disabled={selectedCustomers.length !== 1}
+              onClick={() => {
+                if (selectedCustomers.length === 1) {
+                  router.push("/customers/edit/" + selectedCustomers[0])
+                }
+              }}
+            >
+              <Edit className="h-4 w-4" />
+              تعديل
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2"
+              disabled={selectedCustomers.length === 0}
+              onClick={handleDeleteSelected}
+            >
+              <Trash2 className="h-4 w-4" />
+              حذف
+            </Button>
+            <Button variant="outline" className="gap-2">
+              <Printer className="h-4 w-4" />
+              طباعة
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2"
+              disabled={selectedCustomers.length !== 1}
+            >
+              <FileText className="h-4 w-4" />
+              كشف حساب زبون
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap gap-3 mb-4">
+            <Button variant="secondary" className="gap-2">
+              <FileText className="h-4 w-4" />
+              الملف
+            </Button>
+            <div className="flex-1 flex gap-2" style={{ minWidth: "300px" }}>
+              <div className="relative flex-1">
+                <Search className="absolute right-3 top-[50%] -translate-y-[50%] h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="ابحث عن زبون..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleClearSearch}
+                title="مسح البحث"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3 mb-6">
+            <Button variant="outline" className="gap-2" onClick={handleSelectAll}>
+              <CheckSquare className="h-4 w-4" />
+              {selectedCustomers.length === currentCustomers.length ? "إلغاء التحديد" : "تحديد الكل"}
+            </Button>
+            <Button variant="outline" className="gap-2" onClick={handleRefresh}>
+              <RefreshCw className="h-4 w-4" />
+              تحديث الصفحة
+            </Button>
+          </div>
+
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow style={{ background: 'linear-gradient(to right, var(--theme-surface), var(--theme-accent))', color: 'var(--theme-text)' }}>
+                  <TableHead className="text-center" style={{ width: "100px", color: 'var(--theme-text)' }}>#</TableHead>
+                  <TableHead className="text-right pr-4" style={{ color: 'var(--theme-text)' }}>اسم الزبون</TableHead>
+                  <TableHead className="text-left" style={{ color: 'var(--theme-text)' }}>رقم الهاتف</TableHead>
+                  <TableHead className="text-right pr-4" style={{ color: 'var(--theme-text)' }}>العنوان</TableHead>
+                  <TableHead className="text-left" style={{ color: 'var(--theme-text)' }}>رصيد دينار</TableHead>
+                  <TableHead className="text-left" style={{ color: 'var(--theme-text)' }}>رصيد دولار</TableHead>
+                  <TableHead className="text-right pr-4" style={{ color: 'var(--theme-text)' }}>ملاحظات</TableHead>
+                  <TableHead className="text-center" style={{ color: 'var(--theme-text)' }}>العمليات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {currentCustomers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      لا يوجد عملاء. اضغط على إضافة لإضافة عميل جديد.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  currentCustomers.map((customer, index) => (
+                    <TableRow 
+                      key={customer.id}
+                      className="transition-colors"
+                      style={{
+                        backgroundColor: selectedCustomers.includes(customer.id) ? 'var(--theme-surface)' : 'transparent'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--theme-surface)'}
+                      onMouseLeave={(e) => {
+                        if (!selectedCustomers.includes(customer.id)) {
+                          e.currentTarget.style.backgroundColor = 'transparent'
+                        }
+                      }}
+                    >
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-3">
+                          <span className="font-mono text-sm text-muted-foreground" style={{ minWidth: "24px" }}>
+                            {startIndex + index + 1}
+                          </span>
+                          <Checkbox
+                            checked={selectedCustomers.includes(customer.id)}
+                            onCheckedChange={() => handleSelectCustomer(customer.id)}
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">{customer.customer_name}</TableCell>
+                      <TableCell className="text-left font-mono">
+                        {customer.phone_number || "-"}
+                      </TableCell>
+                      <TableCell>{customer.address || "-"}</TableCell>
+                      <TableCell className="text-left font-mono">
+                        <Badge
+                          variant={customer.balance_iqd >= 0 ? "secondary" : "destructive"}
+                          className="gap-1"
+                        >
+                          {formatCurrency(customer.balance_iqd)}
+                          <span className="text-xs">IQD</span>
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-left font-mono">
+                        <Badge
+                          variant={customer.balance_usd >= 0 ? "outline" : "destructive"}
+                          className="gap-1"
+                        >
+                          {formatCurrency(customer.balance_usd)}
+                          <span className="text-xs">USD</span>
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="flex-1 truncate"
+                            style={{ maxWidth: "200px" }}
+                            title={customer.notes || ""}
+                          >
+                            {customer.notes || "-"}
+                          </div>
+                          {customer.notes && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 shrink-0"
+                              onClick={() => handleViewNotes(customer.notes || "")}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Link href={"/customers/edit/" + customer.id}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => handleDeleteClick(customer.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-4 mt-6">
+            <div className="text-sm text-muted-foreground">
+              <span className="font-semibold" style={{ color: "var(--theme-text)" }}>
+                إجمالي الزبائن:
+              </span>{" "}
+              <Badge variant="secondary" className="mr-2">
+                {filteredCustomers.length}
+              </Badge>
+              {selectedCustomers.length > 0 && (
+                <span className="mr-2">
+                  (محدد: {selectedCustomers.length})
+                </span>
+              )}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((page) => {
+                      return (
+                        page === 1 ||
+                        page === totalPages ||
+                        Math.abs(page - currentPage) <= 1
+                      )
+                    })
+                    .map((page, index, array) => (
+                      <div key={page} className="flex items-center">
+                        {index > 0 && array[index - 1] !== page - 1 && (
+                          <span className="px-2 text-muted-foreground">...</span>
+                        )}
+                        <Button
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="icon"
+                          onClick={() => setCurrentPage(page)}
+                          className="w-10"
+                        >
+                          {page}
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Dialog open={notesModalOpen} onOpenChange={setNotesModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>الملاحظات الكاملة</DialogTitle>
+            </DialogHeader>
+            <div className="mt-4 p-4 bg-muted rounded-lg">
+              <p className="text-sm whitespace-pre-wrap">{selectedNotes}</p>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>تأكيد الحذف</DialogTitle>
+            </DialogHeader>
+            <p className="text-muted-foreground">
+              هل أنت متأكد من حذف هذا الزبون؟ هذه العملية لا يمكن التراجع عنها.
+            </p>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteConfirmOpen(false)}
+              >
+                إلغاء
+              </Button>
+              <Button variant="destructive" onClick={confirmDelete}>
+                حذف
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  )
+}
