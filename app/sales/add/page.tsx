@@ -117,6 +117,7 @@ export default function SaleAddPage() {
   })
 
   const [isSaving, setIsSaving] = useState(false)
+  const saveInFlightRef = useRef(false)
 
   const [viewingNote, setViewingNote] = useState<string | null>(null)
 
@@ -581,6 +582,8 @@ export default function SaleAddPage() {
   }
 
   const handleSaveSale = async () => {
+    if (saveInFlightRef.current || isSaving) return
+
     if (isViewMode) {
       toast.error("لا يمكن الحفظ في وضع العرض")
       return
@@ -608,6 +611,7 @@ export default function SaleAddPage() {
       return
     }
 
+    saveInFlightRef.current = true
     setIsSaving(true)
 
     try {
@@ -760,6 +764,7 @@ export default function SaleAddPage() {
       toast.error("حدث خطأ أثناء حفظ القائمة")
     } finally {
       setIsSaving(false)
+      saveInFlightRef.current = false
     }
   }
   
@@ -841,6 +846,18 @@ export default function SaleAddPage() {
 
   return (
     <>
+    {isSaving && (
+      <div
+        className="fixed inset-0 z-9999 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+        aria-busy="true"
+        role="status"
+      >
+        <div className="flex items-center gap-3 rounded-lg border bg-background px-4 py-3 shadow">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span className="text-sm">جاري حفظ القائمة...</span>
+        </div>
+      </div>
+    )}
     <div className="container mx-auto p-6 space-y-6">
       {}
       <div className="flex items-center justify-between">

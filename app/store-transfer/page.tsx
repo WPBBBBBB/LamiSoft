@@ -1,14 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
   ArrowRight,
-  Package,
   AlertCircle,
   CheckCircle,
   Trash2,
@@ -38,21 +37,8 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 import { 
   getActiveStores, 
-  searchInventoryInStore,
   transferInventory,
   type Store,
   type InventoryItem 
@@ -87,7 +73,6 @@ export default function StoreTransferPage() {
   const [allInventory, setAllInventory] = useState<InventoryItem[]>([])
   const [searchOpen, setSearchOpen] = useState<string | null>(null)
   const [priceUpdateModalOpen, setPriceUpdateModalOpen] = useState(false)
-  const [currentTransferIndex, setCurrentTransferIndex] = useState<number | null>(null)
   const [priceUpdateChoice, setPriceUpdateChoice] = useState<"price" | "quantity" | "both">("both")
   const [isTransferring, setIsTransferring] = useState(false)
   
@@ -102,22 +87,19 @@ export default function StoreTransferPage() {
     sellPriceUSD: 0,
   })
 
-  useEffect(() => {
-    loadStores()
-  }, [])
-
-  useEffect(() => {
-    if (fromStoreId) {
-      loadInventoryFromStore()
-    } else {
-      setAllInventory([])
-      setSearchResults([])
+  const loadStores = useCallback(async () => {
+    try {
+      const data = await getActiveStores()
+      setStores(data)
+    } catch (error) {
+      console.error(error)
+      toast.error(t('loadingStoresError', currentLanguage.code))
     }
-  }, [fromStoreId])
+  }, [currentLanguage.code])
 
-  async function loadInventoryFromStore() {
+  const loadInventoryFromStore = useCallback(async () => {
     if (!fromStoreId) return
-    
+
     try {
       const { getStoreInventory } = await import("@/lib/stores-operations")
       const data = await getStoreInventory(fromStoreId)
@@ -127,17 +109,20 @@ export default function StoreTransferPage() {
       console.error(error)
       toast.error(t('loadingMaterialsError', currentLanguage.code))
     }
-  }
+  }, [fromStoreId, currentLanguage.code])
 
-  async function loadStores() {
-    try {
-      const data = await getActiveStores()
-      setStores(data)
-    } catch (error) {
-      console.error(error)
-      toast.error(t('loadingStoresError', currentLanguage.code))
+  useEffect(() => {
+    loadStores()
+  }, [loadStores])
+
+  useEffect(() => {
+    if (fromStoreId) {
+      loadInventoryFromStore()
+    } else {
+      setAllInventory([])
+      setSearchResults([])
     }
-  }
+  }, [fromStoreId, loadInventoryFromStore])
 
   const handleAddRow = () => {
     if (!newRow.productcode || !newRow.productname || newRow.transferQuantity <= 0) {
@@ -266,6 +251,8 @@ export default function StoreTransferPage() {
       const toStore = stores.find(s => s.id === toStoreId)
       
       for (const row of validRows) {
+        const shouldUpdatePrice = priceUpdateChoice !== "quantity"
+
         await transferInventory(
           row.productcode,
           row.productname,
@@ -273,9 +260,9 @@ export default function StoreTransferPage() {
           fromStoreId,
           toStoreId,
           note,
-          true,
-          row.sellPriceIQD,
-          row.sellPriceUSD
+          shouldUpdatePrice,
+          shouldUpdatePrice ? row.sellPriceIQD : undefined,
+          shouldUpdatePrice ? row.sellPriceUSD : undefined
         )
         
         await logAction(
@@ -429,7 +416,7 @@ export default function StoreTransferPage() {
             <h2 className="text-xl font-bold">{t('materialsToTransfer', currentLanguage.code)}</h2>
           </div>
 
-          <div className="rounded-lg border overflow-x-auto">
+          <div className="rounded-lg border h-[450px] overflow-x-auto overflow-y-auto">
             <Table>
               <TableHeader>
                 <TableRow style={{ background: 'linear-gradient(to right, var(--theme-surface), var(--theme-accent))', color: 'var(--theme-text)' }}>
@@ -466,7 +453,7 @@ export default function StoreTransferPage() {
                         autoFocus
                       />
                       {searchOpen === "new-code" && searchResults.length > 0 && (
-                        <div className="absolute z-50 w-[300px] mt-1 bg-background border rounded-md shadow-lg max-h-[300px] overflow-auto">
+                        <div className="absolute z-50 w-full min-w-[360px] mt-1 bg-background border rounded-md shadow-lg max-h-[700px] overflow-auto">
                           {searchResults.map((item) => (
                             <button
                               key={item.id}
@@ -507,7 +494,7 @@ export default function StoreTransferPage() {
                         placeholder={t('materialName', currentLanguage.code)}
                       />
                       {searchOpen === "new-name" && searchResults.length > 0 && (
-                        <div className="absolute z-50 w-[300px] mt-1 bg-background border rounded-md shadow-lg max-h-[300px] overflow-auto">
+                        <div className="absolute z-50 w-full min-w-[360px] mt-1 bg-background border rounded-md shadow-lg max-h-[700px] overflow-auto">
                           {searchResults.map((item) => (
                             <button
                               key={item.id}
@@ -615,7 +602,7 @@ export default function StoreTransferPage() {
                           placeholder="رمز المادة"
                         />
                         {searchOpen === `code-${row.id}` && searchResults.length > 0 && (
-                          <div className="absolute z-50 w-[300px] mt-1 bg-background border rounded-md shadow-lg max-h-[300px] overflow-auto">
+                          <div className="absolute z-50 w-full min-w-[360px] mt-1 bg-background border rounded-md shadow-lg max-h-[700px] overflow-auto">
                             {searchResults.map((item) => (
                               <button
                                 key={item.id}
@@ -660,7 +647,7 @@ export default function StoreTransferPage() {
                           placeholder="اسم المادة"
                         />
                         {searchOpen === `name-${row.id}` && searchResults.length > 0 && (
-                          <div className="absolute z-50 w-[300px] mt-1 bg-background border rounded-md shadow-lg max-h-[300px] overflow-auto">
+                          <div className="absolute z-50 w-full min-w-[360px] mt-1 bg-background border rounded-md shadow-lg max-h-[700px] overflow-auto">
                             {searchResults.map((item) => (
                               <button
                                 key={item.id}

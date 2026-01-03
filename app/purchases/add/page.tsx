@@ -130,6 +130,7 @@ export default function PurchaseAddPage() {
   })
 
   const [isSaving, setIsSaving] = useState(false)
+  const saveInFlightRef = useRef(false)
   const [generatingNumber, setGeneratingNumber] = useState(false)
   const [generatingProductCode, setGeneratingProductCode] = useState(false)
   
@@ -498,18 +499,24 @@ export default function PurchaseAddPage() {
   }
 
   const handleSavePurchase = async () => {
+    if (saveInFlightRef.current || isSaving) return
+    saveInFlightRef.current = true
+
     if (!numberofpurchase.trim()) {
       toast.error("الرجاء إدخال رقم القائمة")
+      saveInFlightRef.current = false
       return
     }
 
     if (!purchasestoreid) {
       toast.error("الرجاء اختيار المخزن")
+      saveInFlightRef.current = false
       return
     }
 
     if (!supplierid) {
       toast.error("الرجاء اختيار المجهز")
+      saveInFlightRef.current = false
       return
     }
 
@@ -519,6 +526,7 @@ export default function PurchaseAddPage() {
 
     if (validProducts.length === 0) {
       toast.error("الرجاء إضافة مادة واحدة على الأقل")
+      saveInFlightRef.current = false
       return
     }
 
@@ -530,6 +538,7 @@ export default function PurchaseAddPage() {
         // عرض حوار تعارض الأسعار
         setPriceConflicts(conflictsCheck.conflicts)
         setShowPriceConflictDialog(true)
+        saveInFlightRef.current = false
         return
       }
     }
@@ -538,6 +547,9 @@ export default function PurchaseAddPage() {
   }
 
   const savePurchaseData = async (validProducts: ProductRow[], priceDecisions?: Map<string, boolean>) => {
+    if (saveInFlightRef.current || isSaving) return
+
+    saveInFlightRef.current = true
     setIsSaving(true)
 
     try {
@@ -670,6 +682,7 @@ export default function PurchaseAddPage() {
       toast.error("حدث خطأ أثناء حفظ القائمة")
     } finally {
       setIsSaving(false)
+      saveInFlightRef.current = false
     }
   }
 
@@ -708,6 +721,18 @@ export default function PurchaseAddPage() {
 
   return (
     <PermissionGuard requiredPermission="add_purchase">
+    {isSaving && (
+      <div
+        className="fixed inset-0 z-9999 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+        aria-busy="true"
+        role="status"
+      >
+        <div className="flex items-center gap-3 rounded-lg border bg-background px-4 py-3 shadow">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span className="text-sm">جاري حفظ القائمة...</span>
+        </div>
+      </div>
+    )}
     <div className="container mx-auto p-6 space-y-6">
       {}
       <div className="flex items-center justify-between">
