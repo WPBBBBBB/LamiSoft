@@ -20,6 +20,17 @@ type DroppedWeatherSlot = {
 export function WeatherDropZones() {
   const [isDragging, setIsDragging] = useState(false)
   const [reserved, setReserved] = useState<boolean[]>([false, false, false, false])
+
+  const getWeatherDragPayload = () => {
+    if (typeof window === "undefined") return null
+    const payload = (window as unknown as { __weatherDragPayload?: unknown }).__weatherDragPayload
+    return payload ?? null
+  }
+
+  const clearWeatherDragPayload = () => {
+    if (typeof window === "undefined") return
+    ;(window as unknown as { __weatherDragPayload?: unknown }).__weatherDragPayload = undefined
+  }
   
   useEffect(() => {
     const handleDragStart = () => setIsDragging(true)
@@ -97,6 +108,40 @@ export function WeatherDropZones() {
     }
   }
 
+  const handlePointerDropZone = (slotIndex: number) => {
+    const rawPayload = getWeatherDragPayload()
+    if (!rawPayload) return
+
+    try {
+      const parsed = rawPayload as Partial<DroppedWeatherSlot & SavedLocation>
+
+      const location: DroppedWeatherSlot = {
+        id: String(parsed.id ?? `weather-${Date.now()}`),
+        name: String(parsed.name ?? ""),
+        lat: Number(parsed.lat),
+        lon: Number(parsed.lon),
+        country: parsed.country ? String(parsed.country) : undefined,
+      }
+
+      if (!location.name || Number.isNaN(location.lat) || Number.isNaN(location.lon)) {
+        throw new Error("Invalid dropped weather location payload")
+      }
+
+      const slots = JSON.parse(localStorage.getItem('weather_slots') || '[null, null, null, null]') as Array<unknown>
+      slots[slotIndex] = location
+      localStorage.setItem('weather_slots', JSON.stringify(slots))
+
+      window.dispatchEvent(new Event('weather-slots-updated'))
+      window.dispatchEvent(new Event('focus'))
+
+      clearWeatherDragPayload()
+      setIsDragging(false)
+      window.dispatchEvent(new Event('weather-drag-end'))
+    } catch (error) {
+      console.error('Error parsing location data:', error)
+    }
+  }
+
   if (!isDragging) return null
 
   return (
@@ -117,6 +162,9 @@ export function WeatherDropZones() {
             }}
             onDrop={(e) => {
               if (!reserved[index]) handleDropZone(e, index)
+            }}
+            onPointerUp={() => {
+              if (!reserved[index]) handlePointerDropZone(index)
             }}
             title={reserved[index] ? `موقع ${index + 1} (محجوز)` : `موقع ${index + 1}`}
             aria-disabled={reserved[index]}

@@ -210,16 +210,44 @@ export function WeatherDialog() {
     }
   }
 
+  const buildWeatherDragPayload = (location: SavedLocation) => ({
+    id: `weather-${Date.now()}`,
+    name: location.name,
+    lat: location.lat,
+    lon: location.lon,
+    country: location.country,
+    position: { x: 100, y: 100 },
+  })
+
+  const setWeatherDragPayload = (payload: ReturnType<typeof buildWeatherDragPayload> | null) => {
+    if (typeof window === "undefined") return
+    ;(window as unknown as { __weatherDragPayload?: unknown }).__weatherDragPayload = payload ?? undefined
+  }
+
   const handleDragLocation = (location: SavedLocation, e: React.DragEvent) => {
+    const payload = buildWeatherDragPayload(location)
+
     e.dataTransfer.effectAllowed = "copy"
-    e.dataTransfer.setData("application/json", JSON.stringify({
-      id: `weather-${Date.now()}`,
-      name: location.name,
-      lat: location.lat,
-      lon: location.lon,
-      country: location.country,
-      position: { x: 100, y: 100 }
-    }))
+    e.dataTransfer.setData("application/json", JSON.stringify(payload))
+    setWeatherDragPayload(payload)
+  }
+
+  const handlePointerDragStart = (location: SavedLocation) => {
+    const payload = buildWeatherDragPayload(location)
+    setWeatherDragPayload(payload)
+
+    window.dispatchEvent(new Event("weather-drag-start"))
+
+    const end = () => {
+      const current = (window as unknown as { __weatherDragPayload?: unknown }).__weatherDragPayload
+      if (current) {
+        setWeatherDragPayload(null)
+        window.dispatchEvent(new Event("weather-drag-end"))
+      }
+    }
+
+    window.addEventListener("pointerup", end, { once: true })
+    window.addEventListener("pointercancel", end, { once: true })
   }
 
   const createWidget = (location: SavedLocation) => {
@@ -484,7 +512,7 @@ export function WeatherDialog() {
                   {loc.name}
                 </Button>
                 <div
-                  className="absolute inset-0 cursor-grab hover:cursor-grabbing opacity-0 hover:opacity-100 flex items-center justify-center bg-primary/10 rounded-md transition-opacity pointer-events-auto"
+                  className="absolute inset-0 cursor-grab hover:cursor-grabbing opacity-0 hover:opacity-100 flex items-center justify-center bg-primary/10 rounded-md transition-opacity pointer-events-auto touch-none select-none"
                   draggable
                   onDragStart={(e) => {
                     e.stopPropagation()
@@ -492,7 +520,13 @@ export function WeatherDialog() {
                     window.dispatchEvent(new Event('weather-drag-start'))
                   }}
                   onDragEnd={() => {
+                    setWeatherDragPayload(null)
                     window.dispatchEvent(new Event('weather-drag-end'))
+                  }}
+                  onPointerDown={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
+                    handlePointerDragStart(loc)
                   }}
                   onDoubleClick={(e) => {
                     e.stopPropagation()
