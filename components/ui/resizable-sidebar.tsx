@@ -31,19 +31,17 @@ export function ResizableSidebar({
   const [width, setWidth] = useState(defaultWidth)
   const [isResizing, setIsResizing] = useState(false)
   const sidebarRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const newWidth = collapsed ? 80 : defaultWidth
-    setWidth(newWidth)
-  }, [collapsed, defaultWidth])
+  const activePointerIdRef = useRef<number | null>(null)
 
   const stopResizing = useCallback(() => {
+    activePointerIdRef.current = null
     setIsResizing(false)
   }, [])
 
   const resize = useCallback(
     (e: PointerEvent) => {
       if (!isResizing || !sidebarRef.current) return
+      if (collapsed) return
 
       const sidebarRect = sidebarRef.current.getBoundingClientRect()
       let newWidth: number
@@ -62,11 +60,24 @@ export function ResizableSidebar({
         }
       }
     },
-    [className, isResizing, maxWidth, minWidth, onWidthChange, side]
+    [className, collapsed, isResizing, maxWidth, minWidth, onWidthChange, side]
   )
 
   const startResizing = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    // Only start on primary interaction
+    if (e.pointerType === "mouse" && e.button !== 0) return
+    if (!e.isPrimary) return
+
     e.preventDefault()
+    e.stopPropagation()
+
+    activePointerIdRef.current = e.pointerId
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId)
+    } catch {
+      // Some browsers may throw if capture isn't available; safe to ignore.
+    }
+
     setIsResizing(true)
   }, [])
 
@@ -78,6 +89,7 @@ export function ResizableSidebar({
       document.body.style.cursor = "ew-resize"
       document.body.style.userSelect = "none"
       document.body.style.touchAction = "none"
+      document.documentElement.style.touchAction = "none"
     } else {
       window.removeEventListener("pointermove", resize)
       window.removeEventListener("pointerup", stopResizing)
@@ -85,6 +97,7 @@ export function ResizableSidebar({
       document.body.style.cursor = ""
       document.body.style.userSelect = ""
       document.body.style.touchAction = ""
+      document.documentElement.style.touchAction = ""
     }
 
     return () => {
@@ -94,6 +107,7 @@ export function ResizableSidebar({
       document.body.style.cursor = ""
       document.body.style.userSelect = ""
       document.body.style.touchAction = ""
+      document.documentElement.style.touchAction = ""
     }
   }, [isResizing, resize, stopResizing])
 
@@ -101,7 +115,7 @@ export function ResizableSidebar({
     <div
       ref={sidebarRef}
       className={cn("relative", className)}
-      style={{ width: `${width}px`, transition: isResizing ? "none" : "width 0.2s ease" }}
+      style={{ width: `${collapsed ? 80 : width}px`, transition: isResizing ? "none" : "width 0.2s ease" }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >

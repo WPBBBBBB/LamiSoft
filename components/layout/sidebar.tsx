@@ -265,11 +265,10 @@ export default function Sidebar() {
   }, [mainSidebarWidth, mainSidebarCollapsed, expandOnHover, isHovering])
 
   const effectiveCollapsed = expandOnHover ? !isHovering : mainSidebarCollapsed
-  const effectiveWidth = expandOnHover ? (isHovering ? mainSidebarWidth : 80) : (mainSidebarCollapsed ? 80 : mainSidebarWidth)
 
   return (
     <ResizableSidebar
-      defaultWidth={effectiveWidth}
+      defaultWidth={mainSidebarWidth}
       minWidth={200}
       maxWidth={500}
       collapsed={effectiveCollapsed}
