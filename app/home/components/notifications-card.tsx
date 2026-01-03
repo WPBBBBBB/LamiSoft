@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,11 @@ import { Badge } from "@/components/ui/badge"
 import { Bell, RefreshCw, Eye, Menu } from "lucide-react"
 import { t } from "@/lib/translations"
 import { useSettings } from "@/components/providers/settings-provider"
-import { useNotifications } from "@/components/providers/notification-provider"
+import {
+  getUnreadNotificationsCount,
+  markAllNotificationsAsRead,
+  runNotificationsCheck,
+} from "@/lib/notifications-operations"
 import { toast } from "sonner"
 import { useAuth } from "@/contexts/auth-context"
 
@@ -16,9 +20,23 @@ export function NotificationsCard() {
   const { currentLanguage } = useSettings()
   const { currentUser } = useAuth()
   const router = useRouter()
-  const { unreadCount, runChecks, refreshNotifications, markAllAsRead } = useNotifications()
+  const [debtUnreadCount, setDebtUnreadCount] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isMarkingRead, setIsMarkingRead] = useState(false)
+
+  const loadDebtUnreadCount = async () => {
+    const result = await getUnreadNotificationsCount()
+    if (!result.success) {
+      throw new Error(result.error || "Failed to load debt notifications count")
+    }
+    setDebtUnreadCount(result.count || 0)
+  }
+
+  useEffect(() => {
+    loadDebtUnreadCount().catch((error) => {
+      console.error("Error loading debt notifications count:", error)
+    })
+  }, [])
 
   // التحقق من صلاحية عرض الإشعارات
   const canViewNotifications = currentUser?.permission_type === 'مدير' || 
@@ -27,10 +45,11 @@ export function NotificationsCard() {
   const handleRefresh = async () => {
     setIsRefreshing(true)
     try {
-      // تشغيل فحص الإشعارات وتحديث الـ provider
-      await runChecks()
-      // تحديث الإشعارات في الـ provider (سيحدث الهيدر تلقائياً)
-      await refreshNotifications()
+      const checkResult = await runNotificationsCheck()
+      if (!checkResult.success) {
+        throw new Error(checkResult.error || "Failed to run notifications check")
+      }
+      await loadDebtUnreadCount()
     } catch (error) {
       console.error("Error refreshing notifications:", error)
       toast.error("حدث خطأ أثناء التحديث")
@@ -42,8 +61,11 @@ export function NotificationsCard() {
   const handleMarkAllAsRead = async () => {
     setIsMarkingRead(true)
     try {
-      // استخدام دالة الـ provider (سيحدث الهيدر تلقائياً)
-      await markAllAsRead()
+      const result = await markAllNotificationsAsRead()
+      if (!result.success) {
+        throw new Error(result.error || "Failed to mark all notifications as read")
+      }
+      setDebtUnreadCount(0)
     } catch (error) {
       console.error("Error marking notifications as read:", error)
       toast.error("حدث خطأ أثناء التعيين")
@@ -72,7 +94,7 @@ export function NotificationsCard() {
       <CardContent className="space-y-4">
         <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--theme-surface)' }}>
           <p className="text-sm text-muted-foreground text-center">
-            {t('youHave', currentLanguage.code)} <Badge variant="secondary" className="mx-1">{unreadCount}</Badge> {t('unreadNotifications', currentLanguage.code)}
+            {t('youHave', currentLanguage.code)} <Badge variant="secondary" className="mx-1">{debtUnreadCount}</Badge> {t('unreadNotifications', currentLanguage.code)}
           </p>
         </div>
 
@@ -91,7 +113,7 @@ export function NotificationsCard() {
               variant="outline" 
               size="sm"
               onClick={handleMarkAllAsRead}
-              disabled={isMarkingRead || unreadCount === 0}
+              disabled={isMarkingRead || debtUnreadCount === 0}
             >
               <Eye className="h-4 w-4 mr-2" />
               {t('markAsRead', currentLanguage.code)}

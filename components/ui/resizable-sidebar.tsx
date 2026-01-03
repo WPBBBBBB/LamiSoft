@@ -1,6 +1,6 @@
 "use client"
 
-import { ReactNode, useRef, useState, useEffect } from "react"
+import { ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 
 interface ResizableSidebarProps {
@@ -37,19 +37,17 @@ export function ResizableSidebar({
     setWidth(newWidth)
   }, [collapsed, defaultWidth])
 
-  const startResizing = () => {
-    setIsResizing(true)
-  }
-
-  const stopResizing = () => {
+  const stopResizing = useCallback(() => {
     setIsResizing(false)
-  }
+  }, [])
 
-  const resize = (e: MouseEvent) => {
-    if (isResizing && sidebarRef.current) {
+  const resize = useCallback(
+    (e: PointerEvent) => {
+      if (!isResizing || !sidebarRef.current) return
+
       const sidebarRect = sidebarRef.current.getBoundingClientRect()
       let newWidth: number
-      
+
       if (side === "left") {
         newWidth = e.clientX - sidebarRect.left
       } else {
@@ -63,29 +61,41 @@ export function ResizableSidebar({
           document.documentElement.style.setProperty("--sidebar-width", `${newWidth}px`)
         }
       }
-    }
-  }
+    },
+    [className, isResizing, maxWidth, minWidth, onWidthChange, side]
+  )
+
+  const startResizing = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsResizing(true)
+  }, [])
 
   useEffect(() => {
     if (isResizing) {
-      window.addEventListener("mousemove", resize)
-      window.addEventListener("mouseup", stopResizing)
+      window.addEventListener("pointermove", resize)
+      window.addEventListener("pointerup", stopResizing)
+      window.addEventListener("pointercancel", stopResizing)
       document.body.style.cursor = "ew-resize"
       document.body.style.userSelect = "none"
+      document.body.style.touchAction = "none"
     } else {
-      window.removeEventListener("mousemove", resize)
-      window.removeEventListener("mouseup", stopResizing)
+      window.removeEventListener("pointermove", resize)
+      window.removeEventListener("pointerup", stopResizing)
+      window.removeEventListener("pointercancel", stopResizing)
       document.body.style.cursor = ""
       document.body.style.userSelect = ""
+      document.body.style.touchAction = ""
     }
 
     return () => {
-      window.removeEventListener("mousemove", resize)
-      window.removeEventListener("mouseup", stopResizing)
+      window.removeEventListener("pointermove", resize)
+      window.removeEventListener("pointerup", stopResizing)
+      window.removeEventListener("pointercancel", stopResizing)
       document.body.style.cursor = ""
       document.body.style.userSelect = ""
+      document.body.style.touchAction = ""
     }
-  }, [isResizing])
+  }, [isResizing, resize, stopResizing])
 
   return (
     <div
@@ -100,10 +110,10 @@ export function ResizableSidebar({
       {!collapsed && (
         <div
           className={cn(
-            "absolute top-0 w-1 h-full cursor-ew-resize group hover:bg-primary/20 transition-colors",
+            "absolute top-0 w-1 h-full cursor-ew-resize touch-none select-none group hover:bg-primary/20 transition-colors",
             side === "left" ? "right-0" : "left-0"
           )}
-          onMouseDown={startResizing}
+          onPointerDown={startResizing}
         >
           <div className="absolute inset-y-0 -inset-x-2" />
           <div className="absolute top-1/2 -translate-y-1/2 w-1 h-20 bg-border group-hover:bg-primary rounded-full transition-colors" 
