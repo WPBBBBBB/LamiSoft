@@ -13,3 +13,8 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>
 }
 
+declare module "next-pwa" {
+  const withPWAInit: any
+  export default withPWAInit
+}
+

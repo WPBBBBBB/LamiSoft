@@ -147,12 +147,14 @@ export async function GET(request: NextRequest) {
         // User not found - record failed attempt
         if (fingerprint) {
           const blockInfo = await recordFailedOAuthAttempt(
-            fingerprint,
+            {
+              fingerprint,
+              ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+              userAgent: request.headers.get('user-agent') || 'unknown'
+            },
             'github',
             email || 'unknown',
-            String(userInfo.id),
-            request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
-            request.headers.get('user-agent') || 'unknown'
+            String(userInfo.id)
           )
           
           // Return error with block info

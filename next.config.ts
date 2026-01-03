@@ -9,6 +9,7 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
+  turbopack: {},
   images: {
     unoptimized: true,
   },

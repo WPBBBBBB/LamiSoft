@@ -22,7 +22,7 @@ export function NotificationsCard() {
 
   // التحقق من صلاحية عرض الإشعارات
   const canViewNotifications = currentUser?.permission_type === 'مدير' || 
-    ((currentUser?.permission_type === 'موظف عادي' || currentUser?.permission_type === 'موظف') && currentUser?.permissions?.view_notifications)
+    (currentUser?.permission_type === 'موظف' && currentUser?.permissions?.view_notifications)
 
   const handleRefresh = async () => {
     setIsRefreshing(true)

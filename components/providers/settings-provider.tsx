@@ -8,6 +8,7 @@ import { Language, languages } from "@/lib/i18n"
 interface SettingsContextType {
   currentTheme: Theme
   themeId: string
+  theme: string
   setTheme: (themeId: string) => void
   mode: "light" | "dark" | "system"
   setMode: (mode: "light" | "dark" | "system") => void
@@ -261,6 +262,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       value={{
         currentTheme,
         themeId,
+        theme: themeId,
         setTheme,
         mode,
         setMode,

@@ -8,8 +8,8 @@ import { toast } from "sonner"
 interface PermissionGuardProps {
   children: React.ReactNode
   requiredPermission?: string
-  requiredRole?: 'مدير' | 'محاسب' | 'موظف' | 'موظف عادي'
-  allowedRoles?: ('مدير' | 'محاسب' | 'موظف' | 'موظف عادي')[]
+  requiredRole?: 'مدير' | 'محاسب' | 'موظف'
+  allowedRoles?: ('مدير' | 'محاسب' | 'موظف')[]
 }
 
 export function PermissionGuard({ 

@@ -321,7 +321,7 @@ export default function Sidebar() {
               }
 
               // تطبيق الصلاحيات للمحاسب والموظف (كلاهما يملكان نفس الصلاحيات الأساسية الأربعة)
-              if (currentUser?.permission_type === 'محاسب' || currentUser?.permission_type === 'موظف عادي' || currentUser?.permission_type === 'موظف') {
+              if (currentUser?.permission_type === 'محاسب' || currentUser?.permission_type === 'موظف') {
                 // إخفاء/عرض الأشخاص بناءً على الصلاحية
                 if ('href' in item && item.titleKey === 'people') {
                   if (!currentUser.permissions?.view_people) {

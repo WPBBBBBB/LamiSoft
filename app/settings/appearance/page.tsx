@@ -1,5 +1,7 @@
 "use client"
 
+export const dynamic = "force-dynamic"
+
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,11 +12,11 @@ import { themes, type Theme } from "@/lib/themes"
 import { t } from "@/lib/translations"
 import { Sun, Moon, Monitor, Check, Home, Settings, User, Mail, ShoppingCart, BarChart3, DollarSign, TrendingUp, Search, Plus, Warehouse, PackageOpen, Users, FileText, Wallet, Maximize, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import dynamic from "next/dynamic"
+import nextDynamic from "next/dynamic"
 
-const HomePage = dynamic(() => import("@/app/home/page"), { ssr: false })
-const Header = dynamic(() => import("@/components/layout/header"), { ssr: false })
-const Sidebar = dynamic(() => import("@/components/layout/sidebar"), { ssr: false })
+const HomePage = nextDynamic(() => import("@/app/home/page"), { ssr: false })
+const Header = nextDynamic(() => import("@/components/layout/header"), { ssr: false })
+const Sidebar = nextDynamic(() => import("@/components/layout/sidebar"), { ssr: false })
 
 function ThemePreview({ theme, onMaximize, isFullscreen }: { theme: Theme; onMaximize?: () => void; isFullscreen?: boolean }) {
   const handleClick = (e: React.MouseEvent) => {

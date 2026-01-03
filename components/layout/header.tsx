@@ -14,7 +14,7 @@ export default function Header() {
 
   // التحقق من صلاحية عرض الإشعارات
   const canViewNotifications = currentUser?.permission_type === 'مدير' || 
-    ((currentUser?.permission_type === 'موظف عادي' || currentUser?.permission_type === 'موظف') && currentUser?.permissions?.view_notifications)
+    (currentUser?.permission_type === 'موظف' && currentUser?.permissions?.view_notifications)
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
