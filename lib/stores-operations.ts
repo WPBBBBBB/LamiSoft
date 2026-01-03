@@ -257,11 +257,11 @@ export async function deleteStoreTransfer(transferId: string): Promise<{
     return {
       success: true,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Exception in deleteStoreTransfer:', error)
     return {
       success: false,
-      error: error.message || 'حدث خطأ غير متوقع',
+      error: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
     }
   }
 }
@@ -287,11 +287,11 @@ export async function deleteMultipleStoreTransfers(transferIds: string[]): Promi
     return {
       success: true,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Exception in deleteMultipleStoreTransfers:', error)
     return {
       success: false,
-      error: error.message || 'حدث خطأ غير متوقع',
+      error: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
     }
   }
 }
@@ -342,7 +342,7 @@ export async function transferInventory(
     .maybeSingle()
 
   if (targetItems) {
-    const updates: any = {
+    const updates: Record<string, unknown> = {
       quantity: targetItems.quantity + quantity
     }
 

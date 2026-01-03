@@ -6,7 +6,7 @@ export interface DebtNotification {
   customer_name: string
   customer_phone?: string
   notification_type: 'تنبيه_قبل_3_ايام' | 'تنبيه_مرور_شهر' | 'تنبيه_عام'
-  metadata?: any
+  metadata?: unknown
   message: string
   last_payment_date?: string
   last_payment_amount_iqd?: number

@@ -4,6 +4,11 @@ import React, { createContext, useContext, useEffect, useState } from "react"
 import { Theme, themes, applyTheme, getThemeById } from "@/lib/themes"
 import { FontOption, fonts, applyFont, getFontById, loadGoogleFont } from "@/lib/fonts"
 import { Language, languages } from "@/lib/i18n"
+import { readPersistedValue, writePersistedValue } from "@/lib/cookie-utils"
+
+const COOKIE_THEME_ID = "als_theme_id"
+const COOKIE_THEME_MODE = "als_theme_mode"
+const COOKIE_FONT_ID = "als_font_id"
 
 interface SettingsContextType {
   currentTheme: Theme
@@ -35,7 +40,7 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [themeId, setThemeIdState] = useState<string>(() => {
     if (typeof window !== 'undefined') {
-      const savedThemeId = localStorage.getItem("theme-id")
+      const savedThemeId = readPersistedValue("theme-id", COOKIE_THEME_ID)
       return savedThemeId || themes[0].id
     }
     return themes[0].id
@@ -43,7 +48,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   
   const [currentTheme, setCurrentThemeState] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
-      const savedThemeId = localStorage.getItem("theme-id")
+      const savedThemeId = readPersistedValue("theme-id", COOKIE_THEME_ID)
       if (savedThemeId) {
         const theme = getThemeById(savedThemeId)
         if (theme) return theme
@@ -54,7 +59,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   
   const [mode, setModeState] = useState<"light" | "dark" | "system">(() => {
     if (typeof window !== 'undefined') {
-      const savedMode = localStorage.getItem("theme-mode") as "light" | "dark" | "system" | null
+      const savedMode = readPersistedValue("theme-mode", COOKIE_THEME_MODE) as "light" | "dark" | "system" | null
       return savedMode || "system"
     }
     return "system"
@@ -73,7 +78,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   
   const [currentFont, setCurrentFontState] = useState<FontOption>(() => {
     if (typeof window !== 'undefined') {
-      const savedFontId = localStorage.getItem("font-id")
+      const savedFontId = readPersistedValue("font-id", COOKIE_FONT_ID)
       if (savedFontId) {
         const font = getFontById(savedFontId)
         if (font) return font
@@ -183,14 +188,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       setThemeIdState(id)
       setCurrentThemeState(theme)
       applyTheme(theme)
-      localStorage.setItem("theme-id", id)
+      writePersistedValue("theme-id", COOKIE_THEME_ID, id, { cookieMaxAgeDays: 365, requireConsent: true })
     }
   }
 
   const setMode = (newMode: "light" | "dark" | "system") => {
     console.log("Setting mode to:", newMode)
     setModeState(newMode)
-    localStorage.setItem("theme-mode", newMode)
+    writePersistedValue("theme-mode", COOKIE_THEME_MODE, newMode, { cookieMaxAgeDays: 365, requireConsent: true })
     
     const root = document.documentElement
     if (newMode === "system") {
@@ -226,7 +231,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     if (font) {
       setCurrentFontState(font)
       applyFont(font.family)
-      localStorage.setItem("font-id", fontId)
+      writePersistedValue("font-id", COOKIE_FONT_ID, fontId, { cookieMaxAgeDays: 365, requireConsent: true })
       if (font.category !== "universal") {
         loadGoogleFont(font.name)
       }

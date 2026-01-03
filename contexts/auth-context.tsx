@@ -9,7 +9,7 @@ interface AuthContextType {
   currentUser: UserWithPermissions | null
   loading: boolean
   isLoading: boolean
-  login: (user: UserWithPermissions, rememberMe: boolean) => void
+  login: (user: UserWithPermissions) => void
   logout: () => void
   hasPermission: (permission: string) => boolean
   isAuthenticated: boolean
@@ -22,15 +22,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
+  const isUserWithPermissions = (value: unknown): value is UserWithPermissions => {
+    if (!value || typeof value !== 'object') return false
+    const record = value as Record<string, unknown>
+    return typeof record.id === 'string'
+  }
+
   useEffect(() => {
-    const loadUser = () => {
+    const loadUser = async () => {
       try {
-        const savedUser = localStorage.getItem('currentUser')
-        const rememberMe = localStorage.getItem('rememberMe') === 'true'
-        
-        if (savedUser && rememberMe) {
-          setCurrentUser(JSON.parse(savedUser))
-        }
+        const response = await fetch(`/api/auth/me`, {
+          cache: 'no-store',
+        })
+
+        if (!response.ok) return
+
+        const data: unknown = await response.json()
+        if (isUserWithPermissions(data)) setCurrentUser(data)
       } catch (error) {
         console.error('Error loading user:', error)
       } finally {
@@ -41,23 +49,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUser()
   }, [])
 
-  const login = (user: UserWithPermissions, rememberMe: boolean) => {
+  const login = (user: UserWithPermissions) => {
     setCurrentUser(user)
-    
-    if (rememberMe) {
-      localStorage.setItem('currentUser', JSON.stringify(user))
-      localStorage.setItem('rememberMe', 'true')
-    } else {
-      sessionStorage.setItem('currentUser', JSON.stringify(user))
-      localStorage.removeItem('rememberMe')
-    }
   }
 
   const logout = () => {
     setCurrentUser(null)
-    localStorage.removeItem('currentUser')
-    localStorage.removeItem('rememberMe')
-    sessionStorage.removeItem('currentUser')
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
     router.push('/login')
   }
 

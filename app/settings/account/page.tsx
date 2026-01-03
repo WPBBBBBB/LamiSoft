@@ -202,7 +202,7 @@ export default function AccountPage() {
           )}
 
           {/* الصلاحيات */}
-          <Card className="p-6 bg-gradient-to-br from-primary/10 to-accent/10">
+          <Card className="p-6 bg-linear-to-br from-primary/10 to-accent/10">
             <div className="flex items-center gap-2 mb-4">
               <Shield className="h-5 w-5 text-primary" />
               <h3 className="font-bold">الصلاحيات والرتبة</h3>

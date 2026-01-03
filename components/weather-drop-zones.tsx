@@ -100,7 +100,7 @@ export function WeatherDropZones() {
   if (!isDragging) return null
 
   return (
-    <div className="fixed inset-0 z-[9999] pointer-events-none">
+    <div className="fixed inset-0 z-9999 pointer-events-none">
       <div className="absolute inset-0 bg-background/20 backdrop-blur-md" />
 
       <div className="fixed left-2 top-2 flex gap-2 pointer-events-auto z-10">

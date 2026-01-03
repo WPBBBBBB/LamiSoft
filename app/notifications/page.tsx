@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -16,6 +16,11 @@ import {
   DebtNotification,
 } from "@/lib/notifications-operations"
 
+function metadataShowsConfetti(metadata: unknown): boolean {
+  if (!metadata || typeof metadata !== "object") return false
+  return (metadata as Record<string, unknown>)["show_confetti"] === true
+}
+
 export default function NotificationsPage() {
   const { runChecks, refreshNotifications, markAllAsRead: providerMarkAllAsRead } = useNotifications()
   const [notifications, setNotifications] = useState<DebtNotification[]>([])
@@ -24,7 +29,7 @@ export default function NotificationsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     setIsLoading(true)
     try {
       const result = await getAllNotifications(showRead)
@@ -33,7 +38,7 @@ export default function NotificationsPage() {
         
         // تشغيل الأنيميشن إذا كان هناك إشعار احتفالي جديد
         const hasConfettiNotification = result.data?.some(
-          (n: any) => n.metadata?.show_confetti && !n.is_read
+          (n) => metadataShowsConfetti(n.metadata) && !n.is_read
         )
         if (hasConfettiNotification) {
           setShowConfetti(true)
@@ -50,12 +55,11 @@ export default function NotificationsPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [showRead])
 
   useEffect(() => {
     fetchNotifications()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showRead])
+  }, [fetchNotifications])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -124,9 +128,9 @@ export default function NotificationsPage() {
     }
   }
 
-  const getNotificationIcon = (type: string, metadata?: any) => {
+  const getNotificationIcon = (type: string, metadata?: unknown) => {
     // إشعار احتفالي (معلم الزبائن)
-    if (metadata?.show_confetti) {
+    if (metadataShowsConfetti(metadata)) {
       return <Trophy className="h-5 w-5 text-amber-500" />
     }
     
@@ -140,10 +144,10 @@ export default function NotificationsPage() {
     }
   }
 
-  const getNotificationBadge = (type: string, metadata?: any) => {
+  const getNotificationBadge = (type: string, metadata?: unknown) => {
     // إشعار احتفالي (معلم الزبائن)
-    if (metadata?.show_confetti) {
-      return <Badge className="bg-gradient-to-r from-amber-400 to-yellow-500 text-white border-none">🏆 إنجاز رائع</Badge>
+    if (metadataShowsConfetti(metadata)) {
+      return <Badge className="bg-linear-to-r from-amber-400 to-yellow-500 text-white border-none">🏆 إنجاز رائع</Badge>
     }
     
     switch (type) {

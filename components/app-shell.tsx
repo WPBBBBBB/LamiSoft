@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 import { ThemeProvider } from "@/components/providers/theme-provider"
 import { SettingsProvider } from "@/components/providers/settings-provider"
 import { ThemeApplier } from "@/components/providers/theme-applier"
@@ -16,14 +16,12 @@ import { NotificationProvider } from "@/components/providers/notification-provid
 import { NotificationPanel } from "@/components/notifications/notification-panel"
 import { AnimatePresence } from "framer-motion"
 import { WeatherDropZones } from "@/components/weather-drop-zones"
+import { CookieConsentBanner } from "@/components/cookie-consent-banner"
+import { CookieThemeSync } from "@/components/providers/cookie-theme-sync"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [isLoginPage, setIsLoginPage] = useState(false)
-
-  useEffect(() => {
-    const pathname = window.location.pathname
-    setIsLoginPage(pathname === "/login" || pathname === "/forgot-password")
-  }, [])
+  const pathname = usePathname()
+  const isLoginPage = pathname === "/login" || pathname === "/forgot-password"
 
   return (
     <ThemeProvider
@@ -32,6 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       enableSystem
       disableTransitionOnChange
     >
+      <CookieThemeSync />
       <SettingsProvider>
         <ThemeApplier>
           <AuthProvider>
@@ -64,6 +63,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </AuthProvider>
         </ThemeApplier>
       </SettingsProvider>
+
+      <CookieConsentBanner />
 
       <GlobalKeyboardShortcuts />
       <Toaster />

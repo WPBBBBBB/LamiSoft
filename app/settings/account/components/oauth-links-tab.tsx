@@ -7,16 +7,29 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import OAuthLinkDialog from "./oauth-link-dialog"
 
+type OAuthProviderKey = "google" | "microsoft" | "github"
+
+interface OAuthLinksUserData {
+  id: string
+  google_id: string | null
+  google_email: string | null
+  microsoft_id: string | null
+  microsoft_email: string | null
+  github_id: string | null
+  github_username: string | null
+}
+
 interface OAuthLinksTabProps {
-  userData: any
+  userData: OAuthLinksUserData
   onUpdate: () => void
 }
 
 export default function OAuthLinksTab({ userData, onUpdate }: OAuthLinksTabProps) {
-  const [linkDialog, setLinkDialog] = useState<'google' | 'microsoft' | 'github' | null>(null)
+  const [linkDialog, setLinkDialog] = useState<OAuthProviderKey | null>(null)
 
   const oauthProviders = [
     {
+      key: 'google' as const,
       name: 'Google',
       icon: (
         <svg className="h-6 w-6" viewBox="0 0 24 24">
@@ -28,10 +41,9 @@ export default function OAuthLinksTab({ userData, onUpdate }: OAuthLinksTabProps
       ),
       connected: !!userData.google_id,
       email: userData.google_email,
-      id_field: 'google_id',
-      email_field: 'google_email',
     },
     {
+      key: 'microsoft' as const,
       name: 'Microsoft',
       icon: (
         <svg className="h-6 w-6" viewBox="0 0 23 23">
@@ -43,10 +55,9 @@ export default function OAuthLinksTab({ userData, onUpdate }: OAuthLinksTabProps
       ),
       connected: !!userData.microsoft_id,
       email: userData.microsoft_email,
-      id_field: 'microsoft_id',
-      email_field: 'microsoft_email',
     },
     {
+      key: 'github' as const,
       name: 'GitHub',
       icon: (
         <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
@@ -55,25 +66,23 @@ export default function OAuthLinksTab({ userData, onUpdate }: OAuthLinksTabProps
       ),
       connected: !!userData.github_id,
       email: userData.github_username,
-      id_field: 'github_id',
-      email_field: 'github_username',
     },
   ]
 
-  const handleUnlink = async (provider: string, idField: string, emailField: string) => {
+  const handleUnlink = async (provider: OAuthProviderKey, providerName: string) => {
     try {
       const response = await fetch('/api/user/unlink-oauth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: userData.id,
-          provider: provider.toLowerCase(),
+          provider,
         }),
       })
 
       if (!response.ok) throw new Error('فشل إلغاء الربط')
 
-      toast.success(`تم إلغاء ربط ${provider} بنجاح`)
+      toast.success(`تم إلغاء ربط ${providerName} بنجاح`)
       onUpdate()
     } catch (error) {
       console.error('Error unlinking OAuth:', error)
@@ -95,14 +104,14 @@ export default function OAuthLinksTab({ userData, onUpdate }: OAuthLinksTabProps
               <div>
                 <Badge variant="secondary" className="mb-2">متصل</Badge>
                 <p className="text-sm text-muted-foreground truncate">
-                  {provider.email}
+                  {provider.email || "-"}
                 </p>
               </div>
               <Button
                 variant="destructive"
                 size="sm"
                 className="w-full"
-                onClick={() => handleUnlink(provider.name, provider.id_field, provider.email_field)}
+                onClick={() => handleUnlink(provider.key, provider.name)}
               >
                 إلغاء الربط
               </Button>
@@ -114,7 +123,7 @@ export default function OAuthLinksTab({ userData, onUpdate }: OAuthLinksTabProps
                 variant="default"
                 size="sm"
                 className="w-full"
-                onClick={() => setLinkDialog(provider.name.toLowerCase() as 'google' | 'microsoft' | 'github')}
+                onClick={() => setLinkDialog(provider.key)}
               >
                 ربط الحساب
               </Button>

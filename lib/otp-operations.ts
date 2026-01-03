@@ -1,5 +1,18 @@
 import { supabase } from './supabase'
 
+type SendOtpApiResponse = {
+  success: boolean
+  error?: string
+}
+
+function isSendOtpApiResponse(value: unknown): value is SendOtpApiResponse {
+  if (!value || typeof value !== 'object') return false
+  const record = value as Record<string, unknown>
+  if (typeof record.success !== 'boolean') return false
+  if (typeof record.error !== 'undefined' && typeof record.error !== 'string') return false
+  return true
+}
+
 export async function sendOTPViaWhatsApp(
   phoneNumber: string,
   otpCode: string
@@ -22,11 +35,12 @@ export async function sendOTPViaWhatsApp(
       throw new Error(`فشل الاتصال بالخادم: ${response.status}`)
     }
 
-    const data = await response.json()
-
-    if (!data.success) {
-      throw new Error(data.error || 'فشل إرسال رسالة الواتساب')
+    const json: unknown = await response.json()
+    if (!isSendOtpApiResponse(json)) {
+      throw new Error('استجابة غير صالحة من الخادم')
     }
+
+    if (!json.success) throw new Error(json.error || 'فشل إرسال رسالة الواتساب')
 
     return { success: true }
   } catch (error: unknown) {
@@ -93,7 +107,7 @@ export async function verifyOTP(
   try {
     const { data, error } = await supabase
       .from('otp_codes')
-      .select('*')
+      .select('id')
       .eq('phone_number', phoneNumber)
       .eq('otp_code', otpCode)
       .eq('purpose', purpose)
@@ -110,10 +124,15 @@ export async function verifyOTP(
       }
     }
 
-    await supabase
-      .from('otp_codes')
-      .update({ used: true })
-      .eq('id', data.id)
+    const otpId = (data as { id?: unknown } | null)?.id
+    if (typeof otpId !== 'string') {
+      return {
+        success: false,
+        error: 'استجابة غير صالحة من قاعدة البيانات'
+      }
+    }
+
+    await supabase.from('otp_codes').update({ used: true }).eq('id', otpId)
 
     return { success: true }
   } catch (error: unknown) {
@@ -134,7 +153,12 @@ export async function getUserByPhone(phoneNumber: string) {
     .single()
 
   if (error) return null
-  return data
+  return data as {
+    id: string
+    full_name: string
+    username: string
+    phone_number?: string
+  }
 }
 
 export async function resetPassword(
@@ -146,7 +170,7 @@ export async function resetPassword(
     const { hashPassword } = await import('./password-utils')
     const hashedPassword = await hashPassword(newPassword)
 
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       password: hashedPassword,
       password_changed_at: new Date().toISOString(),
       must_change_password: false,

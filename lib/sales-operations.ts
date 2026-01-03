@@ -272,17 +272,23 @@ export async function createSale(
     }
 
     return { success: true, saleId: saleMainId }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("=== ERROR CAUGHT ===")
     console.error("Error creating sale:", error)
     console.error("Error type:", typeof error)
-    console.error("Error constructor:", error?.constructor?.name)
+    console.error(
+      "Error constructor:",
+      error && typeof error === "object"
+        ? (error as Record<string, unknown>).constructor
+        : undefined
+    )
     
     if (error && typeof error === 'object') {
-      console.error("Error keys:", Object.keys(error))
-      console.error("Error message property:", (error as any).message)
-      console.error("Error code property:", (error as any).code)
-      console.error("Error details property:", (error as any).details)
+      const errRecord = error as Record<string, unknown>
+      console.error("Error keys:", Object.keys(errRecord))
+      console.error("Error message property:", errRecord.message)
+      console.error("Error code property:", errRecord.code)
+      console.error("Error details property:", errRecord.details)
     }
     
     console.error("Error instanceof Error:", error instanceof Error)
@@ -294,15 +300,22 @@ export async function createSale(
     if (error instanceof Error) {
       errorMessage = error.message
     } else if (error && typeof error === 'object') {
-      if ('message' in error && error.message) {
-        errorMessage = String(error.message)
-      } else if ('details' in error && error.details) {
-        errorMessage = String(error.details)
-      } else if ('code' in error && error.code) {
-        errorMessage = `خطأ في قاعدة البيانات: ${error.code}`
+      const errRecord = error as Record<string, unknown>
+      if (typeof errRecord.message === 'string' && errRecord.message) {
+        errorMessage = errRecord.message
+      } else if (typeof errRecord.details === 'string' && errRecord.details) {
+        errorMessage = errRecord.details
+      } else if (typeof errRecord.code === 'string' && errRecord.code) {
+        errorMessage = `خطأ في قاعدة البيانات: ${errRecord.code}`
       } else {
-        errorMessage = JSON.stringify(error)
+        try {
+          errorMessage = JSON.stringify(errRecord)
+        } catch {
+          errorMessage = "حدث خطأ غير متوقع"
+        }
       }
+    } else if (typeof error === 'string') {
+      errorMessage = error
     } else if (error) {
       errorMessage = String(error)
     }

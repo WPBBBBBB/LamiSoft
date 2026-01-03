@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import { recordFailedOAuthAttempt, resetOAuthBlock } from "@/lib/oauth-security"
+import { AUTH_SESSION_COOKIE, createSessionToken } from "@/lib/auth-session"
+
+const OAUTH_LOGIN_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
+
+function isSecureRequest(request: NextRequest): boolean {
+  const proto = request.headers.get("x-forwarded-proto")
+  if (proto) return proto === "https"
+  return new URL(request.url).protocol === "https:"
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -252,8 +261,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const { password: _password, ...safeUser } = user as Record<string, unknown>
+
     // Success - close popup and notify parent
-    return new NextResponse(
+    const response = new NextResponse(
       `
       <!DOCTYPE html>
       <html dir="rtl" lang="ar">
@@ -353,7 +364,7 @@ export async function GET(request: NextRequest) {
           window.opener?.postMessage({
             type: 'oauth-success',
             provider: 'microsoft',
-            user: ${JSON.stringify(user)}
+            user: ${JSON.stringify(safeUser)}
           }, '*');
 
           setTimeout(() => {
@@ -365,6 +376,22 @@ export async function GET(request: NextRequest) {
       `,
       { headers: { "Content-Type": "text/html; charset=utf-8" } }
     )
+
+    // Only set login session cookie for actual login flow (not account linking)
+    if (!userId) {
+      const token = await createSessionToken(String(safeUser.id), OAUTH_LOGIN_MAX_AGE_SECONDS)
+      response.cookies.set({
+        name: AUTH_SESSION_COOKIE,
+        value: token,
+        httpOnly: true,
+        sameSite: "lax",
+        secure: isSecureRequest(request),
+        path: "/",
+        maxAge: OAUTH_LOGIN_MAX_AGE_SECONDS,
+      })
+    }
+
+    return response
   } catch (error) {
     console.error("Error in Microsoft OAuth callback:", error)
     return new NextResponse(

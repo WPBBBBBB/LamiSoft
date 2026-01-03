@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
  * Custom hook لتأخير تنفيذ قيمة متغيرة
@@ -26,23 +26,31 @@ export function useDebounce<T>(value: T, delay: number = 500): T {
  * Custom hook لتأخير تنفيذ دالة
  * مفيد لتقليل عدد مرات تنفيذ دالة معينة
  */
-export function useDebouncedCallback<T extends (...args: any[]) => any>(
+export function useDebouncedCallback<T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number = 500
 ): (...args: Parameters<T>) => void {
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const callbackRef = useRef(callback)
 
-  return (...args: Parameters<T>) => {
-    // إلغاء المؤقت السابق
-    if (timeoutId) {
-      clearTimeout(timeoutId)
+  useEffect(() => {
+    callbackRef.current = callback
+  }, [callback])
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
+  }, [])
 
-    // تعيين مؤقت جديد
-    const newTimeoutId = setTimeout(() => {
-      callback(...args)
-    }, delay)
+  return useCallback(
+    (...args: Parameters<T>) => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
 
-    setTimeoutId(newTimeoutId)
-  }
+      timeoutRef.current = setTimeout(() => {
+        callbackRef.current(...args)
+      }, delay)
+    },
+    [delay]
+  )
 }

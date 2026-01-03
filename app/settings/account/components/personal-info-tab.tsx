@@ -9,30 +9,65 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { toast } from "sonner"
 
+interface PersonalInfoUserData {
+  id: string
+  full_name: string
+  age: number | null
+  phone_number: string | null
+  address: string | null
+  username: string
+}
+
+interface PersonalInfoFormData {
+  full_name: string
+  age: string
+  phone_number: string
+  address: string
+  username: string
+}
+
 interface PersonalInfoTabProps {
-  userData: any
+  userData: PersonalInfoUserData
   onUpdate: () => void
 }
 
 export default function PersonalInfoTab({ userData, onUpdate }: PersonalInfoTabProps) {
-  const [formData, setFormData] = useState({
-    full_name: userData.full_name || '',
-    age: userData.age || '',
-    phone_number: userData.phone_number || '',
-    address: userData.address || '',
-    username: userData.username || '',
+  const [formData, setFormData] = useState<PersonalInfoFormData>({
+    full_name: userData.full_name ?? "",
+    age: userData.age !== null && userData.age !== undefined ? String(userData.age) : "",
+    phone_number: userData.phone_number ?? "",
+    address: userData.address ?? "",
+    username: userData.username ?? "",
   })
   const [newPassword, setNewPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [isUpdating, setIsUpdating] = useState(false)
 
+  useEffect(() => {
+    setFormData({
+      full_name: userData.full_name ?? "",
+      age: userData.age !== null && userData.age !== undefined ? String(userData.age) : "",
+      phone_number: userData.phone_number ?? "",
+      address: userData.address ?? "",
+      username: userData.username ?? "",
+    })
+  }, [userData])
+
   const hasChanges = () => {
+    const baseline: PersonalInfoFormData = {
+      full_name: userData.full_name ?? "",
+      age: userData.age !== null && userData.age !== undefined ? String(userData.age) : "",
+      phone_number: userData.phone_number ?? "",
+      address: userData.address ?? "",
+      username: userData.username ?? "",
+    }
+
     return (
-      formData.full_name !== userData.full_name ||
-      formData.age !== (userData.age || '') ||
-      formData.phone_number !== (userData.phone_number || '') ||
-      formData.address !== (userData.address || '') ||
-      formData.username !== userData.username ||
+      formData.full_name !== baseline.full_name ||
+      formData.age !== baseline.age ||
+      formData.phone_number !== baseline.phone_number ||
+      formData.address !== baseline.address ||
+      formData.username !== baseline.username ||
       newPassword !== ''
     )
   }
@@ -51,10 +86,22 @@ export default function PersonalInfoTab({ userData, onUpdate }: PersonalInfoTabP
 
     setIsUpdating(true)
     try {
-      const updateData: any = {
+      const trimmedAge = formData.age.trim()
+      const parsedAge = trimmedAge ? Number.parseInt(trimmedAge, 10) : NaN
+      const ageValue = trimmedAge && Number.isFinite(parsedAge) ? parsedAge : null
+
+      const updateData: {
+        userId: string
+        full_name: string
+        age: number | null
+        phone_number: string
+        address: string
+        username: string
+        password?: string
+      } = {
         userId: userData.id,
         full_name: formData.full_name,
-        age: formData.age ? parseInt(formData.age) : null,
+        age: ageValue,
         phone_number: formData.phone_number,
         address: formData.address,
         username: formData.username,
