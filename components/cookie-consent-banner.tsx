@@ -1,12 +1,28 @@
 "use client"
 
-import { useState } from "react"
+import { useSyncExternalStore } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { getCookieConsent, setCookieConsent } from "@/lib/cookie-utils"
 
 export function CookieConsentBanner() {
-  const [visible, setVisible] = useState(() => getCookieConsent() === null)
+  const consent = useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === "undefined") return () => {}
+      const handler = () => onStoreChange()
+      window.addEventListener("storage", handler)
+      window.addEventListener("als-cookie-consent", handler as EventListener)
+      return () => {
+        window.removeEventListener("storage", handler)
+        window.removeEventListener("als-cookie-consent", handler as EventListener)
+      }
+    },
+    () => getCookieConsent(),
+    // On the server we can't read browser storage; default to hidden.
+    () => "accepted"
+  )
+
+  const visible = consent === null
 
   if (!visible) return null
 
@@ -23,7 +39,6 @@ export function CookieConsentBanner() {
                 variant="outline"
                 onClick={() => {
                   setCookieConsent("rejected")
-                  setVisible(false)
                 }}
               >
                 رفض
@@ -31,7 +46,6 @@ export function CookieConsentBanner() {
               <Button
                 onClick={() => {
                   setCookieConsent("accepted")
-                  setVisible(false)
                 }}
               >
                 قبول

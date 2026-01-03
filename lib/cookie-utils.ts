@@ -80,6 +80,10 @@ export function hasAcceptedCookieConsent(): boolean {
 export function setCookieConsent(value: CookieConsent): void {
   safeLocalStorageSet(COOKIE_CONSENT_STORAGE_KEY, value)
   setCookie(COOKIE_CONSENT_NAME, value, { maxAgeDays: 365 })
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("als-cookie-consent"))
+  }
 }
 
 export function isIOSLikeDevice(): boolean {
