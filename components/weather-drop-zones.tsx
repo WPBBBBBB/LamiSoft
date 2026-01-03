@@ -20,6 +20,7 @@ type DroppedWeatherSlot = {
 export function WeatherDropZones() {
   const [isDragging, setIsDragging] = useState(false)
   const [reserved, setReserved] = useState<boolean[]>([false, false, false, false])
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null)
 
   const getWeatherDragPayload = () => {
     if (typeof window === "undefined") return null
@@ -65,6 +66,31 @@ export function WeatherDropZones() {
     return () => {
       window.removeEventListener("weather-slots-updated", loadReserved)
       window.removeEventListener("storage", loadReserved)
+    }
+  }, [isDragging])
+
+  useEffect(() => {
+    if (!isDragging) {
+      setDragPos(null)
+      return
+    }
+
+    let rafId = 0
+    const handleMove = (e: PointerEvent) => {
+      const x = e.clientX
+      const y = e.clientY
+      if (rafId) return
+      rafId = window.requestAnimationFrame(() => {
+        rafId = 0
+        setDragPos({ x, y })
+      })
+    }
+
+    window.addEventListener("pointermove", handleMove, { passive: true })
+
+    return () => {
+      window.removeEventListener("pointermove", handleMove)
+      if (rafId) window.cancelAnimationFrame(rafId)
     }
   }, [isDragging])
 
@@ -144,9 +170,23 @@ export function WeatherDropZones() {
 
   if (!isDragging) return null
 
+  const currentPayload = getWeatherDragPayload() as null | { name?: unknown }
+  const draggedName = currentPayload?.name ? String(currentPayload.name) : ""
+
   return (
     <div className="fixed inset-0 z-9999 pointer-events-none">
       <div className="absolute inset-0 bg-background/20 backdrop-blur-md" />
+
+      {dragPos && draggedName && (
+        <div
+          className="fixed z-10 pointer-events-none"
+          style={{ left: dragPos.x + 14, top: dragPos.y + 14 }}
+        >
+          <div className="rounded-full border bg-background/90 px-3 py-1 text-sm font-semibold text-foreground shadow">
+            {draggedName}
+          </div>
+        </div>
+      )}
 
       <div className="fixed left-2 top-2 flex gap-2 pointer-events-auto z-10">
         {[0, 1, 2, 3].map((index) => (
