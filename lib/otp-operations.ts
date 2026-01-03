@@ -1,6 +1,5 @@
 import { supabase } from './supabase'
 
-// إرسال OTP عبر Wasenderapi (عبر API route لتجنب CORS)
 export async function sendOTPViaWhatsApp(
   phoneNumber: string,
   otpCode: string
@@ -40,18 +39,15 @@ export async function sendOTPViaWhatsApp(
   }
 }
 
-// إنشاء وحفظ OTP
 export async function createOTP(
   phoneNumber: string,
   purpose: string = 'password_reset'
 ): Promise<{ success: boolean; otpCode?: string; error?: string }> {
   try {
-    // توليد رمز OTP من 6 أرقام
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString()
     
-    // حفظ في قاعدة البيانات
     const expiresAt = new Date()
-    expiresAt.setMinutes(expiresAt.getMinutes() + 5) // صالح لمدة 5 دقائق
+    expiresAt.setMinutes(expiresAt.getMinutes() + 5)
 
     const { error } = await supabase
       .from('otp_codes')
@@ -66,11 +62,9 @@ export async function createOTP(
 
     if (error) throw error
 
-    // إرسال عبر واتساب
     const sendResult = await sendOTPViaWhatsApp(phoneNumber, otpCode)
     
     if (!sendResult.success) {
-      // فشل الإرسال
       return {
         success: false,
         error: sendResult.error
@@ -91,14 +85,12 @@ export async function createOTP(
   }
 }
 
-// التحقق من OTP
 export async function verifyOTP(
   phoneNumber: string,
   otpCode: string,
   purpose: string = 'password_reset'
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // البحث عن OTP صالح
     const { data, error } = await supabase
       .from('otp_codes')
       .select('*')
@@ -118,7 +110,6 @@ export async function verifyOTP(
       }
     }
 
-    // تحديث الرمز كمستخدم
     await supabase
       .from('otp_codes')
       .update({ used: true })
@@ -135,7 +126,6 @@ export async function verifyOTP(
   }
 }
 
-// البحث عن مستخدم برقم الهاتف
 export async function getUserByPhone(phoneNumber: string) {
   const { data, error } = await supabase
     .from('users')
@@ -147,7 +137,6 @@ export async function getUserByPhone(phoneNumber: string) {
   return data
 }
 
-// تحديث كلمة المرور واسم المستخدم
 export async function resetPassword(
   userId: string,
   newPassword: string,
@@ -164,7 +153,6 @@ export async function resetPassword(
       updated_at: new Date().toISOString()
     }
 
-    // إضافة اسم المستخدم إذا تم توفيره
     if (newUsername && newUsername.trim()) {
       updateData.username = newUsername.trim()
     }

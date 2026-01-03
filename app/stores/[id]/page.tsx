@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import {
   Plus,
   Edit,
@@ -14,10 +14,8 @@ import {
   RefreshCw,
   ArrowRight,
   FileText,
-  Package,
   Check,
   XCircle,
-  Save,
 } from "lucide-react"
 import {
   Dialog,
@@ -43,7 +41,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
 import { 
   getStore, 
   getStoreInventory, 
@@ -79,19 +76,14 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
-  const [itemToDelete, setItemToDelete] = useState<string | null>(null)
   
-  // Exchange rate
   const [exchangeRate, setExchangeRate] = useState<number>(1500)
   
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 30
   
-  // Inline editing state
   const [editingRows, setEditingRows] = useState<Set<string>>(new Set())
   const [editedData, setEditedData] = useState<Map<string, EditingRow>>(new Map())
-  // Always show new item row - no need for isAddingNew
   const [newRowData, setNewRowData] = useState<EditingRow>({
     id: "new",
     productcode: "",
@@ -105,6 +97,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     loadStoreData()
     loadExchangeRate()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeId])
 
   async function loadStoreData() {
@@ -128,28 +121,23 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       setExchangeRate(rate)
     } catch (error) {
       console.error("خطأ في تحميل سعر الصرف:", error)
-      // استخدام القيمة الافتراضية
     }
   }
 
-  // Filter inventory based on search
   const filteredInventory = inventory.filter((item) =>
     item.productcode.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.productname.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  // Pagination calculations
   const totalPages = Math.ceil(filteredInventory.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const paginatedInventory = filteredInventory.slice(startIndex, endIndex)
 
-  // Reset to page 1 when search changes
   useEffect(() => {
     setCurrentPage(1)
   }, [searchQuery])
 
-  // Handle refresh
   const handleRefresh = () => {
     loadStoreData()
     setEditingRows(new Set())
@@ -157,12 +145,10 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     toast.success("تم تحديث البيانات")
   }
 
-  // Handle clear search
   const handleClearSearch = () => {
     setSearchQuery("")
   }
 
-  // Reset new row data after adding
   const resetNewRowData = () => {
     setNewRowData({
       id: "new",
@@ -175,7 +161,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     })
   }
 
-  // Handle edit row
   const handleEditRow = (item: InventoryItem) => {
     const newEditingRows = new Set(editingRows)
     newEditingRows.add(item.id)
@@ -194,7 +179,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     setEditedData(newEditedData)
   }
 
-  // Handle cancel edit
   const handleCancelEdit = (id: string) => {
     const newEditingRows = new Set(editingRows)
     newEditingRows.delete(id)
@@ -205,7 +189,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     setEditedData(newEditedData)
   }
 
-  // Handle save edited row
   const handleSaveRow = async (id: string) => {
     const data = editedData.get(id)
     if (!data) return
@@ -235,7 +218,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  // Handle save new row
   const handleSaveNewRow = async () => {
     if (!newRowData.productcode.trim() || !newRowData.productname.trim()) {
       toast.error("الرجاء إدخال رمز واسم المادة")
@@ -267,7 +249,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  // Handle Enter key press on price field
   const handlePriceKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault()
@@ -275,18 +256,16 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  // Update edited data with auto currency conversion
-  const updateEditedField = (id: string, field: keyof EditingRow, value: any) => {
+  const updateEditedField = (id: string, field: keyof EditingRow, value: unknown) => {
     const newEditedData = new Map(editedData)
     const currentData = newEditedData.get(id)
     if (currentData) {
       const updatedData = { ...currentData, [field]: value }
       
-      // Auto convert currency
       if (field === "sellpriceiqd") {
-        updatedData.sellpriceusd = Math.round((value / exchangeRate) * 100) / 100
+        updatedData.sellpriceusd = Math.round((Number(value) / exchangeRate) * 100) / 100
       } else if (field === "sellpriceusd") {
-        updatedData.sellpriceiqd = Math.round(value * exchangeRate)
+        updatedData.sellpriceiqd = Math.round(Number(value) * exchangeRate)
       }
       
       newEditedData.set(id, updatedData)
@@ -294,21 +273,18 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  // Update new row data with auto currency conversion
-  const updateNewRowField = (field: keyof EditingRow, value: any) => {
+  const updateNewRowField = (field: keyof EditingRow, value: unknown) => {
     const updatedData = { ...newRowData, [field]: value }
     
-    // Auto convert currency
     if (field === "sellpriceiqd") {
-      updatedData.sellpriceusd = Math.round((value / exchangeRate) * 100) / 100
+      updatedData.sellpriceusd = Math.round((Number(value) / exchangeRate) * 100) / 100
     } else if (field === "sellpriceusd") {
-      updatedData.sellpriceiqd = Math.round(value * exchangeRate)
+      updatedData.sellpriceiqd = Math.round(Number(value) * exchangeRate)
     }
     
     setNewRowData(updatedData)
   }
 
-  // Handle delete items
   const handleDeleteClick = () => {
     if (selectedItems.length === 0) {
       toast.error("الرجاء اختيار مادة واحدة على الأقل للحذف")
@@ -332,9 +308,19 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       setDeleteConfirmOpen(false)
       setSelectedItems([])
       loadStoreData()
-    } catch (error) {
-      console.error(error)
-      toast.error("حدث خطأ أثناء الحذف")
+    } catch (error: any) {
+      console.error("Delete error:", error)
+      
+      // معالجة أخطاء قيود المفاتيح الأجنبية
+      if (error?.message?.includes('foreign key') || error?.code === '23503') {
+        toast.error("لا يمكن حذف هذه المادة لأنها مرتبطة بعمليات بيع أو شراء سابقة")
+      } else if (error?.message) {
+        toast.error("حدث خطأ أثناء الحذف: " + error.message)
+      } else {
+        toast.error("حدث خطأ أثناء الحذف")
+      }
+      
+      setDeleteConfirmOpen(false)
     }
   }
 
@@ -368,7 +354,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
   return (
     <div className="flex-1 overflow-auto">
       <div className="container mx-auto p-6 space-y-6">
-        {/* Header with Back Button */}
+        {}
         <div className="flex items-center gap-4 mb-6">
           <Button
             variant="outline"
@@ -393,7 +379,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
         </div>
 
         <Card className="p-6">
-          {/* Action Buttons */}
+          {}
           <div className="flex flex-wrap gap-3 mb-6">
             <Button
               onClick={handleDeleteClick}
@@ -406,7 +392,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
             </Button>
           </div>
 
-          {/* Toolbar */}
+          {}
           <div className="flex gap-2 mb-6">
             <Button variant="outline" size="icon">
               <FileText className="h-4 w-4" />
@@ -430,7 +416,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
             </Button>
           </div>
 
-          {/* Inventory Table */}
+          {}
           <div className="rounded-lg border overflow-hidden mb-6">
             <Table>
               <TableHeader>
@@ -459,7 +445,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* New Row - Always Visible */}
+                {}
                 <TableRow className="sticky top-0 z-10" style={{ backgroundColor: 'var(--theme-surface)', opacity: 0.95, color: 'var(--theme-text)' }}>
                   <TableCell className="text-center" style={{ color: 'var(--theme-text)' }}>✨</TableCell>
                   <TableCell className="text-center" style={{ color: 'var(--theme-text)' }}>-</TableCell>
@@ -542,7 +528,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                   </TableCell>
                 </TableRow>
 
-                {/* Existing Rows */}
+                {}
                 {paginatedInventory.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
@@ -585,7 +571,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                           />
                         </TableCell>
                         
-                        {/* Product Code */}
+                        {}
                         <TableCell className="text-right font-medium">
                           {isEditing && editData ? (
                             <Input
@@ -598,7 +584,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                           )}
                         </TableCell>
                         
-                        {/* Product Name */}
+                        {}
                         <TableCell className="text-right">
                           {isEditing && editData ? (
                             <Input
@@ -611,7 +597,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                           )}
                         </TableCell>
                         
-                        {/* Quantity */}
+                        {}
                         <TableCell className="text-right">
                           {isEditing && editData ? (
                             <Input
@@ -627,7 +613,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                           )}
                         </TableCell>
                         
-                        {/* Unit */}
+                        {}
                         <TableCell className="text-right">
                           {isEditing && editData ? (
                             <Select
@@ -650,7 +636,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                           )}
                         </TableCell>
                         
-                        {/* Price IQD */}
+                        {}
                         <TableCell className="text-right">
                           {isEditing && editData ? (
                             <Input
@@ -664,7 +650,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                           )}
                         </TableCell>
                         
-                        {/* Price USD */}
+                        {}
                         <TableCell className="text-right">
                           {isEditing && editData ? (
                             <Input
@@ -678,12 +664,12 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                           )}
                         </TableCell>
                         
-                        {/* Created Date */}
+                        {}
                         <TableCell className="text-right text-sm">
-                          {new Date(item.createdat).toLocaleDateString("ar-IQ")}
+                          {new Date(item.createdat).toLocaleDateString("en-GB")}
                         </TableCell>
                         
-                        {/* Actions */}
+                        {}
                         <TableCell className="text-center">
                           {isEditing ? (
                             <div className="flex gap-1 justify-center">
@@ -724,9 +710,9 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
             </Table>
           </div>
 
-          {/* Footer with Pagination */}
+          {}
           <div className="flex flex-col gap-4 pt-4 border-t">
-            {/* Pagination Controls */}
+            {}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-2">
                 <Button
@@ -792,7 +778,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
               </div>
             )}
             
-            {/* Stats and Refresh */}
+            {}
             <div className="flex justify-between items-center">
               <Button onClick={handleRefresh} variant="outline" className="gap-2">
                 <RefreshCw className="h-4 w-4" />
@@ -811,7 +797,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
         </Card>
       </div>
 
-      {/* Delete Confirmation Dialog */}
+      {}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent>
           <DialogHeader>

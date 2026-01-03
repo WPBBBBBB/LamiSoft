@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
+import Image from "next/image"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -26,6 +27,8 @@ import {
 } from "@/components/ui/select"
 import { ArrowRight, Upload, X } from "lucide-react"
 import { getCustomer, updateCustomer, uploadCustomerImage, deleteCustomerImage } from "@/lib/supabase-operations"
+import { logAction } from "@/lib/system-log-operations"
+import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 
 const formSchema = z.object({
@@ -46,6 +49,14 @@ export default function EditCustomerPage() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>("")
   const [existingImageUrl, setExistingImageUrl] = useState<string>("")
+  const [oldCustomerData, setOldCustomerData] = useState<{
+    customer_name: string
+    type: string
+    phone_number?: string
+    address?: string
+    notes?: string
+    image_url?: string
+  } | null>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,6 +71,7 @@ export default function EditCustomerPage() {
 
   useEffect(() => {
     loadCustomerData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId])
 
   async function loadCustomerData() {
@@ -68,6 +80,8 @@ export default function EditCustomerPage() {
       const customer = await getCustomer(customerId)
       
       if (customer) {
+        setOldCustomerData(customer)
+        
         form.reset({
           customer_name: customer.customer_name,
           type: customer.type,
@@ -122,7 +136,6 @@ export default function EditCustomerPage() {
       let imageUrl = existingImageUrl
 
       if (imageFile) {
-        // حذف الصورة القديمة إذا كانت موجودة
         if (existingImageUrl) {
           await deleteCustomerImage(existingImageUrl)
         }
@@ -137,6 +150,28 @@ export default function EditCustomerPage() {
         notes: values.notes || "",
         image_url: imageUrl || "",
       })
+
+      try {
+        const oldValueFormatted = oldCustomerData ? 
+          `اسم الزبون: ${oldCustomerData.customer_name} | النوع: ${oldCustomerData.type} | رقم الهاتف: ${oldCustomerData.phone_number || 'غير محدد'} | العنوان: ${oldCustomerData.address || 'غير محدد'}` 
+          : "لا توجد بيانات سابقة"
+        
+        await logAction(
+          "تعديل",
+          `تمت عملية تعديل على الزبون: ${values.customer_name}`,
+          "customers",
+          undefined,
+          { old_value_formatted: oldValueFormatted },
+          {
+            customer_name: values.customer_name,
+            type: values.type,
+            phone_number: values.phone_number || "",
+            address: values.address || "",
+          }
+        )
+      } catch (logError) {
+        console.error("Error logging action:", logError)
+      }
 
       toast.success("تم تحديث الزبون بنجاح")
       router.push("/customers")
@@ -164,7 +199,7 @@ export default function EditCustomerPage() {
   return (
     <div className="flex-1 overflow-auto">
       <div className="container mx-auto p-6 space-y-6" style={{ maxWidth: "800px" }}>
-        {/* Header */}
+        {}
         <div className="mb-6 flex items-start justify-between gap-4">
           <div className="flex-1">
             <h1 className="text-3xl font-bold" style={{ color: "var(--theme-text)" }}>
@@ -188,14 +223,16 @@ export default function EditCustomerPage() {
         <Card className="p-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* صورة العميل */}
+              {}
               <div className="space-y-2">
                 <FormLabel>صورة العميل (اختياري)</FormLabel>
                 {imagePreview ? (
                   <div className="relative inline-block">
-                    <img
+                    <Image
                       src={imagePreview}
                       alt="Preview"
+                      width={128}
+                      height={128}
                       className="w-32 h-32 object-cover rounded-lg border"
                     />
                     <Button
@@ -218,10 +255,15 @@ export default function EditCustomerPage() {
                       id="image-upload"
                     />
                     <label htmlFor="image-upload">
-                      <Button type="button" variant="outline" asChild>
-                        <span className="cursor-pointer gap-2">
-                          <Upload className="h-4 w-4" />
-                          اختر صورة
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="cursor-pointer"
+                        asChild
+                      >
+                        <span>
+                          <Upload className="mr-2 h-4 w-4" />
+                          رفع صورة
                         </span>
                       </Button>
                     </label>
@@ -229,7 +271,6 @@ export default function EditCustomerPage() {
                 )}
               </div>
 
-              {/* اسم الزبون */}
               <FormField
                 control={form.control}
                 name="customer_name"
@@ -237,21 +278,20 @@ export default function EditCustomerPage() {
                   <FormItem>
                     <FormLabel>اسم الزبون *</FormLabel>
                     <FormControl>
-                      <Input placeholder="أدخل اسم الزبون" {...field} />
+                      <Input {...field} placeholder="أدخل اسم الزبون" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* نوع الشخص */}
               <FormField
                 control={form.control}
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>نوع الشخص *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <FormLabel>النوع *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="اختر النوع" />
@@ -268,49 +308,18 @@ export default function EditCustomerPage() {
                 )}
               />
 
-              {/* رقم الهاتف */}
               <FormField
                 control={form.control}
                 name="phone_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>رقم الهاتف</FormLabel>
+                    <FormLabel>رقم الهاتف (اختياري)</FormLabel>
                     <FormControl>
-                      <Input placeholder="07XXXXXXXXX" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* العنوان */}
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>العنوان</FormLabel>
-                    <FormControl>
-                      <Input placeholder="أدخل العنوان" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* ملاحظات */}
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ملاحظات</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="أدخل أي ملاحظات..."
-                        className="resize-none"
-                        rows={4}
+                      <Input
                         {...field}
+                        type="tel"
+                        placeholder="07XXXXXXXXX"
+                        maxLength={11}
                       />
                     </FormControl>
                     <FormMessage />
@@ -318,19 +327,49 @@ export default function EditCustomerPage() {
                 )}
               />
 
-              {/* الأزرار */}
-              <div className="flex gap-4 pt-4">
-                <Button type="submit" disabled={isLoading} className="flex-1">
-                  {isLoading ? "جاري الحفظ..." : "حفظ التعديلات"}
-                </Button>
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>العنوان (اختياري)</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="أدخل العنوان" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ملاحظات (اختياري)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="أدخل أي ملاحظات إضافية"
+                        className="min-h-[100px]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end gap-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
                   disabled={isLoading}
-                  className="flex-1"
                 >
                   إلغاء
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "جاري التحديث..." : "تحديث البيانات"}
                 </Button>
               </div>
             </form>

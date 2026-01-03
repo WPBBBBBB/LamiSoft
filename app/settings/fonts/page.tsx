@@ -4,12 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useSettings } from "@/components/providers/settings-provider"
+import { t } from "@/lib/translations"
 import { fonts } from "@/lib/fonts"
 import { Check, Type } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export default function FontsPage() {
-  const { currentFont, setFont } = useSettings()
+  const { currentFont, setFont, currentLanguage } = useSettings()
 
   const arabicFonts = fonts.filter((f) => f.category === "arabic")
   const latinFonts = fonts.filter((f) => f.category === "latin")
@@ -18,20 +19,20 @@ export default function FontsPage() {
   return (
     <div className="space-y-8 p-8">
       <div>
-        <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--theme-primary)" }}>الخطوط</h1>
+        <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--theme-primary)" }}>{t('fonts', currentLanguage.code)}</h1>
         <p className="text-muted-foreground">
-          اختر الخط المفضل لديك لتطبيقه على جميع عناصر الواجهة
+          {t('chooseFavoriteFont', currentLanguage.code)}
         </p>
       </div>
 
-      {/* Arabic Fonts */}
+      {}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Type className="h-5 w-5" />
-            الخطوط العربية
+            {t('arabicFonts', currentLanguage.code)}
           </CardTitle>
-          <CardDescription>خطوط مصممة خصيصاً للنصوص العربية</CardDescription>
+          <CardDescription>{t('fontsDesignedForArabic', currentLanguage.code)}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -72,14 +73,14 @@ export default function FontsPage() {
         </CardContent>
       </Card>
 
-      {/* Latin Fonts */}
+      {}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Type className="h-5 w-5" />
-            الخطوط اللاتينية
+            {t('latinFonts', currentLanguage.code)}
           </CardTitle>
-          <CardDescription>خطوط مصممة للنصوص اللاتينية</CardDescription>
+          <CardDescription>{t('fontsDesignedForLatin', currentLanguage.code)}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -120,14 +121,14 @@ export default function FontsPage() {
         </CardContent>
       </Card>
 
-      {/* Universal Fonts */}
+      {}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Type className="h-5 w-5" />
-            الخطوط العامة
+            {t('universalFonts', currentLanguage.code)}
           </CardTitle>
-          <CardDescription>خطوط تدعم جميع اللغات</CardDescription>
+          <CardDescription>{t('fontsForAllLanguages', currentLanguage.code)}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -168,7 +169,7 @@ export default function FontsPage() {
         </CardContent>
       </Card>
 
-      {/* Current Font Info */}
+      {}
       <Card>
         <CardHeader>
           <CardTitle>الخط الحالي</CardTitle>

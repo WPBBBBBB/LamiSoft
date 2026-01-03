@@ -57,8 +57,12 @@ import {
   type Store,
   type InventoryItem 
 } from "@/lib/stores-operations"
+import { logAction } from "@/lib/system-log-operations"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { t } from "@/lib/translations"
+import { useSettings } from "@/components/providers/settings-provider"
+import { PermissionGuard } from "@/components/permission-guard"
 
 interface TransferRow {
   id: string
@@ -73,6 +77,7 @@ interface TransferRow {
 
 export default function StoreTransferPage() {
   const router = useRouter()
+  const { currentLanguage } = useSettings()
   const [stores, setStores] = useState<Store[]>([])
   const [fromStoreId, setFromStoreId] = useState("")
   const [toStoreId, setToStoreId] = useState("")
@@ -86,7 +91,6 @@ export default function StoreTransferPage() {
   const [priceUpdateChoice, setPriceUpdateChoice] = useState<"price" | "quantity" | "both">("both")
   const [isTransferring, setIsTransferring] = useState(false)
   
-  // New row for quick add - always visible
   const [newRow, setNewRow] = useState<TransferRow>({
     id: "new",
     productcode: "",
@@ -102,7 +106,6 @@ export default function StoreTransferPage() {
     loadStores()
   }, [])
 
-  // تحميل كل المواد من المخزن المصدر
   useEffect(() => {
     if (fromStoreId) {
       loadInventoryFromStore()
@@ -119,10 +122,10 @@ export default function StoreTransferPage() {
       const { getStoreInventory } = await import("@/lib/stores-operations")
       const data = await getStoreInventory(fromStoreId)
       setAllInventory(data)
-      setSearchResults(data) // عرض كل المواد افتراضياً
+      setSearchResults(data)
     } catch (error) {
       console.error(error)
-      toast.error("حدث خطأ أثناء تحميل المواد")
+      toast.error(t('loadingMaterialsError', currentLanguage.code))
     }
   }
 
@@ -132,26 +135,24 @@ export default function StoreTransferPage() {
       setStores(data)
     } catch (error) {
       console.error(error)
-      toast.error("حدث خطأ أثناء تحميل المخازن")
+      toast.error(t('loadingStoresError', currentLanguage.code))
     }
   }
 
-  // Add new row from newRow data
   const handleAddRow = () => {
     if (!newRow.productcode || !newRow.productname || newRow.transferQuantity <= 0) {
-      toast.error("الرجاء إدخال بيانات المادة والكمية")
+      toast.error(t('enterMaterialData', currentLanguage.code))
       return
     }
     
     setTransferRows([
-      ...transferRows.filter(r => r.productcode || r.productname), // Remove empty rows
+      ...transferRows.filter(r => r.productcode || r.productname),
       {
         ...newRow,
         id: Date.now().toString(),
       },
     ])
     
-    // Reset new row
     setNewRow({
       id: "new",
       productcode: "",
@@ -163,15 +164,13 @@ export default function StoreTransferPage() {
       sellPriceUSD: 0,
     })
     
-    toast.success("تم إضافة المادة للقائمة")
+    toast.success(t('materialAddedToList', currentLanguage.code))
   }
 
-  // Remove row
   const handleRemoveRow = (id: string) => {
     setTransferRows(transferRows.filter((row) => row.id !== id))
   }
 
-  // Handle new row product selection
   const handleNewRowSelectProduct = (item: InventoryItem) => {
     setNewRow({
       ...newRow,
@@ -186,7 +185,6 @@ export default function StoreTransferPage() {
     setSearchResults([])
   }
   
-  // Handle Enter key on new row quantity field
   const handleNewRowKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault()
@@ -194,21 +192,18 @@ export default function StoreTransferPage() {
     }
   }
 
-  // Search for products
   const handleProductSearch = async (rowId: string, searchTerm: string) => {
     if (!fromStoreId) {
-      toast.error("الرجاء اختيار المخزن المصدر أولاً")
+      toast.error(t('selectSourceStoreFirst', currentLanguage.code))
       return
     }
 
-    // إذا كان البحث فارغاً، عرض كل المواد
     if (!searchTerm || searchTerm.length === 0) {
       setSearchResults(allInventory)
       setSearchOpen(rowId)
       return
     }
 
-    // البحث في المواد المحملة
     const filtered = allInventory.filter(item => 
       item.productcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.productname.toLowerCase().includes(searchTerm.toLowerCase())
@@ -217,7 +212,6 @@ export default function StoreTransferPage() {
     setSearchOpen(rowId)
   }
 
-  // Select product from search
   const handleSelectProduct = (rowId: string, item: InventoryItem) => {
     setTransferRows(
       transferRows.map((row) =>
@@ -238,7 +232,6 @@ export default function StoreTransferPage() {
     setSearchResults([])
   }
 
-  // Update transfer quantity
   const handleQuantityChange = (rowId: string, quantity: number) => {
     setTransferRows(
       transferRows.map((row) =>
@@ -247,34 +240,32 @@ export default function StoreTransferPage() {
     )
   }
 
-  // Start transfer process
   const handleStartTransfer = async () => {
-    // Validation
     if (!fromStoreId || !toStoreId) {
-      toast.error("الرجاء اختيار المخازن")
+      toast.error(t('selectStoresFirst', currentLanguage.code))
       return
     }
 
     if (fromStoreId === toStoreId) {
-      toast.error("لا يمكن النقل من وإلى نفس المخزن")
+      toast.error(t('cannotTransferToSameStore', currentLanguage.code))
       return
     }
 
-    // Filter valid rows (non-empty)
     const validRows = transferRows.filter(
       (row) => row.productcode && row.transferQuantity > 0
     )
 
     if (validRows.length === 0) {
-      toast.error("الرجاء إضافة مواد للقائمة أولاً")
+      toast.error(t('addMaterialsFirst', currentLanguage.code))
       return
     }
 
     setIsTransferring(true)
     try {
-      // Transfer each item
+      const fromStore = stores.find(s => s.id === fromStoreId)
+      const toStore = stores.find(s => s.id === toStoreId)
+      
       for (const row of validRows) {
-        // Check if price update is needed (this is simplified - in real scenario, check target store)
         await transferInventory(
           row.productcode,
           row.productname,
@@ -282,15 +273,29 @@ export default function StoreTransferPage() {
           fromStoreId,
           toStoreId,
           note,
-          true, // Update prices
+          true,
           row.sellPriceIQD,
           row.sellPriceUSD
         )
+        
+        await logAction(
+          "إضافة",
+          `تمت عملية نقل مادة (${row.productname}) بكمية ${row.transferQuantity} ${row.unit} من المخزن: ${fromStore?.storename || 'غير معروف'} إلى المخزن: ${toStore?.storename || 'غير معروف'}`,
+          "النقل المخزني",
+          undefined,
+          undefined,
+          {
+            productname: row.productname,
+            quantity: row.transferQuantity,
+            unit: row.unit,
+            fromstore: fromStore?.storename,
+            tostore: toStore?.storename
+          }
+        )
       }
 
-      toast.success(`تم نقل ${validRows.length} مادة بنجاح`)
+      toast.success(`${validRows.length} ${t('materialsTransferredSuccess', currentLanguage.code).replace('{count}', '')}`.trim())
       
-      // Reset form
       setTransferRows([])
       setNewRow({
         id: "new",
@@ -303,58 +308,58 @@ export default function StoreTransferPage() {
         sellPriceUSD: 0,
       })
       setNote("")
-      loadInventoryFromStore() // Reload inventory to get updated quantities
+      loadInventoryFromStore()
     } catch (error) {
       console.error(error)
-      toast.error("حدث خطأ أثناء النقل")
+      toast.error(t('transferError', currentLanguage.code))
     } finally {
       setIsTransferring(false)
     }
   }
 
   return (
+    <PermissionGuard requiredPermission="view_store_transfer">
     <div className="flex-1 overflow-auto">
       <div className="container mx-auto p-6 space-y-6">
         <div className="mb-6 flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
-              النقل المخزني
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              نقل المواد بين المخازن
-            </p>
-          </div>
           <Button
             variant="outline"
             size="icon"
-            onClick={() => router.push("/home")}
+            onClick={() => router.back()}
             title="رجوع"
             className="shrink-0"
           >
-            <ArrowRight className="h-5 w-5" />
+            <ArrowRight className="h-5 w-5 theme-icon" />
           </Button>
+          <div className="flex-1 text-right">
+            <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
+              {t('storeTransferPage', currentLanguage.code)}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {t('transferMaterialsBetweenStores', currentLanguage.code)}
+            </p>
+          </div>
         </div>
 
-        {/* Store Selection */}
+        {}
         <Card className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* From Store */}
+            {}
             <div className="space-y-2">
               <Label htmlFor="fromStore">
-                من المخزن
+                {t('fromStore', currentLanguage.code)}
               </Label>
               <Select 
                 value={fromStoreId} 
                 onValueChange={(value) => {
                   setFromStoreId(value)
-                  // إذا كان المخزن المختار هو نفسه المخزن الهدف، نفرغ المخزن الهدف
                   if (value === toStoreId) {
                     setToStoreId("")
                   }
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="اختر المخزن المصدر" />
+                  <SelectValue placeholder={t('selectSourceStore', currentLanguage.code)} />
                 </SelectTrigger>
                 <SelectContent>
                   {stores.map((store) => (
@@ -370,23 +375,22 @@ export default function StoreTransferPage() {
               </Select>
             </div>
 
-            {/* To Store */}
+            {}
             <div className="space-y-2">
               <Label htmlFor="toStore">
-                إلى المخزن
+                {t('toStore', currentLanguage.code)}
               </Label>
               <Select 
                 value={toStoreId} 
                 onValueChange={(value) => {
                   setToStoreId(value)
-                  // إذا كان المخزن المختار هو نفسه المخزن المصدر، نفرغ المخزن المصدر
                   if (value === fromStoreId) {
                     setFromStoreId("")
                   }
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="اختر المخزن الهدف" />
+                  <SelectValue placeholder={t('selectTargetStore', currentLanguage.code)} />
                 </SelectTrigger>
                 <SelectContent>
                   {stores.map((store) => (
@@ -403,26 +407,26 @@ export default function StoreTransferPage() {
             </div>
           </div>
 
-          {/* Notes */}
+          {}
           <div className="mt-6 space-y-2">
             <Label htmlFor="note">
-              الملاحظات
+              {t('notes', currentLanguage.code)}
             </Label>
             <Textarea
               id="note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="أدخل تفاصيل أو ملاحظات حول عملية النقل..."
+              placeholder={t('enterTransferDetails', currentLanguage.code)}
               rows={3}
               className="w-full"
             />
           </div>
         </Card>
 
-        {/* Transfer Table */}
+        {}
         <Card className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">المواد المراد نقلها</h2>
+            <h2 className="text-xl font-bold">{t('materialsToTransfer', currentLanguage.code)}</h2>
           </div>
 
           <div className="rounded-lg border overflow-x-auto">
@@ -430,19 +434,19 @@ export default function StoreTransferPage() {
               <TableHeader>
                 <TableRow style={{ background: 'linear-gradient(to right, var(--theme-surface), var(--theme-accent))', color: 'var(--theme-text)' }}>
                   <TableHead className="text-center w-[50px]" style={{ color: 'var(--theme-text)' }}>#</TableHead>
-                  <TableHead className="text-right min-w-[150px]" style={{ color: 'var(--theme-text)' }}>رمز المادة</TableHead>
-                  <TableHead className="text-right min-w-[200px]" style={{ color: 'var(--theme-text)' }}>اسم المادة</TableHead>
-                  <TableHead className="text-right min-w-[120px]" style={{ color: 'var(--theme-text)' }}>الكمية المتوفرة</TableHead>
-                  <TableHead className="text-right min-w-[150px]" style={{ color: 'var(--theme-text)' }}>الكمية المراد نقلها</TableHead>
-                  <TableHead className="text-center w-[50px]" style={{ color: 'var(--theme-text)' }}>إجراء</TableHead>
+                  <TableHead className="text-right min-w-[150px]" style={{ color: 'var(--theme-text)' }}>{t('materialCode', currentLanguage.code)}</TableHead>
+                  <TableHead className="text-right min-w-[200px]" style={{ color: 'var(--theme-text)' }}>{t('materialName', currentLanguage.code)}</TableHead>
+                  <TableHead className="text-right min-w-[120px]" style={{ color: 'var(--theme-text)' }}>{t('availableQuantity', currentLanguage.code)}</TableHead>
+                  <TableHead className="text-right min-w-[150px]" style={{ color: 'var(--theme-text)' }}>{t('transferQuantity', currentLanguage.code)}</TableHead>
+                  <TableHead className="text-center w-[50px]" style={{ color: 'var(--theme-text)' }}>{t('action', currentLanguage.code)}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* New Row - Always Visible */}
+                {}
                 <TableRow className="sticky top-0 z-10" style={{ backgroundColor: 'var(--theme-surface)', opacity: 0.95, color: 'var(--theme-text)' }}>
                   <TableCell className="text-center" style={{ color: 'var(--theme-text)' }}>✨</TableCell>
                   
-                  {/* Product Code with Autocomplete */}
+                  {}
                   <TableCell>
                     <div className="relative">
                       <Input
@@ -458,7 +462,7 @@ export default function StoreTransferPage() {
                         onBlur={() => {
                           setTimeout(() => setSearchOpen(null), 200)
                         }}
-                        placeholder="رمز المادة"
+                        placeholder={t('materialCode', currentLanguage.code)}
                         autoFocus
                       />
                       {searchOpen === "new-code" && searchResults.length > 0 && (
@@ -484,7 +488,7 @@ export default function StoreTransferPage() {
                     </div>
                   </TableCell>
 
-                  {/* Product Name with Autocomplete */}
+                  {}
                   <TableCell>
                     <div className="relative">
                       <Input
@@ -500,7 +504,7 @@ export default function StoreTransferPage() {
                         onBlur={() => {
                           setTimeout(() => setSearchOpen(null), 200)
                         }}
-                        placeholder="اسم المادة"
+                        placeholder={t('materialName', currentLanguage.code)}
                       />
                       {searchOpen === "new-name" && searchResults.length > 0 && (
                         <div className="absolute z-50 w-[300px] mt-1 bg-background border rounded-md shadow-lg max-h-[300px] overflow-auto">
@@ -525,7 +529,7 @@ export default function StoreTransferPage() {
                     </div>
                   </TableCell>
 
-                  {/* Available Quantity */}
+                  {}
                   <TableCell className="text-right">
                     <span className="font-medium">
                       {newRow.availableQuantity > 0
@@ -534,7 +538,7 @@ export default function StoreTransferPage() {
                     </span>
                   </TableCell>
 
-                  {/* Transfer Quantity */}
+                  {}
                   <TableCell>
                     <div className="relative">
                       <Input
@@ -557,30 +561,30 @@ export default function StoreTransferPage() {
                       {newRow.transferQuantity > newRow.availableQuantity && (
                         <div className="absolute -bottom-6 right-0 text-xs text-orange-600 flex items-center gap-1">
                           <AlertCircle className="h-3 w-3" />
-                          <span>الكمية أكبر من المتوفر</span>
+                          <span>{t('quantityGreaterThanAvailable', currentLanguage.code)}</span>
                         </div>
                       )}
                     </div>
                   </TableCell>
 
-                  {/* Actions */}
+                  {}
                   <TableCell className="text-center">
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={handleAddRow}
-                      title="إضافة للقائمة (Enter)"
+                      title={`${t('addToList', currentLanguage.code)} (Enter)`}
                     >
-                      <Plus className="h-4 w-4 text-green-600" />
+                      <Plus className="h-4 w-4 theme-success" />
                     </Button>
                   </TableCell>
                 </TableRow>
 
-                {/* Existing Rows */}
+                {}
                 {transferRows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      لا توجد مواد في قائمة النقل. أضف مواد من الصف أعلاه.
+                      {t('noMaterialsInTransferList', currentLanguage.code)}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -588,7 +592,7 @@ export default function StoreTransferPage() {
                   <TableRow key={row.id}>
                     <TableCell className="text-center">{index + 1}</TableCell>
                     
-                    {/* Product Code with Autocomplete */}
+                    {}
                     <TableCell>
                       <div className="relative">
                         <Input
@@ -633,7 +637,7 @@ export default function StoreTransferPage() {
                       </div>
                     </TableCell>
 
-                    {/* Product Name with Autocomplete */}
+                    {}
                     <TableCell>
                       <div className="relative">
                         <Input
@@ -678,7 +682,7 @@ export default function StoreTransferPage() {
                       </div>
                     </TableCell>
 
-                    {/* Available Quantity */}
+                    {}
                     <TableCell className="text-right">
                       <span className="font-medium">
                         {row.availableQuantity > 0
@@ -687,7 +691,7 @@ export default function StoreTransferPage() {
                       </span>
                     </TableCell>
 
-                    {/* Transfer Quantity */}
+                    {}
                     <TableCell>
                       <div className="relative">
                         <Input
@@ -712,7 +716,7 @@ export default function StoreTransferPage() {
                       </div>
                     </TableCell>
 
-                    {/* Actions */}
+                    {}
                     <TableCell className="text-center">
                       {transferRows.length > 1 && (
                         <Button
@@ -720,7 +724,7 @@ export default function StoreTransferPage() {
                           size="icon"
                           onClick={() => handleRemoveRow(row.id)}
                         >
-                          <Trash2 className="h-4 w-4 text-red-500" />
+                          <Trash2 className="h-4 w-4 theme-danger" />
                         </Button>
                       )}
                     </TableCell>
@@ -731,7 +735,7 @@ export default function StoreTransferPage() {
             </Table>
           </div>
 
-          {/* Start Transfer Button */}
+          {}
           <div className="mt-6 pt-6 border-t">
             <Button
               onClick={handleStartTransfer}
@@ -741,12 +745,12 @@ export default function StoreTransferPage() {
               {isTransferring ? (
                 <>
                   <Loader2 className="h-6 w-6 animate-spin" />
-                  جاري النقل...
+                  {t('transferring', currentLanguage.code)}
                 </>
               ) : (
                 <>
                   <CheckCircle className="h-6 w-6" />
-                  بدء النقل
+                  {t('startTransfer', currentLanguage.code)}
                 </>
               )}
             </Button>
@@ -754,13 +758,13 @@ export default function StoreTransferPage() {
         </Card>
       </div>
 
-      {/* Price Update Modal */}
+      {}
       <Dialog open={priceUpdateModalOpen} onOpenChange={setPriceUpdateModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تحديث البيانات</DialogTitle>
+            <DialogTitle>{t('updateData', currentLanguage.code)}</DialogTitle>
             <DialogDescription>
-              المادة موجودة في المخزن الهدف بسعر مختلف. كيف تريد التحديث؟
+              {t('materialExistsWithDifferentPrice', currentLanguage.code)}
             </DialogDescription>
           </DialogHeader>
 
@@ -773,7 +777,7 @@ export default function StoreTransferPage() {
                 setPriceUpdateModalOpen(false)
               }}
             >
-              تحديث السعر فقط
+              {t('updatePriceOnly', currentLanguage.code)}
             </Button>
             <Button
               variant="outline"
@@ -783,7 +787,7 @@ export default function StoreTransferPage() {
                 setPriceUpdateModalOpen(false)
               }}
             >
-              تحديث العدد فقط
+              {t('updateQuantityOnly', currentLanguage.code)}
             </Button>
             <Button
               variant="outline"
@@ -793,17 +797,18 @@ export default function StoreTransferPage() {
                 setPriceUpdateModalOpen(false)
               }}
             >
-              تحديث الاثنين معاً
+              {t('updateBoth', currentLanguage.code)}
             </Button>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setPriceUpdateModalOpen(false)}>
-              إلغاء
+              {t('cancel', currentLanguage.code)}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
+    </PermissionGuard>
   )
 }

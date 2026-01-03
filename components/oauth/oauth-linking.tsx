@@ -28,7 +28,6 @@ export function OAuthLinking({ user, onUpdate }: OAuthLinkingProps) {
   const [unlinkConfirmOpen, setUnlinkConfirmOpen] = useState(false)
   const [providerToUnlink, setProviderToUnlink] = useState<OAuthProvider | null>(null)
 
-  // حالة الربط لكل خدمة
   const isGoogleLinked = !!user.google_id
   const isMicrosoftLinked = !!user.microsoft_id
   const isGithubLinked = !!user.github_id
@@ -37,18 +36,15 @@ export function OAuthLinking({ user, onUpdate }: OAuthLinkingProps) {
     setIsLinking(provider)
 
     try {
-      // فتح نافذة OAuth
       const width = 500
       const height = 600
       const left = window.screenX + (window.outerWidth - width) / 2
       const top = window.screenY + (window.outerHeight - height) / 2
 
-      // رابط OAuth حسب المزود
       let authUrl = ''
       
       switch (provider) {
         case 'google':
-          // يجب استبدال CLIENT_ID بمعرف تطبيقك
           authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=YOUR_GOOGLE_CLIENT_ID&redirect_uri=${encodeURIComponent(window.location.origin + '/api/auth/callback/google')}&response_type=code&scope=openid%20email%20profile&state=${user.id}`
           break
         case 'microsoft':
@@ -59,20 +55,17 @@ export function OAuthLinking({ user, onUpdate }: OAuthLinkingProps) {
           break
       }
 
-      // فتح نافذة منبثقة
       const authWindow = window.open(
         authUrl,
         `${provider}_auth`,
         `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
       )
 
-      // الاستماع لرسالة من نافذة OAuth
       const handleMessage = async (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return
 
         if (event.data.type === 'oauth_success' && event.data.provider === provider) {
           try {
-            // ربط الحساب
             await linkOAuthAccount(user.id, {
               provider: provider,
               providerId: event.data.providerId,
@@ -82,7 +75,7 @@ export function OAuthLinking({ user, onUpdate }: OAuthLinkingProps) {
             })
 
             toast.success(`تم ربط حساب ${getProviderName(provider)} بنجاح`)
-            onUpdate() // تحديث البيانات
+            onUpdate()
             
             if (authWindow) authWindow.close()
           } catch (error) {
@@ -97,7 +90,6 @@ export function OAuthLinking({ user, onUpdate }: OAuthLinkingProps) {
 
       window.addEventListener('message', handleMessage)
 
-      // تنظيف عند إغلاق النافذة
       const checkWindow = setInterval(() => {
         if (authWindow?.closed) {
           clearInterval(checkWindow)
@@ -174,7 +166,7 @@ export function OAuthLinking({ user, onUpdate }: OAuthLinkingProps) {
             يمكنك ربط عدة حسابات خارجية مع هذا المستخدم
           </p>
 
-          {/* Google */}
+          {}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 flex-1">
               <svg className="h-6 w-6" viewBox="0 0 24 24">
@@ -218,7 +210,7 @@ export function OAuthLinking({ user, onUpdate }: OAuthLinkingProps) {
             )}
           </div>
 
-          {/* Microsoft */}
+          {}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 flex-1">
               <svg className="h-6 w-6" viewBox="0 0 23 23">
@@ -262,7 +254,7 @@ export function OAuthLinking({ user, onUpdate }: OAuthLinkingProps) {
             )}
           </div>
 
-          {/* GitHub */}
+          {}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 flex-1">
               <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
@@ -311,7 +303,7 @@ export function OAuthLinking({ user, onUpdate }: OAuthLinkingProps) {
         </div>
       )}
 
-      {/* نافذة تأكيد إلغاء الربط */}
+      {}
       <Dialog open={unlinkConfirmOpen} onOpenChange={setUnlinkConfirmOpen}>
         <DialogContent>
           <DialogHeader>

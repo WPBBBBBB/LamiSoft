@@ -1,7 +1,7 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,28 +31,35 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { ArrowRight, Trash2, Loader2, Save, Eye, Plus } from "lucide-react"
+import { ArrowRight, Trash2, Loader2, Save, Eye, Plus, Printer } from "lucide-react"
 import { toast } from "sonner"
 import { getActiveStores, type Store } from "@/lib/stores-operations"
 import {
   getAllCustomers,
   getInventoryByStore,
   createSale,
+  updateSale,
+  getSaleById,
+  getSaleDetails,
   type Customer,
   type InventoryItem,
   type SaleProductRow,
   type SaleMain,
 } from "@/lib/sales-operations"
+import { createCustomer } from "@/lib/supabase-operations"
 import { getCurrentExchangeRate } from "@/lib/exchange-rate-operations"
+import { logAction } from "@/lib/system-log-operations"
 
 export default function SaleAddPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get("edit")
+  const viewMode = searchParams.get("view") === "true"
 
-  // ============================================================
-  // State Management
-  // ============================================================
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [isViewMode, setIsViewMode] = useState(false)
+  const [loadingEditData, setLoadingEditData] = useState(false)
 
-  // البيانات الأساسية
   const [numberofsale, setNumberOfSale] = useState("")
   const [pricetype, setPriceType] = useState<"جملة" | "مفرد">("مفرد")
   const [paytype, setPayType] = useState<"نقدي" | "آجل">("نقدي")
@@ -60,34 +67,32 @@ export default function SaleAddPage() {
   const [salestoreid, setSaleStoreId] = useState("")
   const [datetime, setDateTime] = useState("")
   const [details, setDetails] = useState("")
+  const [barcode, setBarcode] = useState("") // الباركود المحفوظ
 
-  // بيانات الزبون
   const [customerid, setCustomerId] = useState("")
   const [customername, setCustomerName] = useState("")
   const [customerBalanceIQD, setCustomerBalanceIQD] = useState(0)
   const [customerBalanceUSD, setCustomerBalanceUSD] = useState(0)
+  const [searchCustomer, setSearchCustomer] = useState("")
+  const [customerSelectOpen, setCustomerSelectOpen] = useState(false)
+  const customerDropdownRef = useRef<HTMLDivElement>(null)
 
-  // المبلغ الواصل
   const [hasAmountReceived, setHasAmountReceived] = useState(false)
   const [amountCurrency, setAmountCurrency] = useState<"دينار" | "دولار">("دينار")
   const [amountReceivedIQD, setAmountReceivedIQD] = useState(0)
   const [amountReceivedUSD, setAmountReceivedUSD] = useState(0)
 
-  // الخصم
   const [discountEnabled, setDiscountEnabled] = useState(false)
   const [discountCurrency, setDiscountCurrency] = useState<"دينار" | "دولار">("دينار")
   const [discountIQD, setDiscountIQD] = useState(0)
   const [discountUSD, setDiscountUSD] = useState(0)
 
-  // القوائم المنسدلة
   const [stores, setStores] = useState<Store[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
 
-  // سعر الصرف
   const [exchangeRate, setExchangeRate] = useState(1500)
 
-  // البحث في المنتجات
   const [productSearchCode, setProductSearchCode] = useState("")
   const [productSearchName, setProductSearchName] = useState("")
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -96,10 +101,8 @@ export default function SaleAddPage() {
   const codeInputRef = useRef<HTMLInputElement>(null)
   const nameInputRef = useRef<HTMLInputElement>(null)
 
-  // جدول المنتجات
   const [products, setProducts] = useState<SaleProductRow[]>([])
 
-  // صف الإضافة الجديد
   const [newItem, setNewItem] = useState<SaleProductRow>({
     tempId: "new-item",
     productcode: "",
@@ -113,24 +116,28 @@ export default function SaleAddPage() {
     notes: "",
   })
 
-  // حالة الحفظ
   const [isSaving, setIsSaving] = useState(false)
 
-  // معاينة الملاحظات
   const [viewingNote, setViewingNote] = useState<string | null>(null)
-
-  // ============================================================
-  // Load Initial Data
-  // ============================================================
 
   useEffect(() => {
     setIsMounted(true)
     loadInitialData()
-    generateSaleNumber()
-    // تعيين التاريخ الحالي
-    const now = new Date()
-    setDateTime(now.toISOString().slice(0, 16))
-  }, [])
+    
+    if (editId) {
+      setIsEditMode(true)
+      setIsViewMode(viewMode)
+      loadEditData(editId)
+    } else {
+      generateSaleNumber().then((saleNumber) => {
+        // استخدام رقم القائمة كباركود
+        setBarcode(saleNumber)
+      })
+      const now = new Date()
+      setDateTime(now.toISOString().slice(0, 16))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId, viewMode])
 
   useEffect(() => {
     if (salestoreid) {
@@ -138,17 +145,26 @@ export default function SaleAddPage() {
     }
   }, [salestoreid])
 
-  // إغلاق الاقتراحات عند النقر خارجها
+  // تحديث الباركود عندما يتغير رقم القائمة في حالة الإضافة
+  useEffect(() => {
+    if (!isEditMode && numberofsale) {
+      // استخدام رقم القائمة كباركود
+      setBarcode(numberofsale)
+    }
+  }, [numberofsale, isEditMode])
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      // تحقق إذا كان النقر خارج الـ input والاقتراحات
       if (
         codeInputRef.current && !codeInputRef.current.contains(target) &&
         nameInputRef.current && !nameInputRef.current.contains(target) &&
         !target.closest('[data-suggestions]')
       ) {
         setShowSuggestions(false)
+      }
+      if (customerDropdownRef.current && !customerDropdownRef.current.contains(target)) {
+        setCustomerSelectOpen(false)
       }
     }
 
@@ -168,9 +184,25 @@ export default function SaleAddPage() {
       setCustomers(customersData)
       setExchangeRate(rate)
 
-      // تعيين المخزن الأول افتراضياً
       if (storesData.length > 0) {
         setSaleStoreId(storesData[0].id)
+      }
+      
+      const newCustomerId = !editId ? searchParams.get("customerId") : null
+      if (newCustomerId) {
+        const refreshedCustomers = await getAllCustomers()
+        setCustomers(refreshedCustomers)
+        
+        const newCustomer = refreshedCustomers.find(c => c.id === newCustomerId)
+        if (newCustomer) {
+          setCustomerId(newCustomer.id)
+          setCustomerName(newCustomer.customer_name)
+          setCustomerBalanceIQD(newCustomer.balanceiqd ?? 0)
+          setCustomerBalanceUSD(newCustomer.balanceusd ?? 0)
+          setSearchCustomer("")
+          
+          toast.success(`تم اختيار الزبون: ${newCustomer.customer_name}`)
+        }
       }
     } catch (error) {
       console.error("Error loading data:", error)
@@ -178,14 +210,79 @@ export default function SaleAddPage() {
     }
   }
 
-  const generateSaleNumber = async () => {
+  const generateSaleNumber = async (): Promise<string> => {
     try {
       const { generateNextSaleNumber } = await import("@/lib/sales-operations")
       const newNumber = await generateNextSaleNumber()
       setNumberOfSale(newNumber)
+      return newNumber
     } catch (error) {
       console.error("Error generating sale number:", error)
       toast.error("فشل توليد رقم القائمة")
+      return ""
+    }
+  }
+
+  const loadEditData = async (saleId: string) => {
+    try {
+      setLoadingEditData(true)
+      
+      const saleData = await getSaleById(saleId)
+      if (!saleData) {
+        toast.error("لم يتم العثور على القائمة")
+        router.push("/reports")
+        return
+      }
+
+      setNumberOfSale(saleData.numberofsale)
+      setPriceType(saleData.pricetype)
+      setPayType(saleData.paytype)
+      setCurrencyType(saleData.currencytype)
+      setSaleStoreId(saleData.salestoreid)
+      setDateTime(new Date(saleData.datetime).toISOString().slice(0, 16))
+      setDetails(saleData.details || "")
+      setBarcode(saleData.barcode || "") // تحميل الباركود المحفوظ
+      
+      setCustomerId(saleData.customerid)
+      setCustomerName(saleData.customername)
+      setSearchCustomer("")
+      
+      try {
+        const { getCustomerById } = await import("@/lib/sales-operations")
+        const customerData = await getCustomerById(saleData.customerid)
+        if (customerData) {
+          setCustomerName(customerData.customer_name)
+          setCustomerBalanceIQD(customerData.balanceiqd ?? 0)
+          setCustomerBalanceUSD(customerData.balanceusd ?? 0)
+        }
+      } catch (error) {
+        console.error("Error loading customer balance:", error)
+      }
+      
+      setDiscountEnabled(saleData.discountenabled)
+      setDiscountCurrency(saleData.discountcurrency || "دينار")
+      setDiscountIQD(saleData.discountiqd)
+      setDiscountUSD(saleData.discountusd)
+      
+      const hasAmount = saleData.amountreceivediqd > 0 || saleData.amountreceivedusd > 0
+      setHasAmountReceived(hasAmount)
+      setAmountReceivedIQD(saleData.amountreceivediqd)
+      setAmountReceivedUSD(saleData.amountreceivedusd)
+      
+      const details = await getSaleDetails(saleId)
+      const productsWithTempId = details.map((detail, index) => ({
+        ...detail,
+        tempId: `product-${index}`,
+      }))
+      setProducts(productsWithTempId)
+      
+      toast.success("تم تحميل بيانات القائمة")
+    } catch (error) {
+      console.error("Error loading edit data:", error)
+      toast.error("فشل تحميل بيانات القائمة")
+      router.push("/reports")
+    } finally {
+      setLoadingEditData(false)
     }
   }
 
@@ -206,10 +303,6 @@ export default function SaleAddPage() {
     }
   }
 
-  // ============================================================
-  // Customer Selection
-  // ============================================================
-
   const handleCustomerChange = async (customerId: string) => {
     setCustomerId(customerId)
     const customer = customers.find((c) => c.id === customerId)
@@ -221,22 +314,57 @@ export default function SaleAddPage() {
     }
   }
 
-  // ============================================================
-  // Product Management
-  // ============================================================
+  const handleCreateNewCustomer = async (customerName: string) => {
+    try {
+      console.log("🆕 Creating new customer:", customerName)
+      
+      // إنشاء الزبون الجديد
+      const newCustomer = await createCustomer({
+        customer_name: customerName.trim(),
+        type: 'زبون',
+        balanceiqd: 0,
+        balanceusd: 0,
+      })
+      
+      console.log("✅ Customer created:", newCustomer)
+      
+      // إضافة الزبون للقائمة المحلية
+      const customerData: Customer = {
+        id: newCustomer.id,
+        customer_name: newCustomer.customer_name,
+        type: newCustomer.type,
+        balanceiqd: newCustomer.balanceiqd ?? 0,
+        balanceusd: newCustomer.balanceusd ?? 0,
+      }
+      setCustomers([customerData, ...customers])
+      
+      // تحديد الزبون الجديد
+      setCustomerId(newCustomer.id)
+      setCustomerName(newCustomer.customer_name)
+      setCustomerBalanceIQD(0)
+      setCustomerBalanceUSD(0)
+      setSearchCustomer("")
+      setCustomerSelectOpen(false)
+      
+      toast.success(`تم إضافة الزبون: ${newCustomer.customer_name}`)
+      
+      return newCustomer
+    } catch (error) {
+      console.error("❌ Error creating customer:", error)
+      toast.error("فشل إضافة الزبون")
+      throw error
+    }
+  }
 
-  // تصفية المنتجات حسب البحث
   const filteredInventory = inventory.filter((item) => {
     const searchCode = productSearchCode.toLowerCase().trim()
     const searchName = productSearchName.toLowerCase().trim()
     
-    // إذا كان البحث بالرمز
     if (searchCode) {
       const matches = item.productcode.toLowerCase().includes(searchCode)
       return matches
     }
     
-    // إذا كان البحث بالاسم
     if (searchName) {
       const matches = item.productname.toLowerCase().includes(searchName)
       return matches
@@ -245,7 +373,6 @@ export default function SaleAddPage() {
     return false
   })
   
-  // تسجيل الحالة الحالية
   console.log("🔥 CURRENT STATE:", {
     inventory: inventory.length,
     productSearchCode,
@@ -272,9 +399,8 @@ export default function SaleAddPage() {
   const handleProductSearchCodeChange = (value: string) => {
     console.log("🔍 Search code changed:", value, "Inventory count:", inventory.length)
     setProductSearchCode(value)
-    setProductSearchName("") // مسح حقل الاسم
+    setProductSearchName("")
     
-    // تحديث الموقع أولاً
     setTimeout(() => updateSuggestionPosition(codeInputRef), 10)
     
     if (value.trim()) {
@@ -288,9 +414,8 @@ export default function SaleAddPage() {
   const handleProductSearchNameChange = (value: string) => {
     console.log("🔍 Search name changed:", value, "Inventory count:", inventory.length)
     setProductSearchName(value)
-    setProductSearchCode("") // مسح حقل الرمز
+    setProductSearchCode("")
     
-    // تحديث الموقع أولاً
     setTimeout(() => updateSuggestionPosition(nameInputRef), 10)
     
     if (value.trim()) {
@@ -328,7 +453,6 @@ export default function SaleAddPage() {
       return
     }
 
-    // التحقق من توفر الكمية في المخزن
     const inventoryItem = inventory.find((i) => i.productcode === newItem.productcode)
     if (inventoryItem && newItem.quantity > inventoryItem.quantity) {
       toast.error(`الكمية المتوفرة: ${inventoryItem.quantity} فقط`)
@@ -345,7 +469,6 @@ export default function SaleAddPage() {
     setProducts([...products, newProduct])
     toast.success("تمت إضافة المادة")
 
-    // إعادة تعيين newItem والبحث
     setProductSearchCode("")
     setProductSearchName("")
     setShowSuggestions(false)
@@ -367,13 +490,11 @@ export default function SaleAddPage() {
   const updateNewItem = (field: keyof SaleProductRow, value: string | number) => {
     const updated = { ...newItem, [field]: value }
 
-    // حساب الإجمالي عند تغيير الكمية أو السعر
     if (field === "quantity" || field === "unitpriceiqd" || field === "unitpriceusd") {
       updated.totalpriceiqd = updated.quantity * updated.unitpriceiqd
       updated.totalpriceusd = updated.quantity * updated.unitpriceusd
     }
 
-    // تحويل تلقائي بين العملات (مع التقريب لرقمين عشريين)
     if (field === "unitpriceiqd" && exchangeRate > 0) {
       updated.unitpriceusd = Math.round((Number(value) / exchangeRate) * 100) / 100
       updated.totalpriceusd = updated.quantity * updated.unitpriceusd
@@ -386,11 +507,10 @@ export default function SaleAddPage() {
     setNewItem(updated)
   }
 
-  const handleNewItemKeyPress = (e: React.KeyboardEvent, field: keyof SaleProductRow) => {
+  const handleNewItemKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault()
       
-      // إضافة الصف الحالي إلى الجدول وبدء صف جديد
       if (newItem.productcode && newItem.quantity > 0) {
         addItemFromNew()
       }
@@ -403,13 +523,11 @@ export default function SaleAddPage() {
         if (p.tempId === tempId) {
           const updated = { ...p, [field]: value }
 
-          // حساب الإجمالي
           if (field === "quantity" || field === "unitpriceiqd" || field === "unitpriceusd") {
             updated.totalpriceiqd = updated.quantity * updated.unitpriceiqd
             updated.totalpriceusd = updated.quantity * updated.unitpriceusd
           }
 
-          // تحويل تلقائي بين العملات (مع التقريب لرقمين عشريين)
           if (field === "unitpriceiqd" && exchangeRate > 0) {
             updated.unitpriceusd = Math.round((Number(value) / exchangeRate) * 100) / 100
             updated.totalpriceusd = updated.quantity * updated.unitpriceusd
@@ -431,26 +549,16 @@ export default function SaleAddPage() {
     toast.success("تم حذف المادة")
   }
 
-  // ============================================================
-  // Calculations
-  // ============================================================
-
   const totalProductsCount = products.filter((p) => p.productcode && p.quantity > 0).length
 
   const totalSaleIQD = products.reduce((sum, p) => sum + (p.totalpriceiqd || 0), 0)
   const totalSaleUSD = products.reduce((sum, p) => sum + (p.totalpriceusd || 0), 0)
 
-  // المبلغ بعد الخصم
   const afterDiscountIQD = totalSaleIQD - (discountEnabled ? discountIQD : 0)
   const afterDiscountUSD = totalSaleUSD - (discountEnabled ? discountUSD : 0)
 
-  // المبلغ النهائي (بعد الخصم وبعد خصم المبلغ الواصل)
   const finalTotalIQD = afterDiscountIQD - amountReceivedIQD
   const finalTotalUSD = afterDiscountUSD - amountReceivedUSD
-
-  // ============================================================
-  // Amount Received Handler
-  // ============================================================
 
   const handleAmountReceivedChange = (value: number) => {
     if (amountCurrency === "دينار") {
@@ -462,10 +570,6 @@ export default function SaleAddPage() {
     }
   }
 
-  // ============================================================
-  // Discount Handler
-  // ============================================================
-
   const handleDiscountChange = (value: number) => {
     if (discountCurrency === "دينار") {
       setDiscountIQD(value)
@@ -476,12 +580,12 @@ export default function SaleAddPage() {
     }
   }
 
-  // ============================================================
-  // Save Sale
-  // ============================================================
-
   const handleSaveSale = async () => {
-    // التحقق من البيانات
+    if (isViewMode) {
+      toast.error("لا يمكن الحفظ في وضع العرض")
+      return
+    }
+
     if (!numberofsale.trim()) {
       toast.error("الرجاء إدخال رقم القائمة")
       return
@@ -509,6 +613,7 @@ export default function SaleAddPage() {
     try {
       const saleMain: SaleMain = {
         numberofsale,
+        barcode, // إرسال الباركود المُولد مسبقاً
         salestoreid,
         customerid,
         customername,
@@ -537,21 +642,84 @@ export default function SaleAddPage() {
       console.log("currencyType:", currencyType)
       console.log("================================")
 
-      const result = await createSale(
-        saleMain,
-        validProducts,
-        salestoreid,
-        paytype,
-        currencyType
-      )
+      const result = isEditMode && editId
+        ? await updateSale(
+            editId,
+            saleMain,
+            validProducts,
+            salestoreid
+          )
+        : await createSale(
+            saleMain,
+            validProducts,
+            salestoreid,
+            paytype,
+            currencyType
+          )
 
       console.log("=== AFTER createSale ===")
       console.log("result:", result)
 
       if (result.success) {
-        toast.success("تم حفظ قائمة البيع بنجاح")
+        const total = finalTotalIQD || finalTotalUSD
+        const currency = finalTotalIQD ? 'IQD' : 'USD'
+        const selectedCustomer = customers.find(c => c.id === customerid)
+        const selectedStore = stores.find(s => s.id === salestoreid)
+        
+        if (isEditMode) {
+          await logAction(
+            "تعديل",
+            `تم تعديل قائمة بيع رقم ${numberofsale} للزبون: ${selectedCustomer?.customer_name || 'غير معروف'}`,
+            "المبيعات",
+            undefined,
+            undefined,
+            {
+              numberoflist: numberofsale,
+              customername: selectedCustomer?.customer_name,
+              totalsales: total,
+              currency: currency,
+              paytype: paytype,
+              items_count: validProducts.length
+            }
+          )
+        } else {
+          await logAction(
+            "إضافة",
+            `تمت عملية إضافة قائمة بيع رقم ${numberofsale} للزبون: ${selectedCustomer?.customer_name || 'غير معروف'} بمبلغ ${total.toLocaleString()} ${currency}`,
+            "المبيعات",
+            undefined,
+            undefined,
+            {
+              numberoflist: numberofsale,
+              customername: selectedCustomer?.customer_name,
+              totalsales: total,
+              currency: currency,
+              paytype: paytype,
+              items_count: validProducts.length,
+              storename: selectedStore?.storename
+            }
+          )
+          
+          for (const product of validProducts) {
+            await logAction(
+              "خصم من المخزن",
+              `تم خصم مادة ${product.productname} بكمية ${product.quantity} من المخزن`,
+              "المخزون",
+              undefined,
+              undefined,
+              {
+                productcode: product.productcode,
+                productname: product.productname,
+                quantity: product.quantity,
+                storename: selectedStore?.storename,
+                from_sale: numberofsale
+              }
+            )
+          }
+        }
+        
+        toast.success(isEditMode ? "تم تعديل قائمة البيع بنجاح" : "تم حفظ قائمة البيع بنجاح")
 
-        // تصفير الجدول والنموذج للبدء بقائمة جديدة
         setProducts([])
         setDetails("")
         setHasAmountReceived(false)
@@ -562,10 +730,8 @@ export default function SaleAddPage() {
         setDiscountUSD(0)
         setDateTime(new Date().toISOString().slice(0, 16))
         
-        // توليد رقم قائمة جديد
         generateSaleNumber()
 
-        // إعادة تعيين newItem وحقول البحث
         setProductSearchCode("")
         setProductSearchName("")
         setShowSuggestions(false)
@@ -583,7 +749,6 @@ export default function SaleAddPage() {
           notes: "",
         })
 
-        // إعادة تحميل المخزون
         if (salestoreid) {
           loadInventory(salestoreid)
         }
@@ -597,31 +762,109 @@ export default function SaleAddPage() {
       setIsSaving(false)
     }
   }
+  
+  const handlePrintInvoice = () => {
+    if (!customerid || !customername) {
+      toast.error("الرجاء اختيار الزبون أولاً")
+      return
+    }
 
-  // ============================================================
-  // Render
-  // ============================================================
+    if (products.length === 0) {
+      toast.error("الرجاء إضافة منتجات أولاً")
+      return
+    }
+
+    const selectedStore = stores.find(s => s.id === salestoreid)
+    const storeName = selectedStore?.storename || "المخزن الرئيسي"
+
+    const isExistingSale = Boolean(editId)
+    const receivedIQD = hasAmountReceived ? amountReceivedIQD : 0
+    const receivedUSD = hasAmountReceived ? amountReceivedUSD : 0
+
+    const reportData = {
+      type: "sale",
+      storeName: storeName,
+      customerName: customername,
+      priceType: pricetype,
+      payType: paytype,
+      currencyType: currencyType,
+      items: products.map(p => ({
+        productname: p.productname,
+        quantity: p.quantity,
+        unitpriceiqd: p.unitpriceiqd,
+        unitpriceusd: p.unitpriceusd,
+        totalpriceiqd: p.totalpriceiqd,
+        totalpriceusd: p.totalpriceusd,
+      })),
+      totalIQD: afterDiscountIQD,
+      totalUSD: afterDiscountUSD,
+      discountIQD: discountEnabled ? discountIQD : 0,
+      discountUSD: discountEnabled ? discountUSD : 0,
+      amountReceivedIQD: hasAmountReceived ? amountReceivedIQD : 0,
+      amountReceivedUSD: hasAmountReceived ? amountReceivedUSD : 0,
+      datetime: datetime || new Date().toISOString(),
+      saleNumber: numberofsale,
+      barcode: barcode || numberofsale, // استخدام رقم القائمة فقط
+      previousBalanceIQD:
+        paytype === "آجل"
+          ? isExistingSale
+            ? (customerBalanceIQD ?? 0) - Math.max(0, afterDiscountIQD - receivedIQD)
+            : (customerBalanceIQD ?? 0)
+          : (customerBalanceIQD ?? 0),
+      nextBalanceIQD:
+        paytype === "آجل"
+          ? isExistingSale
+            ? (customerBalanceIQD ?? 0)
+            : (customerBalanceIQD ?? 0) + Math.max(0, afterDiscountIQD - receivedIQD)
+          : (customerBalanceIQD ?? 0),
+      previousBalanceUSD:
+        paytype === "آجل"
+          ? isExistingSale
+            ? (customerBalanceUSD ?? 0) - Math.max(0, afterDiscountUSD - receivedUSD)
+            : (customerBalanceUSD ?? 0)
+          : (customerBalanceUSD ?? 0),
+      nextBalanceUSD:
+        paytype === "آجل"
+          ? isExistingSale
+            ? (customerBalanceUSD ?? 0)
+            : (customerBalanceUSD ?? 0) + Math.max(0, afterDiscountUSD - receivedUSD)
+          : (customerBalanceUSD ?? 0),
+    }
+
+    const jsonString = JSON.stringify(reportData)
+    const utf8Bytes = new TextEncoder().encode(jsonString)
+    const base64Data = btoa(String.fromCharCode(...utf8Bytes))
+    const encodedData = encodeURIComponent(base64Data)
+
+    window.open(`/report?s=${encodedData}`, '_blank')
+  }
 
   return (
     <>
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowRight className="h-5 w-5" />
+            <ArrowRight className="h-5 w-5 theme-icon" />
           </Button>
-          <h1 className="text-3xl font-bold text-foreground">
-            إضافة قائمة بيع
+          <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
+            {isViewMode ? "كشف قائمة بيع" : isEditMode ? "تعديل قائمة بيع" : "إضافة قائمة بيع"}
           </h1>
         </div>
+        {loadingEditData && (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>جاري تحميل البيانات...</span>
+          </div>
+        )}
       </div>
 
-      {/* Form Card */}
+      {}
       <Card className="p-6">
-        {/* الصف الأول */}
+        {}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          {/* رقم القائمة */}
+          {}
           <div className="space-y-2">
             <Label htmlFor="numberofsale">رقم القائمة (تلقائي)</Label>
             <Input
@@ -633,10 +876,10 @@ export default function SaleAddPage() {
             />
           </div>
 
-          {/* نوع التسعير */}
+          {}
           <div className="space-y-2">
             <Label>نوع التسعير</Label>
-            <Select value={pricetype} onValueChange={(v: "جملة" | "مفرد") => setPriceType(v)}>
+            <Select value={pricetype} onValueChange={(v: "جملة" | "مفرد") => setPriceType(v)} disabled={isViewMode}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -647,10 +890,10 @@ export default function SaleAddPage() {
             </Select>
           </div>
 
-          {/* نوع الدفع */}
+          {}
           <div className="space-y-2">
             <Label>نوع الدفع</Label>
-            <Select value={paytype} onValueChange={(v: "نقدي" | "آجل") => setPayType(v)}>
+            <Select value={paytype} onValueChange={(v: "نقدي" | "آجل") => setPayType(v)} disabled={isViewMode}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -661,12 +904,13 @@ export default function SaleAddPage() {
             </Select>
           </div>
 
-          {/* نوع العملة */}
+          {}
           <div className="space-y-2">
             <Label>نوع العملة</Label>
             <Select
               value={currencyType}
               onValueChange={(v: "دينار" | "دولار") => setCurrencyType(v)}
+              disabled={isViewMode}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -678,7 +922,7 @@ export default function SaleAddPage() {
             </Select>
           </div>
 
-          {/* سعر الصرف */}
+          {}
           <div className="space-y-2">
             <Label>سعر الصرف الحالي</Label>
             <div className="flex items-center h-10 px-3 rounded-md border bg-muted">
@@ -687,26 +931,89 @@ export default function SaleAddPage() {
           </div>
         </div>
 
-        {/* الصف الثاني - الزبون والمخزن */}
+        {}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
-          {/* اسم الزبون */}
+          {}
           <div className="space-y-2 md:col-span-3">
             <Label>اسم الزبون</Label>
-            <Select value={customerid} onValueChange={handleCustomerChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="اختر الزبون" />
-              </SelectTrigger>
-              <SelectContent>
-                {customers.map((customer) => (
-                  <SelectItem key={customer.id} value={customer.id}>
-                    {customer.customer_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative" ref={customerDropdownRef}>
+              <Input
+                placeholder="ابحث عن زبون..."
+                value={searchCustomer || customername || ""}
+                onChange={(e) => {
+                  setSearchCustomer(e.target.value)
+                  setCustomerSelectOpen(true)
+                  if (!e.target.value) {
+                    setCustomerId("")
+                    setCustomerName("")
+                    setCustomerBalanceIQD(0)
+                    setCustomerBalanceUSD(0)
+                  }
+                }}
+                onFocus={() => setCustomerSelectOpen(true)}
+                onKeyDown={async (e) => {
+                  if (e.key === "Enter" && searchCustomer) {
+                    const filteredCustomers = customers.filter((customer) =>
+                      customer.customer_name.toLowerCase().includes(searchCustomer.toLowerCase())
+                    )
+                    
+                    if (filteredCustomers.length === 0) {
+                      // إضافة الزبون مباشرة بدون فتح صفحة
+                      e.preventDefault()
+                      await handleCreateNewCustomer(searchCustomer)
+                    } else if (filteredCustomers.length === 1) {
+                      // إذا كان هناك زبون واحد فقط، اختره مباشرة
+                      e.preventDefault()
+                      handleCustomerChange(filteredCustomers[0].id)
+                      setSearchCustomer("")
+                      setCustomerSelectOpen(false)
+                    }
+                  }
+                }}
+                disabled={isViewMode}
+              />
+              {customerSelectOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-[300px] overflow-y-auto">
+                  {(() => {
+                    const filteredCustomers = customers.filter((customer) =>
+                      customer.customer_name.toLowerCase().includes((searchCustomer || "").toLowerCase())
+                    )
+                    
+                    if (filteredCustomers.length === 0) {
+                      return (
+                        <div className="px-3 py-3 text-center space-y-1">
+                          <div className="text-sm text-muted-foreground">
+                            لا يوجد اسم مطابق
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            اضغط <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Enter</kbd> لإضافة زبون جديد مباشرة
+                          </div>
+                        </div>
+                      )
+                    }
+                    
+                    return filteredCustomers.map((customer) => (
+                      <div
+                        key={customer.id}
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleCustomerChange(customer.id)
+                          setCustomerSelectOpen(false)
+                          setSearchCustomer("")
+                        }}
+                        className="px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                      >
+                        {customer.customer_name}
+                      </div>
+                    ))
+                  })()}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* رصيد الزبون السابق دينار */}
+          {}
           <div className="space-y-2 md:col-span-2">
             <Label className="font-semibold text-blue-600 dark:text-blue-400">
               رصيد سابق دينار
@@ -718,7 +1025,7 @@ export default function SaleAddPage() {
             </div>
           </div>
 
-          {/* رصيد الزبون السابق دولار */}
+          {}
           <div className="space-y-2 md:col-span-2">
             <Label className="font-semibold text-green-600 dark:text-green-400">
               رصيد سابق دولار
@@ -730,10 +1037,10 @@ export default function SaleAddPage() {
             </div>
           </div>
 
-          {/* المخزن */}
+          {}
           <div className="space-y-2 md:col-span-3">
             <Label>المخزن</Label>
-            <Select value={salestoreid} onValueChange={setSaleStoreId}>
+            <Select value={salestoreid} onValueChange={setSaleStoreId} disabled={isViewMode}>
               <SelectTrigger>
                 <SelectValue placeholder="اختر المخزن" />
               </SelectTrigger>
@@ -747,7 +1054,7 @@ export default function SaleAddPage() {
             </Select>
           </div>
 
-          {/* Checkbox مبلغ واصل - يظهر فقط عند الآجل */}
+          {}
           {paytype === "آجل" && (
             <div className="space-y-2 flex items-end">
               <div className="flex items-center gap-2">
@@ -761,6 +1068,7 @@ export default function SaleAddPage() {
                       setAmountReceivedUSD(0)
                     }
                   }}
+                  disabled={isViewMode}
                 />
                 <Label htmlFor="hasAmountReceived" className="cursor-pointer">
                   مبلغ واصل
@@ -770,7 +1078,7 @@ export default function SaleAddPage() {
           )}
         </div>
 
-        {/* صف المبلغ الواصل */}
+        {}
         {hasAmountReceived && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 rounded-lg bg-accent/50">
             <div className="space-y-2">
@@ -807,7 +1115,7 @@ export default function SaleAddPage() {
           </div>
         )}
 
-        {/* الصف الثالث - التاريخ والملاحظات */}
+        {}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="space-y-2">
             <Label>تاريخ العملية</Label>
@@ -815,6 +1123,7 @@ export default function SaleAddPage() {
               type="datetime-local"
               value={datetime}
               onChange={(e) => setDateTime(e.target.value)}
+              readOnly={isViewMode}
             />
           </div>
 
@@ -825,11 +1134,12 @@ export default function SaleAddPage() {
               onChange={(e) => setDetails(e.target.value)}
               placeholder="ملاحظات إضافية"
               rows={2}
+              readOnly={isViewMode}
             />
           </div>
         </div>
 
-        {/* الخصم */}
+        {}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-4">
             <Checkbox
@@ -842,6 +1152,7 @@ export default function SaleAddPage() {
                   setDiscountUSD(0)
                 }
               }}
+              disabled={isViewMode}
             />
             <Label htmlFor="discountEnabled" className="cursor-pointer font-semibold">
               تفعيل الخصم
@@ -883,7 +1194,7 @@ export default function SaleAddPage() {
           )}
         </div>
 
-        {/* Summary Footer - نقله للأعلى */}
+        {}
         <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: "var(--theme-surface)", borderLeft: "4px solid var(--theme-primary)" }}>
           <div className="flex flex-wrap items-center justify-between gap-6">
             <div className="flex items-center gap-2">
@@ -953,42 +1264,11 @@ export default function SaleAddPage() {
           </div>
         </div>
 
-        {/* جدول المواد - التصميم الجديد مثل صفحة الشراء */}
         <div className="mt-6 space-y-2">
-          {/* Debug info */}
-          <div className="text-xs bg-muted/50 p-2 rounded space-y-1">
-            <div className="flex gap-4 flex-wrap">
-              <span className={inventory.length > 0 ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
-                📦 عدد المواد في المخزن: {inventory.length}
-              </span>
-              <span className={filteredInventory.length > 0 ? "text-green-600 font-bold" : "text-orange-600"}>
-                🔍 نتائج البحث: {filteredInventory.length}
-              </span>
-              <span className={showSuggestions ? "text-green-600 font-bold" : "text-gray-500"}>
-                👁️ إظهار الاقتراحات: {showSuggestions ? "نعم ✅" : "لا ❌"}
-              </span>
-            </div>
-            <div className="flex gap-4">
-              <span className="text-muted-foreground">
-                🔤 رمز البحث: <span className="font-mono bg-yellow-100 dark:bg-yellow-900 px-1">"{productSearchCode}"</span>
-              </span>
-              <span className="text-muted-foreground">
-                📝 اسم البحث: <span className="font-mono bg-yellow-100 dark:bg-yellow-900 px-1">"{productSearchName}"</span>
-              </span>
-            </div>
-            {inventory.length === 0 && (
-              <div className="text-red-600 font-bold mt-2">
-                ⚠️ تحذير: المخزون فارغ! اختر مخزنًا أولاً.
-              </div>
-            )}
-            {inventory.length > 0 && filteredInventory.length === 0 && (productSearchCode || productSearchName) && (
-              <div className="text-orange-600 font-bold mt-2">
-                ⚠️ لا توجد نتائج مطابقة للبحث.
-              </div>
-            )}
-          </div>
+         
           
-          <div className="rounded-lg border overflow-x-auto w-full max-h-[calc(100vh-500px)] overflow-y-auto">
+          
+          <div className="rounded-lg border overflow-auto w-full" style={{ maxHeight: "1200px" }}>
           <Table>
             <TableHeader>
               <TableRow
@@ -1009,13 +1289,14 @@ export default function SaleAddPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-            {/* صف الإضافة الجديد */}
+            {}
+            {!isViewMode && (
             <TableRow style={{ backgroundColor: "var(--theme-accent)", opacity: 0.9 }}>
               <TableCell className="text-center font-bold" style={{ color: "var(--theme-text)" }}>
                 جديد
               </TableCell>
                 <TableCell className="text-center">
-                  <Plus className="h-5 w-5 text-green-500 mx-auto" />
+                  <Plus className="h-5 w-5 theme-success mx-auto" />
                 </TableCell>
                 <TableCell>
                   <div style={{ minWidth: '120px', width: '120px', position: 'relative' }}>
@@ -1054,7 +1335,7 @@ export default function SaleAddPage() {
                     onChange={(e) =>
                       updateNewItem("quantity", parseFloat(e.target.value) || 0)
                     }
-                    onKeyPress={(e) => handleNewItemKeyPress(e, "quantity")}
+                    onKeyPress={(e) => handleNewItemKeyPress(e)}
                     placeholder="0"
                     className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
                   />
@@ -1066,7 +1347,7 @@ export default function SaleAddPage() {
                     onChange={(e) =>
                       updateNewItem("unitpriceiqd", parseFloat(e.target.value) || 0)
                     }
-                    onKeyPress={(e) => handleNewItemKeyPress(e, "unitpriceiqd")}
+                    onKeyPress={(e) => handleNewItemKeyPress(e)}
                     placeholder="0"
                     className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
                   />
@@ -1078,7 +1359,7 @@ export default function SaleAddPage() {
                     onChange={(e) =>
                       updateNewItem("unitpriceusd", parseFloat(e.target.value) || 0)
                     }
-                    onKeyPress={(e) => handleNewItemKeyPress(e, "unitpriceusd")}
+                    onKeyPress={(e) => handleNewItemKeyPress(e)}
                     placeholder="0"
                     className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
                   />
@@ -1103,26 +1384,29 @@ export default function SaleAddPage() {
                   <Input
                     value={newItem.notes}
                     onChange={(e) => updateNewItem("notes", e.target.value)}
-                    onKeyPress={(e) => handleNewItemKeyPress(e, "notes")}
+                    onKeyPress={(e) => handleNewItemKeyPress(e)}
                     placeholder="ملاحظة"
                     className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
                   />
                 </TableCell>
               </TableRow>
+            )}
 
-              {/* المواد المضافة */}
+              {}
               {products.map((product, index) => (
                 <TableRow key={product.tempId} className="bg-background">
                   <TableCell className="text-center text-foreground">{index + 1}</TableCell>
                   <TableCell className="text-center">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteProduct(product.tempId)}
-                      className="h-8 w-8 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {!isViewMode && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteProduct(product.tempId)}
+                        className="h-8 w-8 hover:bg-red-50 dark:hover:bg-red-950"
+                      >
+                        <Trash2 className="h-4 w-4 theme-danger" />
+                      </Button>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
@@ -1139,7 +1423,7 @@ export default function SaleAddPage() {
                           className="h-8 w-8"
                           onClick={() => setViewingNote(product.productcode)}
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-4 w-4 theme-info" />
                         </Button>
                       )}
                     </div>
@@ -1159,7 +1443,7 @@ export default function SaleAddPage() {
                           className="h-8 w-8"
                           onClick={() => setViewingNote(product.productname)}
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-4 w-4 theme-info" />
                         </Button>
                       )}
                     </div>
@@ -1243,7 +1527,7 @@ export default function SaleAddPage() {
                           className="h-8 w-8"
                           onClick={() => setViewingNote(product.notes || "")}
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-4 w-4 theme-info" />
                         </Button>
                       )}
                     </div>
@@ -1255,31 +1539,58 @@ export default function SaleAddPage() {
           </div>
         </div>
 
-        {/* زر الحفظ */}
-        <div className="mt-6">
-          <Button
-            onClick={handleSaveSale}
-            disabled={isSaving}
-            size="lg"
-            className="w-full md:w-auto"
-            style={{ backgroundColor: "var(--theme-primary)", color: "white" }}
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="h-5 w-5 ml-2 animate-spin" />
-                جاري الحفظ...
-              </>
-            ) : (
-              <>
-                <Save className="h-5 w-5 ml-2" />
-                إضافة قائمة البيع
-              </>
-            )}
-          </Button>
-        </div>
+        {}
+        {!isViewMode && (
+          <div className="mt-6 flex gap-3 flex-wrap">
+            <Button
+              onClick={handleSaveSale}
+              disabled={isSaving}
+              size="lg"
+              className="flex-1 md:flex-initial"
+              style={{ backgroundColor: "var(--theme-primary)", color: "white" }}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-5 w-5 ml-2 animate-spin theme-icon" />
+                  جاري الحفظ...
+                </>
+              ) : (
+                <>
+                  <Save className="h-5 w-5 ml-2 theme-success" />
+                  {isEditMode ? "تحديث القائمة" : "إضافة قائمة البيع"}
+                </>
+              )}
+            </Button>
+
+            <Button
+              onClick={handlePrintInvoice}
+              disabled={isSaving || products.length === 0}
+              size="lg"
+              variant="outline"
+              className="flex-1 md:flex-initial"
+            >
+              <Printer className="h-5 w-5 ml-2" />
+              طباعة الفاتورة
+            </Button>
+          </div>
+        )}
+        
+        {}
+        {isViewMode && (
+          <div className="mt-6">
+            <Button
+              onClick={handlePrintInvoice}
+              size="lg"
+              className="w-full md:w-auto"
+            >
+              <Printer className="h-5 w-5 ml-2" />
+              طباعة الفاتورة
+            </Button>
+          </div>
+        )}
       </Card>
 
-      {/* Dialog عرض الملاحظة */}
+      {}
       <Dialog open={viewingNote !== null} onOpenChange={(open) => !open && setViewingNote(null)}>
         <DialogContent>
           <DialogHeader>
@@ -1295,7 +1606,7 @@ export default function SaleAddPage() {
       </Dialog>
     </div>
     
-    {/* قائمة الاقتراحات - Portal خارج كل شيء */}
+    {}
     {isMounted && showSuggestions && filteredInventory.length > 0 && createPortal(
       <div 
         data-suggestions="true"
@@ -1316,7 +1627,7 @@ export default function SaleAddPage() {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {}
         <div style={{
           padding: '16px 20px',
           background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))',
@@ -1345,7 +1656,7 @@ export default function SaleAddPage() {
           </button>
         </div>
         
-        {/* جدول الاقتراحات */}
+        {}
         <div style={{ maxHeight: 'calc(80vh - 140px)', overflowY: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
@@ -1460,7 +1771,7 @@ export default function SaleAddPage() {
         </table>
         </div>
         
-        {/* Footer مع عدد النتائج */}
+        {}
         <div style={{ 
           padding: '12px 20px', 
           background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))',
@@ -1476,7 +1787,7 @@ export default function SaleAddPage() {
       document.body
     )}
 
-    {/* خلفية شبه شفافة عند ظهور الاقتراحات */}
+    {}
     {isMounted && showSuggestions && filteredInventory.length > 0 && createPortal(
       <div
         style={{

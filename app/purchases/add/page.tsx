@@ -1,7 +1,7 @@
-"use client"
+﻿"use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useRef } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -30,7 +30,9 @@ import {
   Calendar,
   Loader2,
   Save,
+  RefreshCw,
 } from "lucide-react"
+import { PermissionGuard } from "@/components/permission-guard"
 import {
   Dialog,
   DialogContent,
@@ -38,28 +40,54 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { supabase } from "@/lib/supabase"
 import { getActiveStores, type Store } from "@/lib/stores-operations"
 import {
   getSuppliers,
   createPurchase,
+  updatePurchase,
+  getPurchaseById,
+  getPurchaseDetails,
+  checkProductsPriceConflicts,
   type Supplier,
   type PurchaseProductDetail,
 } from "@/lib/purchase-operations"
+import { logAction } from "@/lib/system-log-operations"
 import { getCurrentExchangeRate } from "@/lib/exchange-rate-operations"
 
 interface ProductRow extends PurchaseProductDetail {
   tempId: string
 }
 
+function toEnglishDigits(value: string): string {
+  return value
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+}
+
+function normalizeDateTimeInput(raw: string): string {
+  const normalized = toEnglishDigits(raw)
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(" ", "T")
+    .replace(/[^0-9T:\-]/g, "")
+
+  // Keep as YYYY-MM-DDTHH:mm (16 chars). If user types seconds or more, trim.
+  return normalized.length > 16 ? normalized.slice(0, 16) : normalized
+}
+
 export default function PurchaseAddPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get("edit")
+  const viewMode = searchParams.get("view") === "true"
 
-  // ============================================================
-  // State Management
-  // ============================================================
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [isViewMode, setIsViewMode] = useState(false)
+  const [loadingEditData, setLoadingEditData] = useState(false)
 
-  // البيانات الأساسية
   const [numberofpurchase, setNumberOfPurchase] = useState("")
   const [typeofbuy, setTypeOfBuy] = useState<"إعادة" | "محلي" | "استيراد">("محلي")
   const [typeofpayment, setTypeOfPayment] = useState<"نقدي" | "آجل">("نقدي")
@@ -68,29 +96,26 @@ export default function PurchaseAddPage() {
   const [datetime, setDateTime] = useState("")
   const [details, setDetails] = useState("")
 
-  // بيانات المجهز
   const [supplierid, setSupplierId] = useState("")
   const [nameofsupplier, setNameOfSupplier] = useState("")
   const [supplierBalanceIQD, setSupplierBalanceIQD] = useState(0)
   const [supplierBalanceUSD, setSupplierBalanceUSD] = useState(0)
+  const [searchSupplier, setSearchSupplier] = useState("")
+  const [selectOpen, setSelectOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // المبلغ الواصل
   const [hasAmountReceived, setHasAmountReceived] = useState(false)
   const [amountCurrency, setAmountCurrency] = useState<"دينار" | "دولار">("دينار")
   const [amountReceivedIQD, setAmountReceivedIQD] = useState(0)
   const [amountReceivedUSD, setAmountReceivedUSD] = useState(0)
 
-  // القوائم المنسدلة
   const [stores, setStores] = useState<Store[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
 
-  // سعر الصرف
   const [exchangeRate, setExchangeRate] = useState(1500)
 
-  // جدول المنتجات
   const [products, setProducts] = useState<ProductRow[]>([])
   
-  // صف الإضافة الجديد
   const [newItem, setNewItem] = useState<ProductRow>({
     tempId: "new-item",
     productcode1: "",
@@ -104,48 +129,219 @@ export default function PurchaseAddPage() {
     details: "",
   })
 
-  // حالة الحفظ
   const [isSaving, setIsSaving] = useState(false)
+  const [generatingNumber, setGeneratingNumber] = useState(false)
+  const [generatingProductCode, setGeneratingProductCode] = useState(false)
   
-  // عرض الملاحظات
   const [viewingNote, setViewingNote] = useState<string | null>(null)
-
-  // ============================================================
-  // Load Initial Data
-  // ============================================================
+  
+  // حالة حوار تعارض الأسعار
+  const [priceConflicts, setPriceConflicts] = useState<Array<{
+    product: PurchaseProductDetail
+    existingPriceIQD: number
+    existingPriceUSD: number
+    newPriceIQD: number
+    newPriceUSD: number
+  }>>([])
+  const [showPriceConflictDialog, setShowPriceConflictDialog] = useState(false)
+  const [priceUpdateDecisions, setPriceUpdateDecisions] = useState<Map<string, boolean>>(new Map())
 
   useEffect(() => {
     loadInitialData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const loadInitialData = async () => {
-    try {
-      // تحميل المخازن
-      const storesData = await getActiveStores()
-      setStores(storesData)
-
-      // تحميل المجهزين
-      const suppliersData = await getSuppliers()
-      setSuppliers(suppliersData)
-
-      // تحميل سعر الصرف
-      const rate = await getCurrentExchangeRate()
-      setExchangeRate(rate)
-
-      // تعيين التاريخ الحالي
+    
+    if (editId) {
+      setIsEditMode(true)
+      setIsViewMode(viewMode)
+      loadEditData(editId)
+    } else {
       const now = new Date()
       const formattedDate = now.toISOString().slice(0, 16)
       setDateTime(formattedDate)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId, viewMode])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setSelectOpen(false)
+      }
+    }
+    if (selectOpen) {
+      document.addEventListener("mousedown", handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [selectOpen])
+
+  useEffect(() => {
+    const newSupplierId = searchParams.get('newSupplierId')
+    if (newSupplierId && suppliers.length > 0) {
+      const reloadSuppliersAndSelect = async () => {
+        try {
+          const suppliersData = await getSuppliers()
+          setSuppliers(suppliersData)
+          
+          const newSupplier = suppliersData.find(s => s.id === newSupplierId)
+          if (newSupplier) {
+            setSupplierId(newSupplierId)
+            setNameOfSupplier(newSupplier.name)
+            setSupplierBalanceIQD(newSupplier.balanceiqd || 0)
+            setSupplierBalanceUSD(newSupplier.balanceusd || 0)
+            toast.success(`تم اختيار المجهز: ${newSupplier.name}`)
+          }
+          
+          const newUrl = window.location.pathname + (editId ? `?edit=${editId}` : '')
+          window.history.replaceState({}, '', newUrl)
+        } catch (error) {
+          console.error("Error reloading suppliers:", error)
+        }
+      }
+      reloadSuppliersAndSelect()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, suppliers.length])
+
+  const loadInitialData = async () => {
+    try {
+      const storesData = await getActiveStores()
+      setStores(storesData)
+
+      const suppliersData = await getSuppliers()
+      setSuppliers(suppliersData)
+
+      const rate = await getCurrentExchangeRate()
+      setExchangeRate(rate)
     } catch (error) {
       console.error("Error loading data:", error)
       toast.error("فشل تحميل البيانات")
     }
   }
 
-  // ============================================================
-  // Supplier Selection
-  // ============================================================
+  const generateUniqueProductCode = async () => {
+    setGeneratingProductCode(true)
+    try {
+      let attempts = 0
+      const maxAttempts = 100
+      
+      while (attempts < maxAttempts) {
+        const randomNum = Math.floor(Math.random() * 999999) + 1
+        const productCode = `M-${String(randomNum).padStart(6, '0')}`
+        
+        const { data, error } = await supabase
+          .from('tb_inventory')
+          .select('productcode')
+          .eq('productcode', productCode)
+          .maybeSingle()
+        
+        if (error && error.code !== 'PGRST116') {
+          throw error
+        }
+        
+        if (!data) {
+          updateNewItem("productcode1", productCode)
+          toast.success(`تم إنشاء رمز مادة: ${productCode}`)
+          break
+        }
+        
+        attempts++
+      }
+      
+      if (attempts >= maxAttempts) {
+        toast.error('فشل إنشاء رمز فريد بعد عدة محاولات')
+      }
+    } catch (error) {
+      console.error('Error generating product code:', error)
+      toast.error('حدث خطأ أثناء إنشاء رمز المادة')
+    } finally {
+      setGeneratingProductCode(false)
+    }
+  }
+
+  const generateUniquePurchaseNumber = async () => {
+    setGeneratingNumber(true)
+    try {
+      let attempts = 0
+      const maxAttempts = 100
+      
+      while (attempts < maxAttempts) {
+        const randomNum = Math.floor(Math.random() * 999999) + 1
+        const purchaseNumber = `P-${String(randomNum).padStart(6, '0')}`
+        
+        const { data, error } = await supabase
+          .from('tb_purchasemain')
+          .select('numberofpurchase')
+          .eq('numberofpurchase', purchaseNumber)
+          .maybeSingle()
+        
+        if (error && error.code !== 'PGRST116') {
+          throw error
+        }
+        
+        if (!data) {
+          setNumberOfPurchase(purchaseNumber)
+          toast.success(`تم إنشاء رقم قائمة: ${purchaseNumber}`)
+          break
+        }
+        
+        attempts++
+      }
+      
+      if (attempts >= maxAttempts) {
+        toast.error('فشل إنشاء رقم فريد بعد عدة محاولات')
+      }
+    } catch (error) {
+      console.error('Error generating purchase number:', error)
+      toast.error('حدث خطأ أثناء إنشاء رقم القائمة')
+    } finally {
+      setGeneratingNumber(false)
+    }
+  }
+
+  const loadEditData = async (purchaseId: string) => {
+    try {
+      setLoadingEditData(true)
+      
+      const purchaseData = await getPurchaseById(purchaseId)
+      if (!purchaseData) {
+        toast.error("لم يتم العثور على القائمة")
+        router.push("/reports")
+        return
+      }
+
+      setNumberOfPurchase(purchaseData.numberofpurchase)
+      setTypeOfBuy(purchaseData.typeofbuy)
+      setTypeOfPayment(purchaseData.typeofpayment)
+      setCurrencyType(purchaseData.currency || "دينار")
+      setPurchaseStoreId(purchaseData.purchasestoreid)
+      setDateTime(new Date(purchaseData.datetime).toISOString().slice(0, 16))
+      setDetails(purchaseData.details || "")
+      
+      setSupplierId(purchaseData.supplierid)
+      setNameOfSupplier(purchaseData.nameofsupplier)
+      
+      const hasAmount = purchaseData.amountreceivediqd > 0 || purchaseData.amountreceivedusd > 0
+      setHasAmountReceived(hasAmount)
+      setAmountReceivedIQD(purchaseData.amountreceivediqd)
+      setAmountReceivedUSD(purchaseData.amountreceivedusd)
+      
+      const details = await getPurchaseDetails(purchaseId)
+      const productsWithTempId = details.map((detail, index) => ({
+        ...detail,
+        tempId: `product-${index}`,
+      }))
+      setProducts(productsWithTempId)
+      
+      toast.success("تم تحميل بيانات القائمة")
+    } catch (error) {
+      console.error("Error loading edit data:", error)
+      toast.error("فشل تحميل بيانات القائمة")
+      router.push("/reports")
+    } finally {
+      setLoadingEditData(false)
+    }
+  }
 
   const handleSupplierChange = async (supplierId: string) => {
     setSupplierId(supplierId)
@@ -159,7 +355,6 @@ export default function PurchaseAddPage() {
     if (supplier) {
       setNameOfSupplier(supplier.name)
       
-      // جلب بيانات المجهز مباشرة من قاعدة البيانات للتأكد
       try {
         const { getSupplierById } = await import("@/lib/purchase-operations")
         const freshSupplier = await getSupplierById(supplierId)
@@ -183,12 +378,7 @@ export default function PurchaseAddPage() {
     console.log('=== End Debug ===')
   }
 
-  // ============================================================
-  // Product Table Management
-  // ============================================================
-
   const addItemFromNew = () => {
-    // التحقق من أن الحقول الأساسية ليست فارغة
     if (!newItem.productcode1.trim() || !newItem.nameofproduct.trim()) {
       toast.error("الرجاء إدخال رمز المادة واسم المادة")
       return
@@ -199,14 +389,12 @@ export default function PurchaseAddPage() {
       return
     }
 
-    // إضافة المادة للقائمة
     const newProduct: ProductRow = {
       ...newItem,
       tempId: `temp-${Date.now()}-${Math.random()}`,
     }
     setProducts([...products, newProduct])
 
-    // إعادة تعيين newItem
     setNewItem({
       tempId: "new-item",
       productcode1: "",
@@ -230,7 +418,6 @@ export default function PurchaseAddPage() {
   const updateNewItem = (field: keyof ProductRow, value: string | number) => {
     const updated = { ...newItem, [field]: value }
 
-    // تحويل تلقائي بين العملات (مع التقريب لرقمين عشريين)
     if (field === "purchasesinglepriceiqd" && exchangeRate > 0) {
       updated.purchasesinglepriceusd = Math.round((Number(value) / exchangeRate) * 100) / 100
     }
@@ -249,9 +436,8 @@ export default function PurchaseAddPage() {
 
   const handleNewItemKeyPress = (e: React.KeyboardEvent, field: keyof ProductRow) => {
     if (e.key === "Enter") {
-      e.preventDefault() // منع السلوك الافتراضي
+      e.preventDefault()
       
-      // إضافة المادة للجدول فقط (بدون حفظ في قاعدة البيانات)
       if (field === "sellsinglepriceusd" || field === "sellsinglepriceiqd" || field === "details") {
         addItemFromNew()
       }
@@ -264,7 +450,6 @@ export default function PurchaseAddPage() {
         if (p.tempId === tempId) {
           const updated = { ...p, [field]: value }
 
-          // تحويل تلقائي بين العملات (مع التقريب لرقمين عشريين)
           if (field === "purchasesinglepriceiqd" && exchangeRate > 0) {
             updated.purchasesinglepriceusd = Math.round((Number(value) / exchangeRate) * 100) / 100
           }
@@ -285,10 +470,6 @@ export default function PurchaseAddPage() {
     )
   }
 
-  // ============================================================
-  // Calculations
-  // ============================================================
-
   const totalProductsCount = products.filter(
     (p) => p.productcode1 && p.quantity > 0
   ).length
@@ -306,10 +487,6 @@ export default function PurchaseAddPage() {
   const remainingAmountIQD = totalPurchaseIQD - amountReceivedIQD
   const remainingAmountUSD = totalPurchaseUSD - amountReceivedUSD
 
-  // ============================================================
-  // Amount Received Handler
-  // ============================================================
-
   const handleAmountReceivedChange = (value: number) => {
     if (amountCurrency === "دينار") {
       setAmountReceivedIQD(value)
@@ -320,12 +497,7 @@ export default function PurchaseAddPage() {
     }
   }
 
-  // ============================================================
-  // Save Purchase
-  // ============================================================
-
   const handleSavePurchase = async () => {
-    // التحقق من البيانات
     if (!numberofpurchase.trim()) {
       toast.error("الرجاء إدخال رقم القائمة")
       return
@@ -350,6 +522,22 @@ export default function PurchaseAddPage() {
       return
     }
 
+    // التحقق من تعارض الأسعار قبل الحفظ
+    if (!isEditMode) {
+      const conflictsCheck = await checkProductsPriceConflicts(purchasestoreid, validProducts)
+      
+      if (conflictsCheck.success && conflictsCheck.conflicts.length > 0) {
+        // عرض حوار تعارض الأسعار
+        setPriceConflicts(conflictsCheck.conflicts)
+        setShowPriceConflictDialog(true)
+        return
+      }
+    }
+
+    await savePurchaseData(validProducts)
+  }
+
+  const savePurchaseData = async (validProducts: ProductRow[], priceDecisions?: Map<string, boolean>) => {
     setIsSaving(true)
 
     try {
@@ -363,46 +551,117 @@ export default function PurchaseAddPage() {
         nameofsupplier,
         datetime,
         details,
-        currency: amountCurrency,
+        currency: currencyType,
         amountreceivediqd: amountReceivedIQD,
         amountreceivedusd: amountReceivedUSD,
         totalpurchaseiqd: totalPurchaseIQD,
         totalpurchaseusd: totalPurchaseUSD,
       }
 
-      const result = await createPurchase(
-        purchaseMain,
-        validProducts,
-        purchasestoreid,
-        typeofpayment,
-        currencyType
-      )
+      let result
+      if (isEditMode && editId) {
+        // استخدام دالة التعديل
+        result = await updatePurchase(
+          editId,
+          purchaseMain,
+          validProducts,
+          purchasestoreid
+        )
+      } else {
+        // استخدام دالة الإضافة مع قرارات تحديث الأسعار
+        result = await createPurchase(
+          purchaseMain,
+          validProducts,
+          purchasestoreid,
+          typeofpayment,
+          currencyType,
+          priceDecisions
+        )
+      }
 
       if (result.success) {
-        toast.success("تم حفظ قائمة الشراء بنجاح")
+        const total = totalPurchaseIQD || totalPurchaseUSD
+        const currency = totalPurchaseIQD ? 'IQD' : 'USD'
+        const selectedSupplier = suppliers.find(s => s.id === supplierid)
         
-        // تصفير الجدول والنموذج للبدء بقائمة جديدة
-        setProducts([])
-        setNumberOfPurchase("")
-        setDetails("")
-        setHasAmountReceived(false)
-        setAmountReceivedIQD(0)
-        setAmountReceivedUSD(0)
-        setDateTime("")
-        
-        // إعادة تعيين newItem
-        setNewItem({
-          tempId: "new-item",
-          productcode1: "",
-          nameofproduct: "",
-          quantity: 0,
-          unit: "قطعة",
-          purchasesinglepriceiqd: 0,
-          purchasesinglepriceusd: 0,
-          sellsinglepriceiqd: 0,
-          sellsinglepriceusd: 0,
-          details: "",
-        })
+        if (isEditMode) {
+          await logAction(
+            "تعديل",
+            `تم تعديل قائمة شراء رقم ${numberofpurchase} للمجهز: ${selectedSupplier?.name || 'غير معروف'}`,
+            "المشتريات",
+            undefined,
+            undefined,
+            {
+              numberofpurchase: numberofpurchase,
+              nameofsupplier: selectedSupplier?.name,
+              totalpurchase: total,
+              currency: currency,
+              typeofpayment: typeofpayment,
+              items_count: validProducts.length
+            }
+          )
+          toast.success("تم تعديل قائمة الشراء بنجاح")
+          router.push("/reports")
+        } else {
+          await logAction(
+            "إضافة",
+            `تمت عملية إضافة قائمة شراء رقم ${numberofpurchase} للمجهز: ${selectedSupplier?.name || 'غير معروف'} بمبلغ ${total.toLocaleString('en-US')} ${currency}`,
+            "المشتريات",
+            undefined,
+            undefined,
+            {
+              numberofpurchase: numberofpurchase,
+              nameofsupplier: selectedSupplier?.name,
+              totalpurchase: total,
+              currency: currency,
+              typeofpayment: typeofpayment,
+              items_count: validProducts.length,
+              storename: stores.find(s => s.id === purchasestoreid)?.storename
+            }
+          )
+          
+          for (const product of validProducts) {
+            await logAction(
+              "إضافة للمخزن",
+              `تمت إضافة مادة ${product.nameofproduct} بكمية ${product.quantity} ${product.unit} إلى المخزن`,
+              "المخزون",
+              undefined,
+              undefined,
+              {
+                productcode: product.productcode1,
+                productname: product.nameofproduct,
+                quantity: product.quantity,
+                unit: product.unit,
+                storename: stores.find(s => s.id === purchasestoreid)?.storename,
+                from_purchase: numberofpurchase
+              }
+            )
+          }
+          
+          toast.success("تم حفظ قائمة الشراء بنجاح")
+          
+          // إعادة تعيين النموذج
+          setProducts([])
+          setNumberOfPurchase("")
+          setDetails("")
+          setHasAmountReceived(false)
+          setAmountReceivedIQD(0)
+          setAmountReceivedUSD(0)
+          setDateTime("")
+          
+          setNewItem({
+            tempId: "new-item",
+            productcode1: "",
+            nameofproduct: "",
+            quantity: 0,
+            unit: "قطعة",
+            purchasesinglepriceiqd: 0,
+            purchasesinglepriceusd: 0,
+            sellsinglepriceiqd: 0,
+            sellsinglepriceusd: 0,
+            details: "",
+          })
+        }
       } else {
         toast.error(result.error || "فشل حفظ قائمة الشراء")
       }
@@ -414,13 +673,43 @@ export default function PurchaseAddPage() {
     }
   }
 
-  // ============================================================
-  // Render
-  // ============================================================
+  const handlePriceConflictDecision = (productCode: string, updatePrice: boolean) => {
+    const newDecisions = new Map(priceUpdateDecisions)
+    newDecisions.set(productCode, updatePrice)
+    setPriceUpdateDecisions(newDecisions)
+  }
+
+  const handleApplyAllPriceDecisions = async (decision: 'update-all' | 'quantity-only' | 'cancel') => {
+    if (decision === 'cancel') {
+      setShowPriceConflictDialog(false)
+      setPriceConflicts([])
+      setPriceUpdateDecisions(new Map())
+      return
+    }
+
+    const decisions = new Map<string, boolean>()
+    const updatePrices = decision === 'update-all'
+    
+    for (const conflict of priceConflicts) {
+      decisions.set(conflict.product.productcode1, updatePrices)
+    }
+
+    setShowPriceConflictDialog(false)
+    
+    const validProducts = products.filter(
+      (p) => p.productcode1 && p.quantity > 0
+    )
+    
+    await savePurchaseData(validProducts, decisions)
+    
+    setPriceConflicts([])
+    setPriceUpdateDecisions(new Map())
+  }
 
   return (
+    <PermissionGuard requiredPermission="add_purchase">
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
@@ -428,33 +717,56 @@ export default function PurchaseAddPage() {
             size="icon"
             onClick={() => router.back()}
           >
-            <ArrowRight className="h-5 w-5" />
+            <ArrowRight className="h-5 w-5 theme-icon" />
           </Button>
-          <h1 className="text-3xl font-bold" style={{ color: "var(--theme-text)" }}>
-            إضافة قائمة شراء
+          <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
+            {isViewMode ? "كشف قائمة شراء" : isEditMode ? "تعديل قائمة شراء" : "إضافة قائمة شراء"}
           </h1>
         </div>
+        {loadingEditData && (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>جاري تحميل البيانات...</span>
+          </div>
+        )}
       </div>
 
-      {/* Form Cards */}
+      {}
       <Card className="p-6" style={{ backgroundColor: "var(--theme-surface)", color: "var(--theme-text)" }}>
-        {/* الصف الأول */}
+        {}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          {/* رقم القائمة */}
+          {}
           <div className="space-y-2">
             <Label htmlFor="numberofpurchase">رقم القائمة</Label>
-            <Input
-              id="numberofpurchase"
-              value={numberofpurchase}
-              onChange={(e) => setNumberOfPurchase(e.target.value)}
-              placeholder="رقم القائمة"
-            />
+            <div className="relative">
+              <Input
+                id="numberofpurchase"
+                value={numberofpurchase}
+                onChange={(e) => setNumberOfPurchase(e.target.value)}
+                placeholder="رقم القائمة"
+                readOnly={isViewMode}
+                className="pr-10"
+              />
+              {!isViewMode && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                  onClick={generateUniquePurchaseNumber}
+                  disabled={generatingNumber}
+                  title="إنشاء رقم عشوائي"
+                >
+                  <RefreshCw className={cn("h-4 w-4", generatingNumber && "animate-spin")} />
+                </Button>
+              )}
+            </div>
           </div>
 
-          {/* نوع الشراء */}
+          {}
           <div className="space-y-2">
             <Label>نوع الشراء</Label>
-            <Select value={typeofbuy} onValueChange={(v: "إعادة" | "محلي" | "استيراد") => setTypeOfBuy(v)}>
+            <Select value={typeofbuy} onValueChange={(v: "إعادة" | "محلي" | "استيراد") => setTypeOfBuy(v)} disabled={isViewMode}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -466,12 +778,13 @@ export default function PurchaseAddPage() {
             </Select>
           </div>
 
-          {/* نوع الدفع */}
+          {}
           <div className="space-y-2">
             <Label>نوع الدفع</Label>
             <Select
               value={typeofpayment}
               onValueChange={(v: "نقدي" | "آجل") => setTypeOfPayment(v)}
+              disabled={isViewMode}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -483,12 +796,13 @@ export default function PurchaseAddPage() {
             </Select>
           </div>
 
-          {/* نوع العملة */}
+          {}
           <div className="space-y-2">
             <Label>نوع العملة</Label>
             <Select
               value={currencyType}
               onValueChange={(v: "دينار" | "دولار") => setCurrencyType(v)}
+              disabled={isViewMode}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -499,8 +813,6 @@ export default function PurchaseAddPage() {
               </SelectContent>
             </Select>
           </div>
-
-          {/* المخزن */}
           <div className="space-y-2">
             <Label>المخزن</Label>
             <Select value={purchasestoreid} onValueChange={setPurchaseStoreId}>
@@ -518,33 +830,88 @@ export default function PurchaseAddPage() {
           </div>
         </div>
 
-        {/* الصف الثاني */}
+        {}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
-          {/* اسم المجهز */}
+          {}
           <div className="space-y-2 md:col-span-3">
             <Label>اسم المجهز</Label>
-            <Select value={supplierid} onValueChange={handleSupplierChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="اختر المجهز" />
-              </SelectTrigger>
-              <SelectContent>
-                {suppliers.map((supplier) => (
-                  <SelectItem key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative" ref={dropdownRef}>
+                <Input
+                  placeholder="ابحث عن مجهز..."
+                  value={searchSupplier || (supplierid ? suppliers.find(s => s.id === supplierid)?.name : "")}
+                  onChange={(e) => {
+                    setSearchSupplier(e.target.value)
+                    setSelectOpen(true)
+                    if (!e.target.value) {
+                      setSupplierId("")
+                      setNameOfSupplier("")
+                      setSupplierBalanceIQD(0)
+                      setSupplierBalanceUSD(0)
+                    }
+                  }}
+                  onFocus={() => setSelectOpen(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && searchSupplier) {
+                      const filteredSuppliers = suppliers.filter((supplier) =>
+                        supplier.name.toLowerCase().includes(searchSupplier.toLowerCase())
+                      )
+                      if (filteredSuppliers.length === 0) {
+                        const currentPath = window.location.pathname + window.location.search
+                        router.push(`/customers/add?type=مجهز&returnTo=${encodeURIComponent(currentPath)}&name=${encodeURIComponent(searchSupplier)}`)
+                      }
+                    }
+                  }}
+                  disabled={isViewMode}
+                />
+                {selectOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-[300px] overflow-y-auto">
+                    {(() => {
+                      const filteredSuppliers = suppliers.filter((supplier) =>
+                        supplier.name.toLowerCase().includes(searchSupplier.toLowerCase())
+                      )
+                      
+                      if (filteredSuppliers.length === 0) {
+                        return (
+                          <div className="px-3 py-3 text-center space-y-1">
+                            <div className="text-sm text-muted-foreground">
+                              لا يوجد اسم مطابق
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              اضغط <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Enter</kbd> لإضافة مجهز جديد
+                            </div>
+                          </div>
+                        )
+                      }
+                      
+                      return filteredSuppliers.map((supplier) => (
+                        <div
+                          key={supplier.id}
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            handleSupplierChange(supplier.id)
+                            setSelectOpen(false)
+                            setSearchSupplier("")
+                          }}
+                          className="px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                        >
+                          {supplier.name}
+                        </div>
+                      ))
+                    })()}
+                  </div>
+                )}
+            </div>
           </div>
 
-          {/* رصيد المجهز السابق */}
+          {}
           <div className="space-y-2 md:col-span-2">
             <Label className="font-semibold text-blue-600 dark:text-blue-400">رصيد سابق دينار</Label>
             <div className="flex items-center gap-2">
               <Input
-                value={supplierBalanceIQD.toLocaleString()}
+                value={supplierBalanceIQD.toLocaleString('en-US')}
                 readOnly
-                className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 font-bold"
+                className="ltr-numbers bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 font-bold"
               />
             </div>
           </div>
@@ -553,14 +920,14 @@ export default function PurchaseAddPage() {
             <Label className="font-semibold text-green-600 dark:text-green-400">رصيد سابق دولار</Label>
             <div className="flex items-center gap-2">
               <Input
-                value={supplierBalanceUSD.toLocaleString()}
+                value={supplierBalanceUSD.toLocaleString('en-US')}
                 readOnly
-                className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 font-bold"
+                className="ltr-numbers bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 font-bold"
               />
             </div>
           </div>
 
-          {/* Checkbox مبلغ واصل - يظهر فقط عندما يكون نوع الدفع آجل */}
+          {}
           {typeofpayment === "آجل" && (
             <div className="space-y-2 md:col-span-3">
               <div className="flex items-center space-x-2 space-x-reverse h-full">
@@ -570,6 +937,7 @@ export default function PurchaseAddPage() {
                   onCheckedChange={(checked) =>
                     setHasAmountReceived(checked as boolean)
                   }
+                  disabled={isViewMode}
                 />
                 <Label htmlFor="hasAmountReceived" className="cursor-pointer">
                   مبلغ واصل
@@ -607,34 +975,42 @@ export default function PurchaseAddPage() {
             </div>
           )}
 
-          {/* سعر الصرف */}
+          {}
           <div className="space-y-2 md:col-span-2">
             <Label>سعر الصرف</Label>
             <Input
-              value={exchangeRate.toLocaleString()}
+              value={exchangeRate.toLocaleString('en-US')}
               readOnly
-              className="bg-muted"
+              className="ltr-numbers bg-muted"
             />
           </div>
         </div>
 
-        {/* الصف الثالث */}
+        {}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* التاريخ */}
+          {}
           <div className="space-y-2">
             <Label htmlFor="datetime">التاريخ والوقت</Label>
             <div className="relative">
               <Input
                 id="datetime"
-                type="datetime-local"
-                value={datetime}
-                onChange={(e) => setDateTime(e.target.value)}
+                type="text"
+                inputMode="numeric"
+                placeholder="YYYY-MM-DD HH:MM"
+                value={datetime ? datetime.replace("T", " ") : ""}
+                onChange={(e) => setDateTime(normalizeDateTimeInput(e.target.value))}
+                readOnly={isViewMode}
+                dir="ltr"
+                className={cn(
+                  "ltr-numbers text-center pl-10 pr-10",
+                  isViewMode && "bg-muted"
+                )}
               />
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none theme-icon" />
             </div>
           </div>
 
-          {/* الملاحظات */}
+          {}
           <div className="space-y-2">
             <Label htmlFor="details">الملاحظات</Label>
             <Textarea
@@ -643,12 +1019,13 @@ export default function PurchaseAddPage() {
               onChange={(e) => setDetails(e.target.value)}
               placeholder="ملاحظات إضافية..."
               rows={2}
+              readOnly={isViewMode}
             />
           </div>
         </div>
       </Card>
 
-      {/* Products Table */}
+      {}
       <Card className="p-6" style={{ backgroundColor: "var(--theme-surface)", color: "var(--theme-text)" }}>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold" style={{ color: "var(--theme-text)" }}>
@@ -656,7 +1033,7 @@ export default function PurchaseAddPage() {
           </h2>
         </div>
 
-        <div className="rounded-lg border overflow-x-auto w-full max-h-[calc(100vh-500px)] overflow-y-auto">
+        <div className="rounded-lg border overflow-x-auto w-full max-h-[1200px] overflow-y-auto">
           <Table>
             <TableHeader>
               <TableRow
@@ -678,24 +1055,40 @@ export default function PurchaseAddPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* صف الإضافة الجديد */}
+              {}
+              {!isViewMode && (
               <TableRow style={{ backgroundColor: "var(--theme-accent)", opacity: 0.9 }}>
                 <TableCell className="text-center font-bold" style={{ color: "var(--theme-text)" }}>
                   جديد
                 </TableCell>
                 <TableCell className="text-center">
-                  <Plus className="h-5 w-5 text-green-500 mx-auto" />
+                  <Plus className="h-5 w-5 theme-success mx-auto" />
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <Input
-                      value={newItem.productcode1}
-                      onChange={(e) => updateNewItem("productcode1", e.target.value)}
-                      onKeyPress={(e) => handleNewItemKeyPress(e, "productcode1")}
-                      placeholder="رمز المادة"
-                      className="bg-green-50 dark:bg-green-950/20 h-8 flex-1"
-                      title={newItem.productcode1}
-                    />
+                    <div className="relative flex-1">
+                      <Input
+                        value={newItem.productcode1}
+                        onChange={(e) => updateNewItem("productcode1", e.target.value)}
+                        onKeyPress={(e) => handleNewItemKeyPress(e, "productcode1")}
+                        placeholder="رمز المادة"
+                        className="bg-green-50 dark:bg-green-950/20 h-8 pl-7"
+                        title={newItem.productcode1}
+                      />
+                      {!isViewMode && (
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-6"
+                          onClick={generateUniqueProductCode}
+                          disabled={generatingProductCode}
+                          title="إنشاء رمز عشوائي"
+                        >
+                          <RefreshCw className={cn("h-3 w-3", generatingProductCode && "animate-spin")} />
+                        </Button>
+                      )}
+                    </div>
                     {newItem.productcode1 && newItem.productcode1.length > 10 && (
                       <Button
                         variant="ghost"
@@ -821,21 +1214,24 @@ export default function PurchaseAddPage() {
                   </div>
                 </TableCell>
               </TableRow>
+              )}
 
-              {/* المواد المضافة */}
+              {}
               {products.map((product, index) => (
                   <TableRow key={product.tempId} style={{ backgroundColor: "var(--theme-background)" }}>
                     <TableCell className="text-center" style={{ color: "var(--theme-text)" }}>
                       {index + 1}
                     </TableCell>
                     <TableCell className="text-center">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeRow(product.tempId)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
+                      {!isViewMode && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeRow(product.tempId)}
+                        >
+                          <Trash2 className="h-4 w-4 theme-danger" />
+                        </Button>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
@@ -1005,73 +1401,75 @@ export default function PurchaseAddPage() {
           </Table>
         </div>
 
-        {/* Summary Footer */}
+        {}
         <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: "var(--theme-accent)", color: "var(--theme-text)" }}>
-          {/* الصف الأول - معلومات أفقية */}
+          {}
           <div className="flex flex-wrap items-center justify-between gap-6 mb-4">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">عدد المواد:</span>
-              <span className="font-bold text-lg">{totalProductsCount}</span>
+              <span className="ltr-numbers font-bold text-lg">{totalProductsCount}</span>
             </div>
             
             <div className="flex items-center gap-2">
               <span className="text-sm">إجمالي دينار:</span>
-              <span className="font-bold text-lg text-green-600 dark:text-green-400">{totalPurchaseIQD.toLocaleString()}</span>
+              <span className="ltr-numbers font-bold text-lg text-green-600 dark:text-green-400">{totalPurchaseIQD.toLocaleString('en-US')}</span>
             </div>
             
             <div className="flex items-center gap-2">
               <span className="text-sm">إجمالي دولار:</span>
-              <span className="font-bold text-lg text-blue-600 dark:text-blue-400">{totalPurchaseUSD.toLocaleString()}</span>
+              <span className="ltr-numbers font-bold text-lg text-blue-600 dark:text-blue-400">{totalPurchaseUSD.toLocaleString('en-US')}</span>
             </div>
             
             {hasAmountReceived && (
               <>
                 <div className="flex items-center gap-2">
                   <span className="text-sm">واصل دينار:</span>
-                  <span className="font-bold text-lg">{amountReceivedIQD.toLocaleString()}</span>
+                  <span className="ltr-numbers font-bold text-lg">{amountReceivedIQD.toLocaleString('en-US')}</span>
                 </div>
                 
                 <div className="flex items-center gap-2">
                   <span className="text-sm">واصل دولار:</span>
-                  <span className="font-bold text-lg">{amountReceivedUSD.toLocaleString()}</span>
+                  <span className="ltr-numbers font-bold text-lg">{amountReceivedUSD.toLocaleString('en-US')}</span>
                 </div>
                 
                 <div className="flex items-center gap-2">
                   <span className="text-sm">متبقي دينار:</span>
-                  <span className="font-bold text-lg text-orange-600 dark:text-orange-400">{remainingAmountIQD.toLocaleString()}</span>
+                  <span className="ltr-numbers font-bold text-lg text-orange-600 dark:text-orange-400">{remainingAmountIQD.toLocaleString('en-US')}</span>
                 </div>
                 
                 <div className="flex items-center gap-2">
                   <span className="text-sm">متبقي دولار:</span>
-                  <span className="font-bold text-lg text-orange-600 dark:text-orange-400">{remainingAmountUSD.toLocaleString()}</span>
+                  <span className="ltr-numbers font-bold text-lg text-orange-600 dark:text-orange-400">{remainingAmountUSD.toLocaleString('en-US')}</span>
                 </div>
               </>
             )}
           </div>
 
-          <Button
-            onClick={handleSavePurchase}
-            disabled={isSaving}
-            size="lg"
-            className="w-full md:w-auto"
-            style={{ backgroundColor: "var(--theme-primary)", color: "white" }}
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="h-5 w-5 ml-2 animate-spin" />
-                جاري الحفظ...
-              </>
-            ) : (
-              <>
-                <Save className="h-5 w-5 ml-2" />
-                إضافة قائمة الشراء
-              </>
-            )}
-          </Button>
+          {!isViewMode && (
+            <Button
+              onClick={handleSavePurchase}
+              disabled={isSaving}
+              size="lg"
+              className="w-full md:w-auto"
+              style={{ backgroundColor: "var(--theme-primary)", color: "white" }}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-5 w-5 ml-2 animate-spin theme-icon" />
+                  جاري الحفظ...
+                </>
+              ) : (
+                <>
+                  <Save className="h-5 w-5 ml-2 theme-success" />
+                  إضافة قائمة الشراء
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </Card>
 
-      {/* Dialog عرض الملاحظة */}
+      {}
       <Dialog open={viewingNote !== null} onOpenChange={(open) => !open && setViewingNote(null)}>
         <DialogContent>
           <DialogHeader>
@@ -1085,6 +1483,124 @@ export default function PurchaseAddPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog for Price Conflicts */}
+      <Dialog open={showPriceConflictDialog} onOpenChange={setShowPriceConflictDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-orange-600">
+              ⚠️ تحذير: اختلاف في الأسعار
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              بعض المنتجات موجودة بالفعل في المخزن بأسعار مختلفة. اختر كيف تريد التعامل مع جميع المنتجات:
+            </p>
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>المنتج</TableHead>
+                  <TableHead>السعر الحالي</TableHead>
+                  <TableHead>السعر الجديد</TableHead>
+                  <TableHead>الفرق</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {priceConflicts.map((conflict) => (
+                  <TableRow key={conflict.product.productcode1}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{conflict.product.nameofproduct}</div>
+                        <div className="text-sm text-muted-foreground">
+                          كود: {conflict.product.productcode1}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {conflict.existingPriceIQD > 0 && (
+                          <div className="ltr-numbers text-sm">
+                            {conflict.existingPriceIQD.toLocaleString('en-US')} د.ع
+                          </div>
+                        )}
+                        {conflict.existingPriceUSD > 0 && (
+                          <div className="ltr-numbers text-sm text-green-600">
+                            ${conflict.existingPriceUSD.toLocaleString('en-US')}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {conflict.newPriceIQD > 0 && (
+                          <div className="ltr-numbers text-sm font-semibold text-blue-600">
+                            {conflict.newPriceIQD.toLocaleString('en-US')} د.ع
+                          </div>
+                        )}
+                        {conflict.newPriceUSD > 0 && (
+                          <div className="ltr-numbers text-sm font-semibold text-green-600">
+                            ${conflict.newPriceUSD.toLocaleString('en-US')}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {conflict.newPriceIQD !== conflict.existingPriceIQD && (
+                          <div className={cn(
+                            "ltr-numbers text-sm font-medium",
+                            conflict.newPriceIQD > conflict.existingPriceIQD
+                              ? "text-red-600"
+                              : "text-green-600"
+                          )}>
+                            {conflict.newPriceIQD > conflict.existingPriceIQD ? "+" : ""}
+                            {(conflict.newPriceIQD - conflict.existingPriceIQD).toLocaleString('en-US')} د.ع
+                          </div>
+                        )}
+                        {conflict.newPriceUSD !== conflict.existingPriceUSD && (
+                          <div className={cn(
+                            "ltr-numbers text-sm font-medium",
+                            conflict.newPriceUSD > conflict.existingPriceUSD
+                              ? "text-red-600"
+                              : "text-green-600"
+                          )}>
+                            {conflict.newPriceUSD > conflict.existingPriceUSD ? "+" : ""}
+                            ${(conflict.newPriceUSD - conflict.existingPriceUSD).toLocaleString('en-US')}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <DialogFooter className="flex gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              onClick={() => handleApplyAllPriceDecisions('cancel')}
+            >
+              إلغاء
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => handleApplyAllPriceDecisions('quantity-only')}
+            >
+              تحديث الكمية فقط
+            </Button>
+            <Button
+              onClick={() => handleApplyAllPriceDecisions('update-all')}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              تحديث الكمية والسعر
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+    </PermissionGuard>
   )
 }

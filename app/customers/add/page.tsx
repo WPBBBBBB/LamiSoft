@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -24,14 +25,45 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ArrowRight, Upload, X } from "lucide-react"
+import { ArrowRight, Upload, X, Check, ChevronsUpDown } from "lucide-react"
 import { createCustomer, uploadCustomerImage } from "@/lib/supabase-operations"
+import { logAction } from "@/lib/system-log-operations"
+import { PermissionGuard } from "@/components/permission-guard"
+import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
+import { iraqLocations } from "@/lib/iraq-locations"
+import { cn } from "@/lib/utils"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const formSchema = z.object({
   customer_name: z.string().min(2, { message: "الاسم يجب أن يكون حرفين على الأقل" }),
   type: z.enum(["زبون", "مجهز", "موظف"]),
-  phone_number: z.string().optional(),
+  phone_number: z.string()
+    .refine((val) => !val || val.length === 11, {
+      message: "رقم الهاتف يجب أن يكون 11 رقماً بالضبط"
+    })
+    .refine((val) => !val || val.startsWith("07"), {
+      message: "رقم الهاتف يجب أن يبدأ بـ 07"
+    })
+    .optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
   initial_balance_iqd: z.string().optional(),
@@ -40,22 +72,64 @@ const formSchema = z.object({
 
 export default function AddCustomerPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>("")
+  const [openAddress, setOpenAddress] = useState(false)
+  const [searchAddress, setSearchAddress] = useState("")
+  const [addressCount, setAddressCount] = useState<number | null>(null)
+  const searchInputRef = React.useRef<HTMLInputElement>(null)
+
+  const type = searchParams.get('type') as "زبون" | "مجهز" | "موظف" | null
+  const returnTo = searchParams.get('returnTo')
+  const prefillName = searchParams.get('name')
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      customer_name: "",
-      type: "زبون",
-      phone_number: "",
+      customer_name: prefillName || "",
+      type: type || "زبون",
+      phone_number: "07",
       address: "",
       notes: "",
       initial_balance_iqd: "0",
       initial_balance_usd: "0",
     },
   })
+
+  useEffect(() => {
+    if (openAddress && searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 100)
+    }
+  }, [openAddress])
+
+  const fetchAddressCount = async (address: string) => {
+    if (!address) {
+      setAddressCount(null)
+      return
+    }
+
+    try {
+      const { supabase } = await import("@/lib/supabase")
+      const { count, error } = await supabase
+        .from("customers")
+        .select("*", { count: "exact", head: true })
+        .eq("address", address)
+
+      if (error) {
+        console.error("Error fetching address count:", error)
+        setAddressCount(null)
+      } else {
+        setAddressCount(count || 0)
+      }
+    } catch (error) {
+      console.error("Error fetching address count:", error)
+      setAddressCount(null)
+    }
+  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -83,7 +157,7 @@ export default function AddCustomerPage() {
         imageUrl = await uploadCustomerImage(imageFile)
       }
 
-      await createCustomer({
+      const newCustomer = await createCustomer({
         customer_name: values.customer_name,
         type: values.type,
         phone_number: values.phone_number || "",
@@ -92,9 +166,32 @@ export default function AddCustomerPage() {
         image_url: imageUrl,
       })
 
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        await logAction(
+          "إضافة زبون",
+          `تمت عملية اضافة زبون جديد: ${values.customer_name} الى النظام`,
+          "customers",
+          undefined,
+          undefined,
+          {
+            customer_name: values.customer_name,
+            type: values.type,
+            phone_number: values.phone_number || "",
+          }
+        )
+      } catch (logError) {
+        console.error("Error logging action:", logError)
+      }
+
       toast.success("تم إضافة الزبون بنجاح")
-      router.push("/customers")
-      router.refresh()
+      
+      if (returnTo) {
+        router.push(`${returnTo}?newSupplierId=${newCustomer.id}`)
+      } else {
+        router.push("/customers")
+        router.refresh()
+      }
     } catch (error) {
       console.error(error)
       toast.error("حدث خطأ أثناء إضافة الزبون")
@@ -106,7 +203,7 @@ export default function AddCustomerPage() {
   return (
     <div className="flex-1 overflow-auto">
       <div className="container mx-auto p-6 space-y-6" style={{ maxWidth: "800px" }}>
-        {/* Header */}
+        {}
         <div className="mb-6 flex items-start justify-between gap-4">
           <div className="flex-1">
             <h1 className="text-3xl font-bold" style={{ color: "var(--theme-text)" }}>
@@ -130,7 +227,7 @@ export default function AddCustomerPage() {
         <Card className="p-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* صورة العميل */}
+              {}
               <div className="space-y-2">
                 <FormLabel>صورة العميل (اختياري)</FormLabel>
                 {imagePreview ? (
@@ -160,10 +257,15 @@ export default function AddCustomerPage() {
                       id="image-upload"
                     />
                     <label htmlFor="image-upload">
-                      <Button type="button" variant="outline" asChild>
-                        <span className="cursor-pointer gap-2">
-                          <Upload className="h-4 w-4" />
-                          اختر صورة
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="cursor-pointer"
+                        asChild
+                      >
+                        <span>
+                          <Upload className="mr-2 h-4 w-4" />
+                          رفع صورة
                         </span>
                       </Button>
                     </label>
@@ -171,7 +273,6 @@ export default function AddCustomerPage() {
                 )}
               </div>
 
-              {/* اسم الزبون */}
               <FormField
                 control={form.control}
                 name="customer_name"
@@ -179,20 +280,19 @@ export default function AddCustomerPage() {
                   <FormItem>
                     <FormLabel>اسم الزبون *</FormLabel>
                     <FormControl>
-                      <Input placeholder="أدخل اسم الزبون" {...field} />
+                      <Input {...field} placeholder="أدخل اسم الزبون" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* نوع الشخص */}
               <FormField
                 control={form.control}
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>نوع الشخص *</FormLabel>
+                    <FormLabel>النوع *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -210,49 +310,18 @@ export default function AddCustomerPage() {
                 )}
               />
 
-              {/* رقم الهاتف */}
               <FormField
                 control={form.control}
                 name="phone_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>رقم الهاتف</FormLabel>
+                    <FormLabel>رقم الهاتف (اختياري)</FormLabel>
                     <FormControl>
-                      <Input placeholder="07XXXXXXXXX" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* العنوان */}
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>العنوان</FormLabel>
-                    <FormControl>
-                      <Input placeholder="أدخل العنوان" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* ملاحظات */}
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ملاحظات</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="أدخل أي ملاحظات..."
-                        className="resize-none"
-                        rows={4}
+                      <Input
                         {...field}
+                        type="tel"
+                        placeholder="07XXXXXXXXX"
+                        maxLength={11}
                       />
                     </FormControl>
                     <FormMessage />
@@ -260,19 +329,117 @@ export default function AddCustomerPage() {
                 )}
               />
 
-              {/* الأزرار */}
-              <div className="flex gap-4 pt-4">
-                <Button type="submit" disabled={isLoading} className="flex-1">
-                  {isLoading ? "جاري الحفظ..." : "حفظ"}
-                </Button>
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>العنوان (اختياري)</FormLabel>
+                    <Popover open={openAddress} onOpenChange={setOpenAddress}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "w-full justify-between",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value || "اختر العنوان"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0">
+                        <Command>
+                          <CommandInput
+                            ref={searchInputRef}
+                            placeholder="ابحث عن العنوان..."
+                            value={searchAddress}
+                            onValueChange={setSearchAddress}
+                          />
+                          <CommandList>
+                            <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                            <CommandGroup>
+                              {iraqLocations
+                                .filter((location) =>
+                                  location.toLowerCase().includes(searchAddress.toLowerCase())
+                                )
+                                .map((location) => (
+                                  <CommandItem
+                                    key={location}
+                                    value={location}
+                                    onSelect={() => {
+                                      form.setValue("address", location)
+                                      setOpenAddress(false)
+                                      fetchAddressCount(location)
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        location === field.value
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                    {location}
+                                  </CommandItem>
+                                ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    {addressCount !== null && addressCount > 0 && field.value && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-sm text-muted-foreground cursor-help">
+                              يوجد {addressCount} زبون في هذا العنوان
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>عدد الزبائن المسجلين في نفس العنوان</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ملاحظات (اختياري)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="أدخل أي ملاحظات إضافية"
+                        className="min-h-[100px]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end gap-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
                   disabled={isLoading}
-                  className="flex-1"
                 >
                   إلغاء
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "جاري الإضافة..." : "إضافة الزبون"}
                 </Button>
               </div>
             </form>

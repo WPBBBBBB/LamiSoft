@@ -7,12 +7,8 @@ export interface Language {
 
 export const languages: Language[] = [
   { code: "ar", name: "Arabic", nativeName: "العربية", direction: "rtl" },
-  { code: "en", name: "English", nativeName: "English", direction: "ltr" },
-  { code: "tr", name: "Turkish", nativeName: "Türkçe", direction: "ltr" },
   { code: "ku", name: "Kurdish", nativeName: "کوردی", direction: "rtl" },
-  { code: "fa", name: "Persian", nativeName: "فارسی", direction: "rtl" },
-  { code: "es", name: "Spanish", nativeName: "Español", direction: "ltr" },
-  { code: "fr", name: "French", nativeName: "Français", direction: "ltr" },
+  { code: "en", name: "English", nativeName: "English", direction: "ltr" },
 ]
 
 export interface Translations {
@@ -22,7 +18,6 @@ export interface Translations {
 }
 
 export const translations: Translations = {
-  // Settings
   "settings": {
     ar: "الإعدادات",
     en: "Settings",

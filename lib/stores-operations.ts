@@ -1,8 +1,4 @@
-import { supabase } from './supabase'
-
-// ============================================
-// أنواع البيانات
-// ============================================
+﻿import { supabase } from './supabase'
 
 export interface Store {
   id: string
@@ -14,6 +10,8 @@ export interface Store {
   isactive: boolean
   createdat: string
   editedat: string
+  is_synced?: number
+  updated_at?: string
 }
 
 export interface InventoryItem {
@@ -48,11 +46,6 @@ export interface StoreTransfer {
   description?: string
 }
 
-// ============================================
-// دوال المخازن (Stores)
-// ============================================
-
-// جلب جميع المخازن
 export async function getStores(): Promise<Store[]> {
   const { data, error } = await supabase
     .from('tb_store')
@@ -63,7 +56,6 @@ export async function getStores(): Promise<Store[]> {
   return data || []
 }
 
-// جلب المخازن النشطة فقط
 export async function getActiveStores(): Promise<Store[]> {
   const { data, error } = await supabase
     .from('tb_store')
@@ -75,7 +67,6 @@ export async function getActiveStores(): Promise<Store[]> {
   return data || []
 }
 
-// جلب مخزن واحد
 export async function getStore(id: string): Promise<Store | null> {
   const { data, error } = await supabase
     .from('tb_store')
@@ -87,7 +78,6 @@ export async function getStore(id: string): Promise<Store | null> {
   return data
 }
 
-// إضافة مخزن جديد
 export async function createStore(store: Omit<Store, 'id' | 'createdat' | 'editedat'>): Promise<Store> {
   const { data, error } = await supabase
     .from('tb_store')
@@ -99,7 +89,6 @@ export async function createStore(store: Omit<Store, 'id' | 'createdat' | 'edite
   return data
 }
 
-// تحديث مخزن
 export async function updateStore(id: string, updates: Partial<Store>): Promise<Store> {
   const { data, error } = await supabase
     .from('tb_store')
@@ -112,7 +101,6 @@ export async function updateStore(id: string, updates: Partial<Store>): Promise<
   return data
 }
 
-// حذف مخزن
 export async function deleteStore(id: string): Promise<void> {
   const { error } = await supabase
     .from('tb_store')
@@ -122,7 +110,6 @@ export async function deleteStore(id: string): Promise<void> {
   if (error) throw error
 }
 
-// حذف مخازن متعددة
 export async function deleteStores(ids: string[]): Promise<void> {
   const { error } = await supabase
     .from('tb_store')
@@ -132,11 +119,6 @@ export async function deleteStores(ids: string[]): Promise<void> {
   if (error) throw error
 }
 
-// ============================================
-// دوال المخزون (Inventory)
-// ============================================
-
-// جلب جميع المواد في مخزن معين
 export async function getStoreInventory(storeId: string): Promise<InventoryItem[]> {
   const { data, error } = await supabase
     .from('tb_inventory')
@@ -148,7 +130,6 @@ export async function getStoreInventory(storeId: string): Promise<InventoryItem[
   return data || []
 }
 
-// جلب مادة واحدة
 export async function getInventoryItem(id: string): Promise<InventoryItem | null> {
   const { data, error } = await supabase
     .from('tb_inventory')
@@ -160,7 +141,6 @@ export async function getInventoryItem(id: string): Promise<InventoryItem | null
   return data
 }
 
-// البحث عن مادة بالكود أو الاسم في مخزن معين
 export async function searchInventoryInStore(
   storeId: string,
   searchTerm: string
@@ -176,7 +156,6 @@ export async function searchInventoryInStore(
   return data || []
 }
 
-// إضافة مادة جديدة للمخزن
 export async function createInventoryItem(
   item: Omit<InventoryItem, 'id' | 'createdat'>
 ): Promise<InventoryItem> {
@@ -190,7 +169,6 @@ export async function createInventoryItem(
   return data
 }
 
-// تحديث مادة
 export async function updateInventoryItem(
   id: string,
   updates: Partial<InventoryItem>
@@ -206,7 +184,6 @@ export async function updateInventoryItem(
   return data
 }
 
-// حذف مادة
 export async function deleteInventoryItem(id: string): Promise<void> {
   const { error } = await supabase
     .from('tb_inventory')
@@ -216,7 +193,6 @@ export async function deleteInventoryItem(id: string): Promise<void> {
   if (error) throw error
 }
 
-// حذف مواد متعددة
 export async function deleteInventoryItems(ids: string[]): Promise<void> {
   const { error } = await supabase
     .from('tb_inventory')
@@ -226,11 +202,6 @@ export async function deleteInventoryItems(ids: string[]): Promise<void> {
   if (error) throw error
 }
 
-// ============================================
-// دوال النقل المخزني (Store Transfers)
-// ============================================
-
-// تسجيل عملية نقل
 export async function createStoreTransfer(
   transfer: Omit<StoreTransfer, 'id' | 'transferdate'>
 ): Promise<StoreTransfer> {
@@ -244,7 +215,6 @@ export async function createStoreTransfer(
   return data
 }
 
-// جلب تاريخ النقل
 export async function getStoreTransfers(limit: number = 50): Promise<StoreTransfer[]> {
   const { data, error } = await supabase
     .from('tb_storetransfers')
@@ -256,7 +226,76 @@ export async function getStoreTransfers(limit: number = 50): Promise<StoreTransf
   return data || []
 }
 
-// نقل مادة من مخزن لآخر
+export async function getAllStoreTransfers(): Promise<StoreTransfer[]> {
+  const { data, error } = await supabase
+    .from('tb_storetransfers')
+    .select('*')
+    .order('transferdate', { ascending: false })
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function deleteStoreTransfer(transferId: string): Promise<{
+  success: boolean
+  error?: string
+}> {
+  try {
+    const { error } = await supabase
+      .from('tb_storetransfers')
+      .delete()
+      .eq('id', transferId)
+
+    if (error) {
+      console.error('Error deleting transfer:', error)
+      return {
+        success: false,
+        error: error.message,
+      }
+    }
+
+    return {
+      success: true,
+    }
+  } catch (error: any) {
+    console.error('Exception in deleteStoreTransfer:', error)
+    return {
+      success: false,
+      error: error.message || 'حدث خطأ غير متوقع',
+    }
+  }
+}
+
+export async function deleteMultipleStoreTransfers(transferIds: string[]): Promise<{
+  success: boolean
+  error?: string
+}> {
+  try {
+    const { error } = await supabase
+      .from('tb_storetransfers')
+      .delete()
+      .in('id', transferIds)
+
+    if (error) {
+      console.error('Error deleting transfers:', error)
+      return {
+        success: false,
+        error: error.message,
+      }
+    }
+
+    return {
+      success: true,
+    }
+  } catch (error: any) {
+    console.error('Exception in deleteMultipleStoreTransfers:', error)
+    return {
+      success: false,
+      error: error.message || 'حدث خطأ غير متوقع',
+    }
+  }
+}
+
 export async function transferInventory(
   productCode: string,
   productName: string,
@@ -268,7 +307,6 @@ export async function transferInventory(
   newPriceIQD?: number,
   newPriceUSD?: number
 ): Promise<void> {
-  // 1. جلب بيانات المخازن
   const fromStore = await getStore(fromStoreId)
   const toStore = await getStore(toStoreId)
 
@@ -276,7 +314,6 @@ export async function transferInventory(
     throw new Error('المخزن غير موجود')
   }
 
-  // 2. جلب المادة من المخزن المصدر
   const { data: sourceItems, error: sourceError } = await supabase
     .from('tb_inventory')
     .select('*')
@@ -286,11 +323,9 @@ export async function transferInventory(
 
   if (sourceError) throw new Error('المادة غير موجودة في المخزن المصدر')
 
-  // 3. خصم الكمية من المخزن المصدر
   const newSourceQuantity = sourceItems.quantity - quantity
   
   if (newSourceQuantity < 0) {
-    // إذا كانت الكمية سالبة، نستمر ولكن نسجل تحذير
     console.warn('تحذير: الكمية المنقولة أكبر من المتوفر')
   }
 
@@ -299,7 +334,6 @@ export async function transferInventory(
     .update({ quantity: newSourceQuantity })
     .eq('id', sourceItems.id)
 
-  // 4. التحقق من وجود المادة في المخزن الهدف
   const { data: targetItems, error: targetError } = await supabase
     .from('tb_inventory')
     .select('*')
@@ -308,7 +342,6 @@ export async function transferInventory(
     .maybeSingle()
 
   if (targetItems) {
-    // المادة موجودة - نحدث الكمية والسعر إذا لزم الأمر
     const updates: any = {
       quantity: targetItems.quantity + quantity
     }
@@ -323,7 +356,6 @@ export async function transferInventory(
       .update(updates)
       .eq('id', targetItems.id)
   } else {
-    // المادة غير موجودة - نضيفها
     await supabase
       .from('tb_inventory')
       .insert([{
@@ -341,7 +373,6 @@ export async function transferInventory(
       }])
   }
 
-  // 5. تسجيل عملية النقل
   await createStoreTransfer({
     productcode: productCode,
     productname: productName,

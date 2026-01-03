@@ -1,4 +1,3 @@
-// Utility functions for theme management
 
 export function generateTableColors(baseColors: {
   background: string
@@ -7,11 +6,9 @@ export function generateTableColors(baseColors: {
   accent: string
   primary: string
 }) {
-  // Check if theme is dark (background is dark)
   const isDark = parseInt(baseColors.background.slice(1, 3), 16) < 128
 
   if (isDark) {
-    // Dark theme table colors
     return {
       tableHeader: lighten(baseColors.surface, 10),
       tableRow: darken(baseColors.background, 5),
@@ -20,7 +17,6 @@ export function generateTableColors(baseColors: {
       border: lighten(baseColors.background, 20),
     }
   } else {
-    // Light theme table colors
     return {
       tableHeader: darken(baseColors.surface, 5),
       tableRow: lighten(baseColors.background, 2),

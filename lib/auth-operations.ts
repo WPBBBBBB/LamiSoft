@@ -13,7 +13,6 @@ export interface LoginResult {
   error?: string
 }
 
-// تسجيل الدخول بكلمة المرور
 export async function loginWithPassword(
   credentials: LoginCredentials,
   ipAddress?: string
@@ -21,11 +20,9 @@ export async function loginWithPassword(
   try {
     const users = await getUsersWithPermissions()
     
-    // البحث عن المستخدم باسم المستخدم فقط
     const user = users.find(u => u.username === credentials.username)
 
     if (!user) {
-      // تسجيل محاولة فاشلة
       await logLoginAttempt({
         username: credentials.username,
         login_method: 'password',
@@ -40,7 +37,6 @@ export async function loginWithPassword(
       }
     }
 
-    // التحقق من أن الحساب نشط
     if (user.is_active === false) {
       await logLoginAttempt({
         user_id: user.id,
@@ -57,7 +53,6 @@ export async function loginWithPassword(
       }
     }
 
-    // التحقق من قفل الحساب
     if (user.account_locked_until) {
       const lockTime = new Date(user.account_locked_until)
       if (lockTime > new Date()) {
@@ -78,19 +73,13 @@ export async function loginWithPassword(
       }
     }
 
-    // التحقق من كلمة المرور
-    // دعم كلمات المرور القديمة (غير مشفرة) والجديدة (مشفرة)
     let isPasswordValid = false
     
-    // التحقق إذا كانت كلمة المرور مشفرة (تبدأ بـ $2a$ أو $2b$)
     if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
-      // كلمة مرور مشفرة - استخدام bcrypt
       isPasswordValid = await verifyPassword(credentials.password, user.password)
     } else {
-      // كلمة مرور غير مشفرة - مقارنة مباشرة
       isPasswordValid = credentials.password === user.password
       
-      // إذا نجح الدخول، قم بتشفير كلمة المرور
       if (isPasswordValid) {
         const { hashPassword } = await import('./password-utils')
         const hashedPassword = await hashPassword(credentials.password)
@@ -105,7 +94,6 @@ export async function loginWithPassword(
     }
     
     if (!isPasswordValid) {
-      // زيادة عدد المحاولات الفاشلة
       await incrementFailedAttempts(user.id)
 
       const attempts = (user.failed_login_attempts || 0) + 1
@@ -132,13 +120,10 @@ export async function loginWithPassword(
       }
     }
 
-    // نجح تسجيل الدخول - إعادة تعيين المحاولات الفاشلة
     await resetFailedAttempts(user.id)
 
-    // تحديث معلومات آخر تسجيل دخول
     await updateLoginInfo(user.id, 'password')
 
-    // تسجيل محاولة ناجحة
     await logLoginAttempt({
       user_id: user.id,
       username: credentials.username,
@@ -160,7 +145,6 @@ export async function loginWithPassword(
   }
 }
 
-// تسجيل الدخول عبر OAuth
 export async function loginWithOAuth(
   provider: 'google' | 'microsoft' | 'github',
   providerId: string
@@ -170,7 +154,6 @@ export async function loginWithOAuth(
     
     let user: UserWithPermissions | undefined
 
-    // البحث عن المستخدم حسب المزود
     switch (provider) {
       case 'google':
         user = users.find(u => u.google_id === providerId && u.is_active !== false)
@@ -196,10 +179,8 @@ export async function loginWithOAuth(
       }
     }
 
-    // تحديث معلومات آخر تسجيل دخول
     await updateLoginInfo(user.id, provider)
 
-    // تسجيل محاولة ناجحة
     await logLoginAttempt({
       user_id: user.id,
       username: user.username,
@@ -220,20 +201,17 @@ export async function loginWithOAuth(
   }
 }
 
-// تحديث معلومات آخر تسجيل دخول
 async function updateLoginInfo(
   userId: string,
   loginMethod: string
 ): Promise<void> {
   try {
-    // استدعاء الدالة في قاعدة البيانات
     const { error } = await supabase.rpc('update_user_login_info', {
       p_user_id: userId,
       p_login_method: loginMethod
     })
 
     if (error) {
-      // إذا فشلت الدالة، نستخدم UPDATE عادي
       const { data: currentUser } = await supabase
         .from('users')
         .select('login_count')
@@ -255,7 +233,6 @@ async function updateLoginInfo(
   }
 }
 
-// زيادة عدد المحاولات الفاشلة
 async function incrementFailedAttempts(userId: string): Promise<void> {
   try {
     const { error } = await supabase.rpc('increment_failed_login_attempts', {
@@ -263,7 +240,6 @@ async function incrementFailedAttempts(userId: string): Promise<void> {
     })
 
     if (error) {
-      // إذا فشلت الدالة، نستخدم UPDATE عادي
       const { data: user } = await supabase
         .from('users')
         .select('failed_login_attempts')
@@ -289,7 +265,6 @@ async function incrementFailedAttempts(userId: string): Promise<void> {
   }
 }
 
-// إعادة تعيين المحاولات الفاشلة
 async function resetFailedAttempts(userId: string): Promise<void> {
   try {
     const { error } = await supabase.rpc('reset_failed_login_attempts', {
@@ -297,7 +272,6 @@ async function resetFailedAttempts(userId: string): Promise<void> {
     })
 
     if (error) {
-      // إذا فشلت الدالة، نستخدم UPDATE عادي
       await supabase
         .from('users')
         .update({
@@ -312,7 +286,6 @@ async function resetFailedAttempts(userId: string): Promise<void> {
   }
 }
 
-// تسجيل محاولة تسجيل الدخول
 async function logLoginAttempt(data: {
   user_id?: string
   username?: string
@@ -336,7 +309,6 @@ async function logLoginAttempt(data: {
   }
 }
 
-// جلب آخر عمليات تسجيل الدخول
 export async function getRecentLogins(userId: string, limit: number = 10) {
   const { data, error } = await supabase
     .from('login_logs')
@@ -350,7 +322,6 @@ export async function getRecentLogins(userId: string, limit: number = 10) {
   return data || []
 }
 
-// حساب وقت آخر تسجيل دخول
 export function getLastLoginTime(lastLoginAt?: string): string {
   if (!lastLoginAt) return 'لم يسجل الدخول بعد'
 

@@ -6,21 +6,18 @@ import { FontOption, fonts, applyFont, getFontById, loadGoogleFont } from "@/lib
 import { Language, languages } from "@/lib/i18n"
 
 interface SettingsContextType {
-  // Theme
   currentTheme: Theme
+  themeId: string
   setTheme: (themeId: string) => void
   mode: "light" | "dark" | "system"
   setMode: (mode: "light" | "dark" | "system") => void
   
-  // Language
   currentLanguage: Language
   setLanguage: (langCode: string) => void
   
-  // Font
   currentFont: FontOption
   setFont: (fontId: string) => void
   
-  // Sidebar
   mainSidebarWidth: number
   setMainSidebarWidth: (width: number) => void
   mainSidebarCollapsed: boolean
@@ -35,113 +32,122 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  // Initialize with defaults
-  const [currentTheme, setCurrentThemeState] = useState<Theme>(themes[0])
-  const [mode, setModeState] = useState<"light" | "dark" | "system">("system")
-  const [currentLanguage, setCurrentLanguageState] = useState<Language>(languages[0])
-  const [currentFont, setCurrentFontState] = useState<FontOption>(fonts[0])
-  const [mainSidebarWidth, setMainSidebarWidthState] = useState(288) // 72 * 4 = 288px (w-72)
-  const [mainSidebarCollapsed, setMainSidebarCollapsedState] = useState(false)
-  const [settingsSidebarWidth, setSettingsSidebarWidthState] = useState(280)
-  const [settingsSidebarCollapsed, setSettingsSidebarCollapsedState] = useState(false)
-  const [mounted, setMounted] = useState(false)
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    const savedThemeId = localStorage.getItem("theme-id")
-    const savedMode = localStorage.getItem("theme-mode") as "light" | "dark" | "system" | null
-    const savedLangCode = localStorage.getItem("language")
-    const savedFontId = localStorage.getItem("font-id")
-    const savedMainSidebarWidth = localStorage.getItem("main-sidebar-width")
-    const savedMainSidebarCollapsed = localStorage.getItem("main-sidebar-collapsed")
-    const savedSettingsSidebarWidth = localStorage.getItem("settings-sidebar-width")
-    const savedSettingsSidebarCollapsed = localStorage.getItem("settings-sidebar-collapsed")
-
-    if (savedThemeId) {
-      const theme = getThemeById(savedThemeId)
-      if (theme) {
-        setCurrentThemeState(theme)
-        applyTheme(theme)
+  const [themeId, setThemeIdState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const savedThemeId = localStorage.getItem("theme-id")
+      return savedThemeId || themes[0].id
+    }
+    return themes[0].id
+  })
+  
+  const [currentTheme, setCurrentThemeState] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      const savedThemeId = localStorage.getItem("theme-id")
+      if (savedThemeId) {
+        const theme = getThemeById(savedThemeId)
+        if (theme) return theme
       }
     }
+    return themes[0]
+  })
+  
+  const [mode, setModeState] = useState<"light" | "dark" | "system">(() => {
+    if (typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem("theme-mode") as "light" | "dark" | "system" | null
+      return savedMode || "system"
+    }
+    return "system"
+  })
+  
+  const [currentLanguage, setCurrentLanguageState] = useState<Language>(() => {
+    if (typeof window !== 'undefined') {
+      const savedLangCode = localStorage.getItem("language")
+      if (savedLangCode) {
+        const lang = languages.find((l) => l.code === savedLangCode)
+        if (lang) return lang
+      }
+    }
+    return languages[0]
+  })
+  
+  const [currentFont, setCurrentFontState] = useState<FontOption>(() => {
+    if (typeof window !== 'undefined') {
+      const savedFontId = localStorage.getItem("font-id")
+      if (savedFontId) {
+        const font = getFontById(savedFontId)
+        if (font) return font
+      }
+    }
+    return fonts[0]
+  })
+  
+  const [mainSidebarWidth, setMainSidebarWidthState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem("main-sidebar-width")
+      return saved ? parseInt(saved) : 288
+    }
+    return 288
+  })
+  
+  const [mainSidebarCollapsed, setMainSidebarCollapsedState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem("main-sidebar-collapsed")
+      return saved === "true"
+    }
+    return false
+  })
+  
+  const [settingsSidebarWidth, setSettingsSidebarWidthState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem("settings-sidebar-width")
+      return saved ? parseInt(saved) : 280
+    }
+    return 280
+  })
+  
+  const [settingsSidebarCollapsed, setSettingsSidebarCollapsedState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem("settings-sidebar-collapsed")
+      return saved === "true"
+    }
+    return false
+  })
+  
+  const [mounted] = useState(true)
 
-    if (savedMode) {
-      console.log("Loading saved mode:", savedMode)
-      setModeState(savedMode)
-      // تطبيق الوضع المحفوظ
-      const root = document.documentElement
-      if (savedMode === "system") {
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-        if (prefersDark) {
-          root.classList.add("dark")
-        } else {
-          root.classList.remove("dark")
-        }
-      } else if (savedMode === "dark") {
+  useEffect(() => {
+    const root = document.documentElement
+    
+    if (mode === "system") {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
+      if (prefersDark) {
         root.classList.add("dark")
       } else {
         root.classList.remove("dark")
       }
-      console.log("Applied mode:", savedMode, "Dark class:", root.classList.contains("dark"))
+    } else if (mode === "dark") {
+      root.classList.add("dark")
     } else {
-      // Detect system preference on first load
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-      console.log("First load, system prefers dark:", prefersDark)
-      setModeState("system")
-      if (prefersDark) {
-        document.documentElement.classList.add("dark")
-      } else {
-        document.documentElement.classList.remove("dark")
-      }
+      root.classList.remove("dark")
     }
 
-    if (savedLangCode) {
-      const lang = languages.find((l) => l.code === savedLangCode)
-      if (lang) {
-        setCurrentLanguageState(lang)
-        document.documentElement.setAttribute("lang", lang.code)
-        document.documentElement.setAttribute("dir", lang.direction)
-      }
+    document.documentElement.setAttribute("lang", currentLanguage.code)
+    document.documentElement.setAttribute("dir", currentLanguage.direction)
+
+    applyTheme(currentTheme)
+    applyFont(currentFont.family)
+    
+    if (currentFont.category !== "universal" && currentFont.url) {
+      loadGoogleFont(currentFont.name)
     }
+  }, [mode, currentLanguage.code, currentLanguage.direction, currentTheme, currentFont.family, currentFont.category, currentFont.url, currentFont.name])
 
-    if (savedFontId) {
-      const font = getFontById(savedFontId)
-      if (font) {
-        setCurrentFontState(font)
-        applyFont(font.family)
-        if (font.category !== "universal") {
-          loadGoogleFont(font.name)
-        }
-      }
-    }
-
-    if (savedMainSidebarWidth) {
-      setMainSidebarWidthState(parseInt(savedMainSidebarWidth))
-    }
-
-    if (savedMainSidebarCollapsed) {
-      setMainSidebarCollapsedState(savedMainSidebarCollapsed === "true")
-    }
-
-    if (savedSettingsSidebarWidth) {
-      setSettingsSidebarWidthState(parseInt(savedSettingsSidebarWidth))
-    }
-
-    if (savedSettingsSidebarCollapsed) {
-      setSettingsSidebarCollapsedState(savedSettingsSidebarCollapsed === "true")
-    }
-
-    setMounted(true)
-  }, [])
-
-  // Apply theme whenever it changes
   useEffect(() => {
     if (currentTheme && mounted) {
       applyTheme(currentTheme)
     }
   }, [currentTheme, mounted])
 
-  // Apply font whenever it changes
   useEffect(() => {
     if (currentFont && mounted) {
       applyFont(currentFont.family)
@@ -151,7 +157,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentFont, mounted])
 
-  // Listen to system theme changes when mode is "system"
   useEffect(() => {
     if (mode === "system" && mounted) {
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
@@ -171,12 +176,13 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [mode, mounted])
 
-  const setTheme = (themeId: string) => {
-    const theme = getThemeById(themeId)
+  const setTheme = (id: string) => {
+    const theme = getThemeById(id)
     if (theme) {
+      setThemeIdState(id)
       setCurrentThemeState(theme)
       applyTheme(theme)
-      localStorage.setItem("theme-id", themeId)
+      localStorage.setItem("theme-id", id)
     }
   }
 
@@ -185,7 +191,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     setModeState(newMode)
     localStorage.setItem("theme-mode", newMode)
     
-    // Apply dark/light class to html element
     const root = document.documentElement
     if (newMode === "system") {
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -255,6 +260,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     <SettingsContext.Provider
       value={{
         currentTheme,
+        themeId,
         setTheme,
         mode,
         setMode,

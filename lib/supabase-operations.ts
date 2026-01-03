@@ -1,6 +1,5 @@
-import { supabase } from './supabase'
+﻿import { supabase } from './supabase'
 
-// أنواع البيانات
 export interface Customer {
   id: string
   customer_name: string
@@ -9,6 +8,8 @@ export interface Customer {
   address?: string
   notes?: string
   image_url?: string
+  balanceiqd?: number
+  balanceusd?: number
   created_at: string
   updated_at: string
 }
@@ -30,11 +31,6 @@ export interface CustomerBalance {
   balance_usd: number
 }
 
-// ============================================
-// دوال العملاء (Customers)
-// ============================================
-
-// جلب جميع العملاء
 export async function getCustomers(): Promise<Customer[]> {
   const { data, error } = await supabase
     .from('customers')
@@ -45,7 +41,6 @@ export async function getCustomers(): Promise<Customer[]> {
   return data || []
 }
 
-// جلب عميل واحد
 export async function getCustomer(id: string): Promise<Customer | null> {
   const { data, error } = await supabase
     .from('customers')
@@ -57,7 +52,6 @@ export async function getCustomer(id: string): Promise<Customer | null> {
   return data
 }
 
-// إضافة عميل جديد
 export async function createCustomer(customer: Omit<Customer, 'id' | 'created_at' | 'updated_at'>): Promise<Customer> {
   const { data, error } = await supabase
     .from('customers')
@@ -69,7 +63,6 @@ export async function createCustomer(customer: Omit<Customer, 'id' | 'created_at
   return data
 }
 
-// تعديل عميل
 export async function updateCustomer(id: string, customer: Partial<Customer>): Promise<Customer> {
   const { data, error } = await supabase
     .from('customers')
@@ -82,8 +75,35 @@ export async function updateCustomer(id: string, customer: Partial<Customer>): P
   return data
 }
 
-// حذف عميل
 export async function deleteCustomer(id: string): Promise<void> {
+  // 1️⃣ التحقق من وجود قوائم بيع آجلة مرتبطة بالزبون
+  const { data: deferredSales, error: salesError } = await supabase
+    .from('tb_salesmain')
+    .select('id, numberofsale, paytype')
+    .eq('customerid', id)
+    .eq('paytype', 'آجل')
+  
+  if (salesError) throw salesError
+  
+  if (deferredSales && deferredSales.length > 0) {
+    const saleNumbers = deferredSales.map(s => s.numberofsale).join(', ')
+    throw new Error(`لا يمكن حذف هذا الزبون لأنه مرتبط بـ ${deferredSales.length} قائمة بيع آجلة: (${saleNumbers}). الرجاء تسديد الديون أو حذف القوائم أولاً.`)
+  }
+  
+  // 2️⃣ التحقق من وجود دفعات مرتبطة بالزبون
+  const { data: payments, error: paymentsError } = await supabase
+    .from('payments')
+    .select('id')
+    .eq('customer_id', id)
+  
+  if (paymentsError) throw paymentsError
+  
+  if (payments && payments.length > 0) {
+    throw new Error(`لا يمكن حذف هذا الزبون لأنه مرتبط بـ ${payments.length} دفعة مالية. الرجاء حذف الدفعات أولاً.`)
+  }
+  
+  // 3️⃣ إذا لم يكن هناك قوائم آجلة أو دفعات، يمكن الحذف
+  // ملاحظة: القوائم النقدية ستحتفظ باسم الزبون في customername
   const { error } = await supabase
     .from('customers')
     .delete()
@@ -92,17 +112,69 @@ export async function deleteCustomer(id: string): Promise<void> {
   if (error) throw error
 }
 
-// حذف عدة عملاء
 export async function deleteCustomers(ids: string[]): Promise<void> {
-  const { error } = await supabase
-    .from('customers')
-    .delete()
-    .in('id', ids)
+  // التحقق من كل زبون على حدة
+  const errors: string[] = []
+  const deletedIds: string[] = []
   
-  if (error) throw error
+  for (const id of ids) {
+    try {
+      // التحقق من القوائم الآجلة
+      const { data: deferredSales } = await supabase
+        .from('tb_salesmain')
+        .select('id, numberofsale, paytype, customername')
+        .eq('customerid', id)
+        .eq('paytype', 'آجل')
+      
+      if (deferredSales && deferredSales.length > 0) {
+        const customerName = deferredSales[0].customername || 'غير معروف'
+        errors.push(`${customerName}: مرتبط بـ ${deferredSales.length} قائمة آجلة`)
+        continue
+      }
+      
+      // التحقق من الدفعات
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('customer_id', id)
+      
+      if (payments && payments.length > 0) {
+        const { data: customer } = await supabase
+          .from('customers')
+          .select('customer_name')
+          .eq('id', id)
+          .single()
+        
+        errors.push(`${customer?.customer_name || 'غير معروف'}: مرتبط بـ ${payments.length} دفعة مالية`)
+        continue
+      }
+      
+      deletedIds.push(id)
+    } catch (error) {
+      console.error('Error checking customer:', error)
+    }
+  }
+  
+  // حذف الزبائن الذين يمكن حذفهم
+  if (deletedIds.length > 0) {
+    const { error } = await supabase
+      .from('customers')
+      .delete()
+      .in('id', deletedIds)
+    
+    if (error) throw error
+  }
+  
+  // إذا كانت هناك أخطاء، اطرح استثناء
+  if (errors.length > 0) {
+    if (deletedIds.length > 0) {
+      throw new Error(`تم حذف ${deletedIds.length} زبون. لا يمكن حذف البقية:\n${errors.join('\n')}`)
+    } else {
+      throw new Error(`لا يمكن حذف أي زبون:\n${errors.join('\n')}`)
+    }
+  }
 }
 
-// البحث عن العملاء
 export async function searchCustomers(query: string): Promise<Customer[]> {
   const { data, error } = await supabase
     .from('customers')
@@ -114,13 +186,7 @@ export async function searchCustomers(query: string): Promise<Customer[]> {
   return data || []
 }
 
-// ============================================
-// دوال الدفعات (Payments)
-// ============================================
-
-// إضافة دفعة جديدة وتحديث رصيد الزبون
 export async function createPayment(payment: Omit<Payment, 'id' | 'created_at'>): Promise<Payment> {
-  // تحديد المبلغ حسب العملة
   const paymentData = {
     customer_id: payment.customer_id,
     amount_iqd: payment.currency_type === 'IQD' ? payment.amount_iqd : 0,
@@ -131,7 +197,6 @@ export async function createPayment(payment: Omit<Payment, 'id' | 'created_at'>)
     pay_date: payment.pay_date,
   }
   
-  // تسجيل الدفعة
   const { data, error } = await supabase
     .from('payments')
     .insert([paymentData])
@@ -140,7 +205,6 @@ export async function createPayment(payment: Omit<Payment, 'id' | 'created_at'>)
   
   if (error) throw error
   
-  // تحديث رصيد الزبون في جدول customers
   await updateCustomerBalanceAfterPayment(
     payment.customer_id,
     payment.currency_type === 'IQD' ? payment.amount_iqd : 0,
@@ -151,14 +215,12 @@ export async function createPayment(payment: Omit<Payment, 'id' | 'created_at'>)
   return data
 }
 
-// تحديث رصيد الزبون بعد الدفعة
 async function updateCustomerBalanceAfterPayment(
   customerId: string,
   amountIQD: number,
   amountUSD: number,
   transactionType: string
 ): Promise<void> {
-  // جلب الرصيد الحالي
   const { data: customer, error: fetchError } = await supabase
     .from('customers')
     .select('balanceiqd, balanceusd')
@@ -170,14 +232,11 @@ async function updateCustomerBalanceAfterPayment(
   const currentBalanceIQD = customer?.balanceiqd || 0
   const currentBalanceUSD = customer?.balanceusd || 0
   
-  // حساب الرصيد الجديد
-  // قبض/ايداع = زيادة، سحب/صرف/قرض = نقصان
   const multiplier = ['قبض', 'ايداع'].includes(transactionType) ? 1 : -1
   
   const newBalanceIQD = currentBalanceIQD + (amountIQD * multiplier)
   const newBalanceUSD = currentBalanceUSD + (amountUSD * multiplier)
   
-  // تحديث الرصيد
   const { error: updateError } = await supabase
     .from('customers')
     .update({
@@ -190,7 +249,6 @@ async function updateCustomerBalanceAfterPayment(
   if (updateError) throw updateError
 }
 
-// جلب دفعات عميل معين
 export async function getCustomerPayments(customerId: string): Promise<Payment[]> {
   const { data, error } = await supabase
     .from('payments')
@@ -202,15 +260,12 @@ export async function getCustomerPayments(customerId: string): Promise<Payment[]
   return data || []
 }
 
-// حساب رصيد العميل
 export async function getCustomerBalance(customerId: string): Promise<CustomerBalance> {
   
-  // استدعاء الدالة المخزنة في قاعدة البيانات
   const { data, error } = await supabase
     .rpc('get_customer_balance', { customer_uuid: customerId })
   
   if (error) {
-    // إذا فشلت الدالة، نحسب الرصيد يدوياً
     const payments = await getCustomerPayments(customerId)
     
     let balance_iqd = 0
@@ -232,7 +287,6 @@ export async function getCustomerBalance(customerId: string): Promise<CustomerBa
   return data[0] || { balance_iqd: 0, balance_usd: 0 }
 }
 
-// جلب جميع العملاء مع أرصدتهم (من جدول customers مباشرة)
 export async function getCustomersWithBalances(): Promise<(Customer & CustomerBalance)[]> {
   const { data, error } = await supabase
     .from('customers')
@@ -241,7 +295,6 @@ export async function getCustomersWithBalances(): Promise<(Customer & CustomerBa
   
   if (error) throw error
   
-  // تحويل البيانات للشكل المطلوب
   return (data || []).map(customer => ({
     ...customer,
     balance_iqd: customer.balanceiqd || 0,
@@ -249,11 +302,6 @@ export async function getCustomersWithBalances(): Promise<(Customer & CustomerBa
   }))
 }
 
-// ============================================
-// دوال رفع الصور
-// ============================================
-
-// رفع صورة إلى Supabase Storage
 export async function uploadCustomerImage(file: File): Promise<string> {
   const fileExt = file.name.split('.').pop()
   const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
@@ -265,7 +313,6 @@ export async function uploadCustomerImage(file: File): Promise<string> {
   
   if (uploadError) throw uploadError
   
-  // الحصول على الرابط العام
   const { data } = supabase.storage
     .from('customer-images')
     .getPublicUrl(filePath)
@@ -273,9 +320,7 @@ export async function uploadCustomerImage(file: File): Promise<string> {
   return data.publicUrl
 }
 
-// حذف صورة من Supabase Storage
 export async function deleteCustomerImage(imageUrl: string): Promise<void> {
-  // استخراج المسار من الرابط
   const urlParts = imageUrl.split('/customer-images/')
   if (urlParts.length < 2) return
   

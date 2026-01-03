@@ -1,7 +1,6 @@
-import { supabase } from './supabase'
+﻿import { supabase } from './supabase'
 import { hashPassword } from './password-utils'
 
-// أنواع البيانات
 export interface User {
   id: string
   full_name: string
@@ -41,6 +40,7 @@ export interface UserPermission {
   view_notifications: boolean
   add_purchase: boolean
   view_stores: boolean
+  view_store_transfer: boolean
   created_at: string
   updated_at: string
 }
@@ -49,11 +49,6 @@ export interface UserWithPermissions extends User {
   permissions?: UserPermission
 }
 
-// ============================================
-// دوال المستخدمين (Users)
-// ============================================
-
-// جلب جميع المستخدمين
 export async function getUsers(): Promise<User[]> {
   const { data, error } = await supabase
     .from('users')
@@ -64,7 +59,6 @@ export async function getUsers(): Promise<User[]> {
   return data || []
 }
 
-// جلب جميع المستخدمين مع الصلاحيات
 export async function getUsersWithPermissions(): Promise<UserWithPermissions[]> {
   const { data, error } = await supabase
     .from('users')
@@ -76,7 +70,6 @@ export async function getUsersWithPermissions(): Promise<UserWithPermissions[]> 
   
   if (error) throw error
   
-  // تحويل البيانات لتكون permissions كائن واحد بدلاً من مصفوفة
   return (data || []).map(user => ({
     ...user,
     permissions: Array.isArray(user.permissions) && user.permissions.length > 0 
@@ -85,7 +78,6 @@ export async function getUsersWithPermissions(): Promise<UserWithPermissions[]> 
   }))
 }
 
-// جلب مستخدم واحد
 export async function getUser(id: string): Promise<User | null> {
   const { data, error } = await supabase
     .from('users')
@@ -97,7 +89,6 @@ export async function getUser(id: string): Promise<User | null> {
   return data
 }
 
-// جلب مستخدم مع الصلاحيات
 export async function getUserWithPermissions(id: string): Promise<UserWithPermissions | null> {
   const { data, error } = await supabase
     .from('users')
@@ -117,15 +108,12 @@ export async function getUserWithPermissions(id: string): Promise<UserWithPermis
   return data
 }
 
-// إضافة مستخدم جديد
 export async function createUser(
   userData: Omit<User, 'id' | 'created_at' | 'updated_at'>,
   permissions?: Omit<UserPermission, 'id' | 'user_id' | 'created_at' | 'updated_at'>
 ): Promise<User> {
-  // تشفير كلمة المرور
   const hashedPassword = await hashPassword(userData.password)
   
-  // إضافة المستخدم
   const { data: user, error: userError } = await supabase
     .from('users')
     .insert([{
@@ -142,7 +130,6 @@ export async function createUser(
   
   if (userError) throw userError
   
-  // إضافة الصلاحيات إذا كانت موجودة
   if (permissions && user && (userData.permission_type === 'محاسب' || userData.permission_type === 'موظف')) {
     const { error: permError } = await supabase
       .from('user_permissions')
@@ -159,20 +146,17 @@ export async function createUser(
   return user
 }
 
-// تحديث مستخدم
 export async function updateUser(
   id: string,
   userData: Partial<Omit<User, 'id' | 'created_at' | 'updated_at'>>,
   permissions?: Partial<Omit<UserPermission, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
 ): Promise<User> {
-  // تشفير كلمة المرور إذا تم تغييرها
-  let updateData = { ...userData }
+  const updateData: Partial<User> & { password_changed_at?: string } = { ...userData }
   if (userData.password) {
     updateData.password = await hashPassword(userData.password)
     updateData.password_changed_at = new Date().toISOString()
   }
   
-  // تحديث المستخدم
   const { data: user, error: userError } = await supabase
     .from('users')
     .update({
@@ -185,9 +169,7 @@ export async function updateUser(
   
   if (userError) throw userError
   
-  // تحديث أو إنشاء الصلاحيات
   if (permissions && user && (user.permission_type === 'محاسب' || user.permission_type === 'موظف')) {
-    // التحقق من وجود صلاحيات
     const { data: existingPerm } = await supabase
       .from('user_permissions')
       .select('id')
@@ -195,7 +177,6 @@ export async function updateUser(
       .single()
     
     if (existingPerm) {
-      // تحديث الصلاحيات الموجودة
       const { error: permError } = await supabase
         .from('user_permissions')
         .update({
@@ -206,7 +187,6 @@ export async function updateUser(
       
       if (permError) throw permError
     } else {
-      // إنشاء صلاحيات جديدة
       const { error: permError } = await supabase
         .from('user_permissions')
         .insert([{
@@ -219,7 +199,6 @@ export async function updateUser(
       if (permError) throw permError
     }
   } else if (user && user.permission_type === 'مدير') {
-    // حذف الصلاحيات إذا تم تغيير النوع إلى مدير
     await supabase
       .from('user_permissions')
       .delete()
@@ -229,15 +208,12 @@ export async function updateUser(
   return user
 }
 
-// حذف مستخدم
 export async function deleteUser(id: string): Promise<void> {
-  // حذف الصلاحيات أولاً
   await supabase
     .from('user_permissions')
     .delete()
     .eq('user_id', id)
   
-  // ثم حذف المستخدم
   const { error } = await supabase
     .from('users')
     .delete()
@@ -246,15 +222,12 @@ export async function deleteUser(id: string): Promise<void> {
   if (error) throw error
 }
 
-// حذف مستخدمين متعددين
 export async function deleteUsers(ids: string[]): Promise<void> {
-  // حذف الصلاحيات أولاً
   await supabase
     .from('user_permissions')
     .delete()
     .in('user_id', ids)
   
-  // ثم حذف المستخدمين
   const { error } = await supabase
     .from('users')
     .delete()
@@ -263,7 +236,6 @@ export async function deleteUsers(ids: string[]): Promise<void> {
   if (error) throw error
 }
 
-// التحقق من وجود اسم مستخدم
 export async function checkUsernameExists(username: string, excludeId?: string): Promise<boolean> {
   let query = supabase
     .from('users')
@@ -280,7 +252,6 @@ export async function checkUsernameExists(username: string, excludeId?: string):
   return (data || []).length > 0
 }
 
-// جلب صلاحيات مستخدم
 export async function getUserPermissions(userId: string): Promise<UserPermission | null> {
   const { data, error } = await supabase
     .from('user_permissions')
@@ -289,16 +260,12 @@ export async function getUserPermissions(userId: string): Promise<UserPermission
     .single()
   
   if (error) {
-    if (error.code === 'PGRST116') return null // لا توجد صلاحيات
+    if (error.code === 'PGRST116') return null
     throw error
   }
   
   return data
 }
-
-// ============================================
-// دوال ربط الحسابات الخارجية (OAuth)
-// ============================================
 
 export type OAuthProvider = 'google' | 'microsoft' | 'github'
 
@@ -310,17 +277,15 @@ export interface OAuthLinkData {
   avatarUrl?: string
 }
 
-// ربط حساب خارجي بمستخدم
 export async function linkOAuthAccount(
   userId: string,
   oauthData: OAuthLinkData
 ): Promise<void> {
-  const updateData: any = {
+  const updateData: Partial<User> = {
     oauth_linked_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }
 
-  // تحديث الحقول حسب المزود
   switch (oauthData.provider) {
     case 'google':
       updateData.google_id = oauthData.providerId
@@ -346,7 +311,6 @@ export async function linkOAuthAccount(
 
   if (error) throw error
 
-  // تسجيل في السجل (اختياري)
   await supabase.from('oauth_link_logs').insert([{
     user_id: userId,
     provider: oauthData.provider,
@@ -355,28 +319,26 @@ export async function linkOAuthAccount(
   }])
 }
 
-// إلغاء ربط حساب خارجي
 export async function unlinkOAuthAccount(
   userId: string,
   provider: OAuthProvider
 ): Promise<void> {
-  const updateData: any = {
+  const updateData: Partial<User> = {
     updated_at: new Date().toISOString()
   }
 
-  // مسح الحقول حسب المزود
   switch (provider) {
     case 'google':
-      updateData.google_id = null
-      updateData.google_email = null
+      updateData.google_id = undefined
+      updateData.google_email = undefined
       break
     case 'microsoft':
-      updateData.microsoft_id = null
-      updateData.microsoft_email = null
+      updateData.microsoft_id = undefined
+      updateData.microsoft_email = undefined
       break
     case 'github':
-      updateData.github_id = null
-      updateData.github_username = null
+      updateData.github_id = undefined
+      updateData.github_username = undefined
       break
   }
 
@@ -387,7 +349,6 @@ export async function unlinkOAuthAccount(
 
   if (error) throw error
 
-  // تسجيل في السجل (اختياري)
   await supabase.from('oauth_link_logs').insert([{
     user_id: userId,
     provider: provider,
@@ -396,7 +357,6 @@ export async function unlinkOAuthAccount(
   }])
 }
 
-// التحقق من حالة ربط الحسابات
 export function getLinkedAccounts(user: User): {
   google: boolean
   microsoft: boolean

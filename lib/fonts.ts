@@ -7,7 +7,6 @@ export interface FontOption {
 }
 
 export const fonts: FontOption[] = [
-  // Arabic Fonts
   { id: "cairo", name: "Cairo", family: "'Cairo', sans-serif", category: "arabic" },
   { id: "tajawal", name: "Tajawal", family: "'Tajawal', sans-serif", category: "arabic" },
   { id: "amiri", name: "Amiri", family: "'Amiri', serif", category: "arabic" },
@@ -15,7 +14,6 @@ export const fonts: FontOption[] = [
   { id: "almarai", name: "Almarai", family: "'Almarai', sans-serif", category: "arabic" },
   { id: "readex", name: "Readex Pro", family: "'Readex Pro', sans-serif", category: "arabic" },
   
-  // Latin Fonts
   { id: "inter", name: "Inter", family: "'Inter', sans-serif", category: "latin" },
   { id: "roboto", name: "Roboto", family: "'Roboto', sans-serif", category: "latin" },
   { id: "open-sans", name: "Open Sans", family: "'Open Sans', sans-serif", category: "latin" },
@@ -27,7 +25,6 @@ export const fonts: FontOption[] = [
   { id: "nunito", name: "Nunito", family: "'Nunito', sans-serif", category: "latin" },
   { id: "pt-sans", name: "PT Sans", family: "'PT Sans', sans-serif", category: "latin" },
   
-  // Universal/Neutral
   { id: "geist", name: "Geist", family: "'Geist', sans-serif", category: "universal" },
   { id: "system", name: "System Font", family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", category: "universal" },
   { id: "arial", name: "Arial", family: "Arial, sans-serif", category: "universal" },

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
@@ -9,141 +9,122 @@ import {
   BarChart3,
   Calendar,
   DollarSign,
-  ShoppingCart,
   Wallet,
   TrendingUp,
   MessageSquare,
-  Send,
-  Hash,
   Settings,
   ChevronDown,
   ChevronRight,
-  ChevronLeft,
-  Menu,
-  Users,
+  PanelLeftOpen,
+  PanelLeftClose,
   Shield,
   LogOut,
+  Users,
 } from "lucide-react"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ResizableSidebar } from "@/components/ui/resizable-sidebar"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { useSettings } from "@/components/providers/settings-provider"
 import { useAuth } from "@/contexts/auth-context"
+import { t } from "@/lib/translations"
 
 interface NavItem {
-  title: string
+  titleKey: string
   href: string
-  icon: any
+  icon: React.ComponentType<{ className?: string }>
   badge?: string
 }
 
 interface NavGroup {
-  title: string
+  titleKey: string
   items: NavItem[]
 }
 
-const navigation: (NavItem | NavGroup)[] = [
+const navigationConfig: (NavItem | NavGroup)[] = [
   {
-    title: "الصفحة الرئيسية",
+    titleKey: "home",
     href: "/home",
     icon: Home,
   },
   {
-    title: "الإحصائيات",
+    titleKey: "statistics",
     items: [
       {
-        title: "الإحصائيات الشاملة",
+        titleKey: "comprehensiveStats",
         href: "/stats/comprehensive",
         icon: BarChart3,
       },
       {
-        title: "الإحصائيات اليومية",
+        titleKey: "dailyStats",
         href: "/stats/daily",
         icon: Calendar,
-      },
-      {
-        title: "إحصائيات المبيعات",
-        href: "/stats/sales",
-        icon: TrendingUp,
-      },
-      {
-        title: "إحصائيات المشتريات",
-        href: "/stats/purchases",
-        icon: ShoppingCart,
       },
     ],
   },
   {
-    title: "الأرصدة والأرباح",
+    titleKey: "balancesAndProfits",
     items: [
       {
-        title: "المصاريف",
+        titleKey: "expenses",
         href: "/balance/expenses",
         icon: DollarSign,
       },
       {
-        title: "أرصدة المواد",
+        titleKey: "materialsBalance",
         href: "/balance/materials",
         icon: Wallet,
       },
       {
-        title: "أرباح المبيعات",
+        titleKey: "salesProfit",
         href: "/balance/sales-profit",
         icon: TrendingUp,
       },
       {
-        title: "صافي الأرباح",
+        titleKey: "netProfit",
         href: "/balance/net-profit",
         icon: DollarSign,
       },
     ],
   },
   {
-    title: "الأشخاص",
-    href: "/customers",
-    icon: Users,
-  },
-  {
-    title: "الخدمات",
+    titleKey: "services",
     items: [
       {
-        title: "إدارة الواتساب",
+        titleKey: "whatsappManagement",
         href: "/services/whatsapp-management",
         icon: MessageSquare,
-      },
-      {
-        title: "واتساب",
-        href: "/services/whatsapp",
-        icon: MessageSquare,
-      },
-      {
-        title: "تلغرام",
-        href: "/services/telegram",
-        icon: Send,
-      },
-      {
-        title: "ديسكورد",
-        href: "/services/discord",
-        icon: Hash,
       },
     ],
   },
   {
-    title: "المستخدمين والصلاحيات",
+    titleKey: "people",
+    href: "/customers",
+    icon: Users,
+  },
+  {
+    titleKey: "usersAndPermissions",
     href: "/users-permissions",
     icon: Shield,
   },
   {
-    title: "الإعدادات",
+    titleKey: "settings",
     href: "/settings",
     icon: Settings,
   },
 ]
 
-function NavLink({ item, collapsed }: { item: NavItem; collapsed?: boolean }) {
+function NavLink({ item, collapsed, lang }: { item: NavItem; collapsed?: boolean; lang: string }) {
   const pathname = usePathname()
   const isActive = pathname === item.href
+  const title = t(item.titleKey, lang)
 
   return (
     <Link
@@ -155,11 +136,18 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed?: boolean }) {
           : "text-muted-foreground hover:text-foreground",
         collapsed && "justify-center"
       )}
-      title={collapsed ? item.title : undefined}
+      title={collapsed ? title : undefined}
     >
+      <item.icon 
+        className={cn(
+          "h-6 w-6 transition-colors",
+          collapsed && "h-5 w-5",
+          isActive ? "theme-icon-hover" : "theme-icon"
+        )} 
+      />
       {!collapsed && (
         <>
-          <span className="flex-1 text-right">{item.title}</span>
+          <span className="flex-1 text-left">{title}</span>
           {item.badge && (
             <Badge variant="secondary">
               {item.badge}
@@ -167,20 +155,31 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed?: boolean }) {
           )}
         </>
       )}
-      <item.icon className={cn("h-4 w-4", collapsed && "h-6 w-6")} />
     </Link>
   )
 }
 
-function NavGroup({ group, collapsed }: { group: NavGroup; collapsed?: boolean }) {
-  const [isOpen, setIsOpen] = useState(true)
+function NavGroup({ group, collapsed, lang }: { group: NavGroup; collapsed?: boolean; lang: string }) {
+  const [isOpen, setIsOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`sidebar-group-${group.titleKey}`)
+      return saved !== null ? JSON.parse(saved) : true
+    }
+    return true
+  })
   const pathname = usePathname()
   const isActive = group.items.some((item) => pathname === item.href)
+  const title = t(group.titleKey, lang)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`sidebar-group-${group.titleKey}`, JSON.stringify(isOpen))
+    }
+  }, [isOpen, group.titleKey])
 
   if (collapsed) {
-    // Show only first item icon when collapsed
     const firstItem = group.items[0]
-    return <NavLink item={firstItem} collapsed={collapsed} />
+    return <NavLink item={firstItem} collapsed={collapsed} lang={lang} />
   }
 
   return (
@@ -193,17 +192,17 @@ function NavGroup({ group, collapsed }: { group: NavGroup; collapsed?: boolean }
         )}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className="text-right flex-1">{group.title}</span>
         {isOpen ? (
-          <ChevronDown className="h-4 w-4" />
+          <ChevronDown className="h-4 w-4 theme-icon" />
         ) : (
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-4 w-4 theme-icon" />
         )}
+        <span className="text-left flex-1">{title}</span>
       </Button>
       {isOpen && (
         <div className="space-y-1 pl-6">
           {group.items.map((item) => (
-            <NavLink key={item.href} item={item} collapsed={false} />
+            <NavLink key={item.href} item={item} collapsed={false} lang={lang} />
           ))}
         </div>
       )}
@@ -211,109 +210,268 @@ function NavGroup({ group, collapsed }: { group: NavGroup; collapsed?: boolean }
   )
 }
 
-
-function getGreeting(fullName?: string) {
+function getGreeting(fullName?: string, lang: string = 'ar') {
   const hour = new Date().getHours()
+  const name = fullName ?? ''
+  
   if (hour < 12) {
-    return `صباح الخير يا ${fullName ?? ''}`.trim()
+    if (lang === 'ku') return `${t('goodMorning', lang)} ${name}`.trim()
+    if (lang === 'en') return `${t('goodMorning', lang)} ${name}`.trim()
+    return `${t('goodMorning', lang)} يا ${name}`.trim()
   } else if (hour < 17) {
-    return `طاب مساؤك يا ${fullName ?? ''}`.trim()
+    if (lang === 'ku') return `${t('goodAfternoon', lang)} ${name}`.trim()
+    if (lang === 'en') return `${t('goodAfternoon', lang)} ${name}`.trim()
+    return `${t('goodAfternoon', lang)} يا ${name}`.trim()
   } else {
-    return `مساء الخير يا ${fullName ?? ''}`.trim()
+    if (lang === 'ku') return `${t('goodEvening', lang)} ${name}`.trim()
+    if (lang === 'en') return `${t('goodEvening', lang)} ${name}`.trim()
+    return `${t('goodEvening', lang)} يا ${name}`.trim()
   }
 }
 
 export default function Sidebar() {
   const { currentUser, logout } = useAuth()
-  const [greeting, setGreeting] = useState("")
   const {
     mainSidebarWidth,
     setMainSidebarWidth,
     mainSidebarCollapsed,
     setMainSidebarCollapsed,
+    currentLanguage,
   } = useSettings()
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
+  const [sidebarControlOpen, setSidebarControlOpen] = useState(false)
+  const [isHovering, setIsHovering] = useState(false)
+  
+  const [expandOnHover, setExpandOnHover] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebarExpandOnHover')
+      return saved === 'true'
+    }
+    return false
+  })
+
+  const greeting = getGreeting(currentUser?.full_name, currentLanguage.code)
 
   useEffect(() => {
-    setGreeting(getGreeting(currentUser?.full_name))
-  }, [currentUser])
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebarExpandOnHover', expandOnHover.toString())
+    }
+  }, [expandOnHover])
 
   useEffect(() => {
-    // Update CSS variable when width changes
-    const width = mainSidebarCollapsed ? 80 : mainSidebarWidth
+    const isCollapsed = expandOnHover ? (mainSidebarCollapsed && !isHovering) : mainSidebarCollapsed
+    const width = isCollapsed ? 80 : mainSidebarWidth
     document.documentElement.style.setProperty("--sidebar-width", `${width}px`)
-  }, [mainSidebarWidth, mainSidebarCollapsed])
+  }, [mainSidebarWidth, mainSidebarCollapsed, expandOnHover, isHovering])
+
+  const effectiveCollapsed = expandOnHover ? !isHovering : mainSidebarCollapsed
+  const effectiveWidth = expandOnHover ? (isHovering ? mainSidebarWidth : 80) : (mainSidebarCollapsed ? 80 : mainSidebarWidth)
 
   return (
     <ResizableSidebar
-      defaultWidth={mainSidebarWidth}
+      defaultWidth={effectiveWidth}
       minWidth={200}
       maxWidth={500}
-      collapsed={mainSidebarCollapsed}
+      collapsed={effectiveCollapsed}
       onWidthChange={setMainSidebarWidth}
       className="fixed left-0 top-0 z-40 h-screen border-r bg-background"
       side="left"
+      onMouseEnter={() => expandOnHover && setIsHovering(true)}
+      onMouseLeave={() => expandOnHover && setIsHovering(false)}
     >
       <div className="flex h-full flex-col">
-        {/* Toggle Button */}
+        {}
         <div className="flex h-14 items-center justify-between border-b px-4">
-          {!mainSidebarCollapsed && (
-            <h2 className="text-lg font-semibold">القائمة</h2>
+          {!effectiveCollapsed && (
+            <h2 className="text-lg font-semibold">{t('menu', currentLanguage.code) || 'القائمة'}</h2>
           )}
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setMainSidebarCollapsed(!mainSidebarCollapsed)}
+            onClick={() => {
+              setMainSidebarCollapsed(!mainSidebarCollapsed)
+              if (expandOnHover) setExpandOnHover(false)
+            }}
             className="transition-transform hover:scale-110"
           >
-            {mainSidebarCollapsed ? (
-              <ChevronRight className="h-5 w-5" />
+            {effectiveCollapsed ? (
+              <PanelLeftOpen className="h-5 w-5 theme-icon" />
             ) : (
-              <ChevronLeft className="h-5 w-5" />
+              <PanelLeftClose className="h-5 w-5 theme-icon" />
             )}
           </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-6">
-          {!mainSidebarCollapsed && (
+          {!effectiveCollapsed && (
             <div className="mb-8">
               <h2 className="text-lg font-semibold text-foreground mb-1">
                 {greeting}
               </h2>
-              <p className="text-sm text-muted-foreground">
-                مرحباً بك في لوحة التحكم
-              </p>
+             
             </div>
           )}
           <nav className="space-y-2">
-            {navigation.map((item, index) => {
-              if ("items" in item) {
-                return <NavGroup key={index} group={item} collapsed={mainSidebarCollapsed} />
+            {navigationConfig.map((item, index) => {
+              // إخفاء زر المستخدمين والصلاحيات للمحاسب والموظف العادي
+              if ('href' in item && item.titleKey === 'usersAndPermissions') {
+                if (currentUser?.permission_type !== 'مدير') {
+                  return null
+                }
               }
-              return <NavLink key={item.href} item={item} collapsed={mainSidebarCollapsed} />
+
+              // تطبيق الصلاحيات للمحاسب والموظف (كلاهما يملكان نفس الصلاحيات الأساسية الأربعة)
+              if (currentUser?.permission_type === 'محاسب' || currentUser?.permission_type === 'موظف عادي' || currentUser?.permission_type === 'موظف') {
+                // إخفاء/عرض الأشخاص بناءً على الصلاحية
+                if ('href' in item && item.titleKey === 'people') {
+                  if (!currentUser.permissions?.view_people) {
+                    return null
+                  }
+                }
+                
+                // إخفاء/عرض الإحصائيات بناءً على الصلاحية
+                if ('items' in item && item.titleKey === 'statistics') {
+                  if (!currentUser.permissions?.view_statistics) {
+                    return null
+                  }
+                }
+                
+                // إخفاء/عرض الأرصدة والأرباح بناءً على صلاحية الإحصائيات
+                if ('items' in item && item.titleKey === 'balancesAndProfits') {
+                  if (!currentUser.permissions?.view_statistics) {
+                    return null
+                  }
+                }
+                
+                // إخفاء/عرض الخدمات بناءً على الصلاحية
+                if ('items' in item && item.titleKey === 'services') {
+                  if (!currentUser.permissions?.view_services) {
+                    return null
+                  }
+                }
+              }
+
+              if ("items" in item) {
+                return <NavGroup key={index} group={item} collapsed={effectiveCollapsed} lang={currentLanguage.code} />
+              }
+              return <NavLink key={item.href} item={item} collapsed={effectiveCollapsed} lang={currentLanguage.code} />
             })}
           </nav>
         </div>
 
-        {/* Logout Button */}
-        <div className="border-t p-4">
+        {}
+        <div className="border-t p-4 space-y-2">
           <Button
             variant="ghost"
             className={cn(
-              "w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950",
-              mainSidebarCollapsed && "justify-center"
+              "w-full justify-start gap-3 theme-danger hover:bg-red-50 dark:hover:bg-red-950",
+              effectiveCollapsed && "justify-center"
             )}
-            onClick={() => {
-              logout()
-              window.location.href = "/login"
-            }}
-            title={mainSidebarCollapsed ? "تسجيل الخروج" : undefined}
+            onClick={() => setLogoutDialogOpen(true)}
+            title={effectiveCollapsed ? t('logout', currentLanguage.code) : undefined}
           >
-            {!mainSidebarCollapsed && (
-              <span className="flex-1 text-right">تسجيل الخروج</span>
+            {!effectiveCollapsed && (
+              <span className="flex-1 text-right">{t('logout', currentLanguage.code)}</span>
             )}
-            <LogOut className={cn("h-4 w-4", mainSidebarCollapsed && "h-6 w-6")} />
+            <LogOut className={cn("h-4 w-4 theme-danger", effectiveCollapsed && "h-6 w-6")} />
           </Button>
+
+          {!effectiveCollapsed && (
+            <div className="relative">
+              <Button
+                variant="outline"
+                onClick={() => setSidebarControlOpen(!sidebarControlOpen)}
+              >
+                <PanelLeftOpen className="h-3 w-3 theme-icon" />
+              </Button>
+
+              {}
+              {sidebarControlOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setSidebarControlOpen(false)}
+                  />
+                  <div className="absolute bottom-full left-0 right-0 mb-2 z-50 bg-popover border rounded-lg shadow-lg p-2">
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => {
+                          setMainSidebarCollapsed(false)
+                          setExpandOnHover(false)
+                          setSidebarControlOpen(false)
+                        }}
+                        className={cn(
+                          "w-full text-right px-3 py-2 text-sm rounded-md transition-colors flex items-center gap-2",
+                          !mainSidebarCollapsed && !expandOnHover ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
+                        )}
+                      >
+                        <div className={cn("w-1.5 h-1.5 rounded-full", !mainSidebarCollapsed && !expandOnHover && "bg-current")} />
+                        {t('expanded', currentLanguage.code)}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMainSidebarCollapsed(true)
+                          setExpandOnHover(false)
+                          setSidebarControlOpen(false)
+                        }}
+                        className={cn(
+                          "w-full text-right px-3 py-2 text-sm rounded-md transition-colors flex items-center gap-2",
+                          mainSidebarCollapsed && !expandOnHover ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
+                        )}
+                      >
+                        <div className={cn("w-1.5 h-1.5 rounded-full", mainSidebarCollapsed && !expandOnHover && "bg-current")} />
+                        {t('collapsed', currentLanguage.code)}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMainSidebarCollapsed(true)
+                          setExpandOnHover(true)
+                          setSidebarControlOpen(false)
+                        }}
+                        className={cn(
+                          "w-full text-right px-3 py-2 text-sm rounded-md hover:bg-accent/50 transition-colors flex items-center gap-2",
+                          expandOnHover && "bg-accent text-accent-foreground"
+                        )}
+                      >
+                        <div className={cn("w-1.5 h-1.5 rounded-full", expandOnHover && "bg-current")} />
+                        {t('expandOnHover', currentLanguage.code)}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
+
+        {}
+        <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('confirmLogout', currentLanguage.code)}</DialogTitle>
+              <DialogDescription>
+                {t('confirmLogoutMessage', currentLanguage.code)}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setLogoutDialogOpen(false)}
+              >
+                {t('cancel', currentLanguage.code)}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  logout()
+                  window.location.href = "/login"
+                }}
+              >
+                {t('logout', currentLanguage.code)}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </ResizableSidebar>
   )

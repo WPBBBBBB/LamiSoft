@@ -22,7 +22,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
-  // تحميل المستخدم من localStorage عند بدء التطبيق
   useEffect(() => {
     const loadUser = () => {
       try {
@@ -49,7 +48,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('currentUser', JSON.stringify(user))
       localStorage.setItem('rememberMe', 'true')
     } else {
-      // حفظ الجلسة فقط في sessionStorage
       sessionStorage.setItem('currentUser', JSON.stringify(user))
       localStorage.removeItem('rememberMe')
     }
@@ -66,12 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hasPermission = (permission: string): boolean => {
     if (!currentUser) return false
     
-    // المدير لديه كل الصلاحيات
     if (currentUser.permission_type === 'مدير') {
       return true
     }
     
-    // التحقق من الصلاحية المحددة
     if (currentUser.permissions && permission in currentUser.permissions) {
       return currentUser.permissions[permission as keyof typeof currentUser.permissions] === true
     }

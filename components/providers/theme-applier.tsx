@@ -5,7 +5,7 @@ import { useSettings } from "./settings-provider"
 import { applyTheme, getThemeById } from "@/lib/themes"
 
 export function ThemeApplier({ children }: { children: React.ReactNode }) {
-  const { theme: themeId } = useSettings()
+  const { themeId } = useSettings()
 
   useEffect(() => {
     const theme = getThemeById(themeId)

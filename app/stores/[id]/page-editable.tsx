@@ -42,10 +42,10 @@ import {
   type Store,
   type InventoryItem 
 } from "@/lib/stores-operations"
+import { logAction } from "@/lib/system-log-operations"
 import { toast } from "sonner"
 import { use } from "react"
 
-// نوع للصف الجديد قيد الإضافة
 type NewRow = {
   productcode: string
   productname: string
@@ -69,10 +69,8 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<string | null>(null)
   
-  // صف جديد للإضافة
   const [newRow, setNewRow] = useState<NewRow | null>(null)
   
-  // الصفوف قيد التعديل
   const [editingRows, setEditingRows] = useState<Set<string>>(new Set())
   const [editedData, setEditedData] = useState<Map<string, Partial<InventoryItem>>>(new Map())
 
@@ -95,13 +93,11 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  // Filter inventory based on search
   const filteredInventory = inventory.filter((item) =>
     item.productcode.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.productname.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  // إضافة صف جديد
   const handleAddNewRow = () => {
     if (newRow) {
       toast.warning("يوجد صف قيد الإضافة بالفعل")
@@ -120,7 +116,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     })
   }
 
-  // حفظ الصف الجديد
   const handleSaveNewRow = async () => {
     if (!newRow) return
 
@@ -129,14 +124,12 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       return
     }
 
-    // التحقق من عدم التكرار
     const exists = inventory.find(
       (item) => item.productcode.toLowerCase() === newRow.productcode.toLowerCase()
     )
 
     if (exists) {
       toast.error("رمز المادة موجود مسبقاً. سيتم تحديث البيانات.")
-      // تحديث المادة الموجودة
       try {
         await updateInventoryItem(exists.id, {
           productname: newRow.productname,
@@ -157,7 +150,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       return
     }
 
-    // إضافة مادة جديدة
     try {
       await createInventoryItem({
         ...newRow,
@@ -166,6 +158,22 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
         monitorenabled: false,
         lowstocknotify: false,
       })
+      
+      await logAction(
+        "إضافة",
+        `تمت إضافة المادة: ${newRow.productname} إلى المخزن: ${store?.storename || 'غير معروف'}`,
+        "المخزون",
+        undefined,
+        undefined,
+        {
+          productcode: newRow.productcode,
+          productname: newRow.productname,
+          quantity: newRow.quantity,
+          unit: newRow.unit,
+          storename: store?.storename
+        }
+      )
+      
       toast.success("تم إضافة المادة بنجاح")
       setNewRow(null)
       loadStoreData()
@@ -175,12 +183,10 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  // إلغاء الصف الجديد
   const handleCancelNewRow = () => {
     setNewRow(null)
   }
 
-  // تفعيل تعديل صف موجود
   const handleEditRow = (itemId: string) => {
     const item = inventory.find((i) => i.id === itemId)
     if (!item) return
@@ -194,13 +200,40 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     setEditedData(newEditedData)
   }
 
-  // حفظ تعديل صف موجود
   const handleSaveEditedRow = async (itemId: string) => {
     const edited = editedData.get(itemId)
     if (!edited) return
 
     try {
+      const oldItem = inventory.find(i => i.id === itemId)
+      
       await updateInventoryItem(itemId, edited)
+      
+      if (oldItem) {
+        await logAction(
+          "تعديل",
+          `تم تعديل المادة: ${edited.productname || oldItem.productname} في المخزن: ${store?.storename || 'غير معروف'}`,
+          "المخزون",
+          undefined,
+          {
+            productcode: oldItem.productcode,
+            productname: oldItem.productname,
+            quantity: oldItem.quantity,
+            unit: oldItem.unit,
+            sellpriceiqd: oldItem.sellpriceiqd,
+            sellpriceusd: oldItem.sellpriceusd
+          },
+          {
+            productcode: edited.productcode || oldItem.productcode,
+            productname: edited.productname || oldItem.productname,
+            quantity: edited.quantity ?? oldItem.quantity,
+            unit: edited.unit || oldItem.unit,
+            sellpriceiqd: edited.sellpriceiqd ?? oldItem.sellpriceiqd,
+            sellpriceusd: edited.sellpriceusd ?? oldItem.sellpriceusd
+          }
+        )
+      }
+      
       toast.success("تم تحديث المادة بنجاح")
       
       const newEditingRows = new Set(editingRows)
@@ -218,7 +251,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  // إلغاء تعديل صف موجود
   const handleCancelEditRow = (itemId: string) => {
     const newEditingRows = new Set(editingRows)
     newEditingRows.delete(itemId)
@@ -229,7 +261,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     setEditedData(newEditedData)
   }
 
-  // Handle delete
   const handleDeleteClick = () => {
     if (selectedItems.length === 0) {
       toast.error("الرجاء اختيار مادة للحذف")
@@ -247,7 +278,27 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     if (!itemToDelete) return
 
     try {
+      const itemToDeleteData = inventory.find(i => i.id === itemToDelete)
+      
       await deleteInventoryItem(itemToDelete)
+      
+      if (itemToDeleteData) {
+        await logAction(
+          "حذف",
+          `تم حذف المادة: ${itemToDeleteData.productname} من المخزن: ${store?.storename || 'غير معروف'}`,
+          "المخزون",
+          undefined,
+          {
+            productcode: itemToDeleteData.productcode,
+            productname: itemToDeleteData.productname,
+            quantity: itemToDeleteData.quantity,
+            unit: itemToDeleteData.unit,
+            storename: store?.storename
+          },
+          undefined
+        )
+      }
+      
       toast.success("تم حذف المادة بنجاح")
       setDeleteConfirmOpen(false)
       setItemToDelete(null)
@@ -266,7 +317,27 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     }
 
     try {
+      const itemsToDelete = inventory.filter(i => selectedItems.includes(i.id))
+      
       await deleteInventoryItems(selectedItems)
+      
+      for (const item of itemsToDelete) {
+        await logAction(
+          "حذف",
+          `تم حذف المادة: ${item.productname} من المخزن: ${store?.storename || 'غير معروف'}`,
+          "المخزون",
+          undefined,
+          {
+            productcode: item.productcode,
+            productname: item.productname,
+            quantity: item.quantity,
+            unit: item.unit,
+            storename: store?.storename
+          },
+          undefined
+        )
+      }
+      
       toast.success(`تم حذف ${selectedItems.length} مادة بنجاح`)
       setSelectedItems([])
       loadStoreData()
@@ -328,7 +399,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
         </div>
 
         <Card className="p-6">
-          {/* Action Buttons */}
+          {}
           <div className="flex flex-wrap gap-3 mb-6">
             <Button onClick={handleAddNewRow} className="gap-2" disabled={!!newRow}>
               <Plus className="h-4 w-4" />
@@ -344,7 +415,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
             </Button>
           </div>
 
-          {/* Search Bar */}
+          {}
           <div className="flex gap-2 mb-6">
             <div className="relative flex-1">
               <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -365,7 +436,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
             </Button>
           </div>
 
-          {/* Table */}
+          {}
           <div className="rounded-lg border overflow-hidden mb-6">
             <Table>
               <TableHeader>
@@ -394,7 +465,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* الصف الجديد */}
+                {}
                 {newRow && (
                   <TableRow className="bg-blue-50 dark:bg-blue-950">
                     <TableCell className="text-center">جديد</TableCell>
@@ -468,7 +539,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                   </TableRow>
                 )}
 
-                {/* الصفوف الموجودة */}
+                {}
                 {filteredInventory.map((item, index) => {
                   const isEditing = editingRows.has(item.id)
                   const editedItem = editedData.get(item.id) || item
@@ -622,7 +693,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
             </Table>
           </div>
 
-          {/* Footer */}
+          {}
           <div className="text-center text-sm text-muted-foreground pt-4 border-t">
             <span className="font-semibold">إجمالي المواد:</span>{" "}
             <span style={{ color: "var(--theme-text)" }} className="font-bold">
@@ -632,7 +703,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
         </Card>
       </div>
 
-      {/* Delete Confirmation Dialog */}
+      {}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent>
           <DialogHeader>

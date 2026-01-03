@@ -7,26 +7,30 @@ import { languages } from "@/lib/i18n"
 import { Check, Globe } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+import { t } from "@/lib/translations"
+
 export default function LanguagePage() {
   const { currentLanguage, setLanguage } = useSettings()
 
   return (
     <div className="space-y-8 p-8">
       <div>
-        <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--theme-primary)" }}>اللغات</h1>
+        <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--theme-primary)" }}>
+          {t("languages", currentLanguage.code)}
+        </h1>
         <p className="text-muted-foreground">
-          اختر لغة التطبيق المفضلة لديك
+          {t("selectLanguage", currentLanguage.code)}
         </p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />
-            اللغة المتاحة
+            <Globe className="h-5 w-5 theme-info" />
+            {t("availableLanguages", currentLanguage.code)}
           </CardTitle>
           <CardDescription>
-            يدعم التطبيق 7 لغات مختلفة
+            {t("supportsLanguages", currentLanguage.code)}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -54,7 +58,7 @@ export default function LanguagePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>اللغة الحالية</CardTitle>
+          <CardTitle>{t("currentLanguage", currentLanguage.code)}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -64,9 +68,9 @@ export default function LanguagePage() {
                 <div className="text-sm text-muted-foreground">{currentLanguage.name}</div>
               </div>
               <div className="text-right">
-                <div className="text-sm font-medium">الاتجاه</div>
+                <div className="text-sm font-medium">{t("direction", currentLanguage.code)}</div>
                 <div className="text-sm text-muted-foreground">
-                  {currentLanguage.direction === "rtl" ? "من اليمين إلى اليسار" : "من اليسار إلى اليمين"}
+                  {t(currentLanguage.direction, currentLanguage.code)}
                 </div>
               </div>
             </div>
@@ -76,12 +80,11 @@ export default function LanguagePage() {
 
       <Card className="border-primary/50 bg-primary/5">
         <CardHeader>
-          <CardTitle className="text-primary">ملاحظة مهمة</CardTitle>
+          <CardTitle className="text-primary">{t("note", currentLanguage.code) || "ملاحظة مهمة"}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            عند تغيير اللغة، سيتم تطبيق التغييرات فوراً على جميع عناصر الواجهة.
-            سيتم حفظ اختيارك تلقائياً وسيبقى مفعلاً في الزيارات القادمة.
+            {t("languageNote", currentLanguage.code)}
           </p>
         </CardContent>
       </Card>

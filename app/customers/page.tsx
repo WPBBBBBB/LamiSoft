@@ -29,6 +29,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { PermissionGuard } from "@/components/permission-guard"
 import {
   Table,
   TableBody,
@@ -38,8 +39,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
-import { getCustomersWithBalances, deleteCustomer, deleteCustomers, type Customer } from "@/lib/supabase-operations"
+import { getCustomersWithBalances, deleteCustomer, deleteCustomers, type Customer, getCustomer } from "@/lib/supabase-operations"
+import { logAction } from "@/lib/system-log-operations"
+import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
+import { t } from "@/lib/translations"
+import { useSettings } from "@/components/providers/settings-provider"
+import { useDebounce } from "@/lib/hooks"
 
 interface CustomerWithBalance extends Customer {
   balance_iqd: number
@@ -48,9 +54,11 @@ interface CustomerWithBalance extends Customer {
 
 export default function CustomersPage() {
   const router = useRouter()
+  const { currentLanguage } = useSettings()
   const [customers, setCustomers] = useState<CustomerWithBalance[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const debouncedSearchQuery = useDebounce(searchQuery, 300)
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [notesModalOpen, setNotesModalOpen] = useState(false)
@@ -61,6 +69,7 @@ export default function CustomersPage() {
 
   useEffect(() => {
     loadCustomers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadCustomers() {
@@ -70,26 +79,23 @@ export default function CustomersPage() {
       setCustomers(data)
     } catch (error) {
       console.error(error)
-      toast.error("حدث خطأ أثناء تحميل البيانات")
+      toast.error(t('errorOccurred', currentLanguage.code))
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Filter customers based on search
   const filteredCustomers = customers.filter((customer) =>
-    customer.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.phone_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.address?.toLowerCase().includes(searchQuery.toLowerCase())
+    customer.customer_name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+    customer.phone_number?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+    customer.address?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
   )
 
-  // Pagination
   const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const currentCustomers = filteredCustomers.slice(startIndex, endIndex)
 
-  // Handle select all
   const handleSelectAll = () => {
     if (selectedCustomers.length === currentCustomers.length) {
       setSelectedCustomers([])
@@ -98,7 +104,6 @@ export default function CustomersPage() {
     }
   }
 
-  // Handle individual selection
   const handleSelectCustomer = (id: string) => {
     if (selectedCustomers.includes(id)) {
       setSelectedCustomers(selectedCustomers.filter((cId) => cId !== id))
@@ -107,24 +112,20 @@ export default function CustomersPage() {
     }
   }
 
-  // Handle refresh
   const handleRefresh = () => {
     loadCustomers()
-    toast.success("تم تحديث البيانات")
+    toast.success(t('dataRefreshed', currentLanguage.code))
   }
 
-  // Handle clear search
   const handleClearSearch = () => {
     setSearchQuery("")
   }
 
-  // Open notes modal
   const handleViewNotes = (notes: string) => {
     setSelectedNotes(notes)
     setNotesModalOpen(true)
   }
 
-  // Handle delete single customer
   const handleDeleteClick = (id: string) => {
     setCustomerToDelete(id)
     setDeleteConfirmOpen(true)
@@ -134,36 +135,91 @@ export default function CustomersPage() {
     if (!customerToDelete) return
 
     try {
+      const customer = await getCustomer(customerToDelete)
+      
       await deleteCustomer(customerToDelete)
-      toast.success("تم حذف الزبون بنجاح")
+      
+      try {
+        await logAction(
+          "حذف",
+          `تمت عملية حذف للزبون: ${customer?.customer_name || 'غير معروف'}`,
+          "customers",
+          undefined,
+          {
+            customer_name: customer?.customer_name || '',
+            type: customer?.type || '',
+            phone_number: customer?.phone_number || '',
+          },
+          undefined
+        )
+      } catch (logError) {
+        console.error("Error logging action:", logError)
+      }
+      
+      toast.success(t('customerDeletedSuccess', currentLanguage.code))
       setDeleteConfirmOpen(false)
       setCustomerToDelete(null)
       loadCustomers()
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(error)
-      toast.error("حدث خطأ أثناء الحذف")
+      const errorMessage = (error as { message?: string })?.message || t('errorDeletingData', currentLanguage.code)
+      
+      // رسالة مخصصة للأخطاء
+      if (errorMessage.includes('قائمة بيع آجلة') || errorMessage.includes('دفعة مالية')) {
+        toast.error(errorMessage, { duration: 8000 })
+      } else {
+        toast.error(t('errorDeletingData', currentLanguage.code))
+      }
+      
+      setDeleteConfirmOpen(false)
+      setCustomerToDelete(null)
     }
   }
 
-  // Handle delete multiple customers
   const handleDeleteSelected = async () => {
     if (selectedCustomers.length === 0) {
-      toast.error("يرجى تحديد عملاء للحذف")
+      toast.error(t('selectCustomersToDelete', currentLanguage.code))
       return
     }
 
     try {
+      const customersToDelete = customers.filter(c => selectedCustomers.includes(c.id))
+      const customerNames = customersToDelete.map(c => c.customer_name).join(', ')
+      
       await deleteCustomers(selectedCustomers)
-      toast.success("تم حذف " + selectedCustomers.length + " زبون بنجاح")
+      
+      try {
+        await logAction(
+          "حذف متعدد",
+          `تمت عملية حذف لـ ${selectedCustomers.length} زبون: (${customerNames})`,
+          "customers",
+          undefined,
+          { count: selectedCustomers.length, names: customerNames },
+          undefined
+        )
+      } catch (logError) {
+        console.error("Error logging action:", logError)
+      }
+      
+      toast.success(`${selectedCustomers.length} ${t('customersDeletedSuccess', currentLanguage.code).replace('{count}', '')}`.trim())
       setSelectedCustomers([])
       loadCustomers()
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(error)
-      toast.error("حدث خطأ أثناء الحذف")
+      const errorMessage = (error as { message?: string })?.message || t('errorDeletingData', currentLanguage.code)
+      
+      // رسالة مخصصة للأخطاء
+      if (errorMessage.includes('تم حذف') || errorMessage.includes('لا يمكن حذف')) {
+        toast.error(errorMessage, { duration: 8000 })
+      } else {
+        toast.error(t('errorDeletingData', currentLanguage.code))
+      }
+      
+      setSelectedCustomers([])
+      loadCustomers()
     }
   }
 
-  // Format currency
   const formatCurrency = (amount: number) => {
     return amount.toLocaleString("en-US", {
       minimumFractionDigits: 0,
@@ -176,7 +232,7 @@ export default function CustomersPage() {
       <div className="flex-1 overflow-auto">
         <div className="container mx-auto p-6">
           <Card className="p-6">
-            <p className="text-center text-muted-foreground">جاري التحميل...</p>
+            <p className="text-center text-muted-foreground">{t('loading', currentLanguage.code)}</p>
           </Card>
         </div>
       </div>
@@ -184,17 +240,10 @@ export default function CustomersPage() {
   }
 
   return (
+    <PermissionGuard requiredPermission="view_people">
     <div className="flex-1 overflow-auto">
       <div className="container mx-auto p-6 space-y-6">
         <div className="mb-6 flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
-              إدارة الأشخاص
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              إدارة قائمة الزبائن والعملاء
-            </p>
-          </div>
           <Button
             variant="outline"
             size="icon"
@@ -202,16 +251,24 @@ export default function CustomersPage() {
             title="رجوع"
             className="shrink-0"
           >
-            <ArrowRight className="h-5 w-5" />
+            <ArrowRight className="h-5 w-5 theme-icon" />
           </Button>
+          <div className="flex-1 text-right">
+            <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
+              {t('customerManagement', currentLanguage.code)}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {t('manageCustomersList', currentLanguage.code)}
+            </p>
+          </div>
         </div>
 
         <Card className="p-6">
           <div className="flex flex-wrap gap-3 mb-6">
             <Link href="/customers/add">
               <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                إضافة
+                <Plus className="h-4 w-4 theme-success" />
+                {t('add', currentLanguage.code)}
               </Button>
             </Link>
             <Button
@@ -224,8 +281,8 @@ export default function CustomersPage() {
                 }
               }}
             >
-              <Edit className="h-4 w-4" />
-              تعديل
+              <Edit className="h-4 w-4 theme-info" />
+              {t('edit', currentLanguage.code)}
             </Button>
             <Button
               variant="outline"
@@ -233,12 +290,12 @@ export default function CustomersPage() {
               disabled={selectedCustomers.length === 0}
               onClick={handleDeleteSelected}
             >
-              <Trash2 className="h-4 w-4" />
-              حذف
+              <Trash2 className="h-4 w-4 theme-danger" />
+              {t('delete', currentLanguage.code)}
             </Button>
             <Button variant="outline" className="gap-2">
               <Printer className="h-4 w-4" />
-              طباعة
+              {t('print', currentLanguage.code)}
             </Button>
             <Button
               variant="outline"
@@ -246,21 +303,21 @@ export default function CustomersPage() {
               disabled={selectedCustomers.length !== 1}
             >
               <FileText className="h-4 w-4" />
-              كشف حساب زبون
+              {t('customerAccountStatement', currentLanguage.code)}
             </Button>
           </div>
 
           <div className="flex flex-wrap gap-3 mb-4">
             <Button variant="secondary" className="gap-2">
               <FileText className="h-4 w-4" />
-              الملف
+              {t('file', currentLanguage.code)}
             </Button>
             <div className="flex-1 flex gap-2" style={{ minWidth: "300px" }}>
               <div className="relative flex-1">
-                <Search className="absolute right-3 top-[50%] -translate-y-[50%] h-4 w-4 text-muted-foreground" />
+                <Search className="absolute right-3 top-[50%] -translate-y-[50%] h-4 w-4 theme-icon" />
                 <Input
                   type="text"
-                  placeholder="ابحث عن زبون..."
+                  placeholder={t('searchForCustomer', currentLanguage.code)}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pr-10"
@@ -270,9 +327,9 @@ export default function CustomersPage() {
                 variant="outline"
                 size="icon"
                 onClick={handleClearSearch}
-                title="مسح البحث"
+                title={t('clearSearch', currentLanguage.code)}
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4 theme-danger" />
               </Button>
             </div>
           </div>
@@ -280,33 +337,34 @@ export default function CustomersPage() {
           <div className="flex flex-wrap gap-3 mb-6">
             <Button variant="outline" className="gap-2" onClick={handleSelectAll}>
               <CheckSquare className="h-4 w-4" />
-              {selectedCustomers.length === currentCustomers.length ? "إلغاء التحديد" : "تحديد الكل"}
+              {selectedCustomers.length === currentCustomers.length ? t('clearSelection', currentLanguage.code) : t('selectAll', currentLanguage.code)}
             </Button>
             <Button variant="outline" className="gap-2" onClick={handleRefresh}>
-              <RefreshCw className="h-4 w-4" />
-              تحديث الصفحة
+              <RefreshCw className="h-4 w-4 theme-info" />
+              {t('refreshPage', currentLanguage.code)}
             </Button>
           </div>
 
-          <div className="rounded-md border">
-            <Table>
+          <div className="rounded-lg border overflow-hidden overflow-x-auto">
+            <div className="min-w-[800px]">
+              <Table>
               <TableHeader>
                 <TableRow style={{ background: 'linear-gradient(to right, var(--theme-surface), var(--theme-accent))', color: 'var(--theme-text)' }}>
                   <TableHead className="text-center" style={{ width: "100px", color: 'var(--theme-text)' }}>#</TableHead>
-                  <TableHead className="text-right pr-4" style={{ color: 'var(--theme-text)' }}>اسم الزبون</TableHead>
-                  <TableHead className="text-left" style={{ color: 'var(--theme-text)' }}>رقم الهاتف</TableHead>
-                  <TableHead className="text-right pr-4" style={{ color: 'var(--theme-text)' }}>العنوان</TableHead>
-                  <TableHead className="text-left" style={{ color: 'var(--theme-text)' }}>رصيد دينار</TableHead>
-                  <TableHead className="text-left" style={{ color: 'var(--theme-text)' }}>رصيد دولار</TableHead>
-                  <TableHead className="text-right pr-4" style={{ color: 'var(--theme-text)' }}>ملاحظات</TableHead>
-                  <TableHead className="text-center" style={{ color: 'var(--theme-text)' }}>العمليات</TableHead>
+                  <TableHead className="text-right pr-4" style={{ color: 'var(--theme-text)' }}>{t('customerName', currentLanguage.code)}</TableHead>
+                  <TableHead className="text-left" style={{ color: 'var(--theme-text)' }}>{t('phoneNumber', currentLanguage.code)}</TableHead>
+                  <TableHead className="text-right pr-4" style={{ color: 'var(--theme-text)' }}>{t('address', currentLanguage.code)}</TableHead>
+                  <TableHead className="text-left" style={{ color: 'var(--theme-text)' }}>{t('balanceIQD', currentLanguage.code)}</TableHead>
+                  <TableHead className="text-left" style={{ color: 'var(--theme-text)' }}>{t('balanceUSD', currentLanguage.code)}</TableHead>
+                  <TableHead className="text-right pr-4" style={{ color: 'var(--theme-text)' }}>{t('notes', currentLanguage.code)}</TableHead>
+                  <TableHead className="text-center" style={{ color: 'var(--theme-text)' }}>{t('operations', currentLanguage.code)}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {currentCustomers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      لا يوجد عملاء. اضغط على إضافة لإضافة عميل جديد.
+                      {t('noCustomers', currentLanguage.code)}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -401,6 +459,7 @@ export default function CustomersPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-4 mt-6">
@@ -502,5 +561,6 @@ export default function CustomersPage() {
         </Dialog>
       </div>
     </div>
+    </PermissionGuard>
   )
 }

@@ -1,29 +1,24 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp } from "lucide-react"
+"use client"
+
+import { PermissionGuard } from "@/components/permission-guard"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 export default function SalesStatsPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">إحصائيات المبيعات</h1>
-        <p className="text-muted-foreground mt-2">
-          تتبع وتحليل بيانات المبيعات
-        </p>
-      </div>
+  const router = useRouter()
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            إحصائيات المبيعات
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-center py-8">
-            سيتم إضافة المحتوى قريباً...
-          </p>
-        </CardContent>
-      </Card>
+  useEffect(() => {
+    router.replace("/balance/sales-profit")
+  }, [router])
+
+  return (
+    <PermissionGuard requiredPermission="view_statistics">
+    <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+      <div className="text-center">
+        <p className="text-muted-foreground">جاري التحويل إلى صفحة أرباح المبيعات...</p>
+      </div>
     </div>
+    </PermissionGuard>
   )
 }

@@ -13,6 +13,14 @@ export interface Theme {
     tableRowHover?: string
     tableRowSelected?: string
     border?: string
+    icon?: string
+    iconHover?: string
+    cardBackground?: string
+    cardText?: string
+    success?: string
+    warning?: string
+    danger?: string
+    info?: string
   }
 }
 
@@ -26,11 +34,11 @@ export const themes: Theme[] = [
       background: "#121212",
       surface: "#1E1E1E",
       text: "#E1E1E1",
-      accent: "#03DAC6",
-      tableHeader: "#2C2C2C",
+      accent: "#121212",
+      tableHeader: "#121212",
       tableRow: "#1E1E1E",
       tableRowHover: "#2C2C2C",
-      tableRowSelected: "#3700B3",
+      tableRowSelected: "#121212",
       border: "#383838",
     },
   },
@@ -55,12 +63,12 @@ export const themes: Theme[] = [
     id: "midnight-black",
     name: "أسود منتصف الليل",
     colors: {
-      primary: "#0D0D0D",
+      primary: "#EDEDED",
       secondary: "#1A1A1A",
       background: "#000000",
       surface: "#121212",
       text: "#EDEDED",
-      accent: "#8B5CF6",
+      accent: "#000000",
       tableHeader: "#1A1A1A",
       tableRow: "#0A0A0A",
       tableRowHover: "#1F1F1F",
@@ -385,12 +393,36 @@ export const themes: Theme[] = [
       accent: "#FBBF24",
     },
   },
+  {
+    id: "night-theme",
+    name: "ثيم ليلي",
+    colors: {
+      primary: "#4A5C8F",
+      secondary: "#6B7FAA",
+      background: "#0A0E1A",
+      surface: "#131824",
+      text: "#D4D8E8",
+      accent: "#7B8FCC",
+      tableHeader: "#1A202E",
+      tableRow: "#0F131F",
+      tableRowHover: "#1C2433",
+      tableRowSelected: "#2A3448",
+      border: "#252C3D",
+      icon: "#8B95B5",
+      iconHover: "#A3AECF",
+      cardBackground: "#15192A",
+      cardText: "#D8DCE8",
+      success: "#3D8F5A",
+      warning: "#B87D3F",
+      danger: "#B8475A",
+      info: "#4A7FB8",
+    },
+  },
 ]
 
 export function applyTheme(theme: Theme) {
   const root = document.documentElement
   
-  // Helper to generate table colors if not provided
   const isDark = parseInt(theme.colors.background.slice(1, 3), 16) < 128
   
   const tableHeader = theme.colors.tableHeader || (isDark 
@@ -410,8 +442,21 @@ export function applyTheme(theme: Theme) {
   const border = theme.colors.border || (isDark
     ? lightenColor(theme.colors.background, 25)
     : darkenColor(theme.colors.background, 12))
+
+  const icon = theme.colors.icon || (isDark 
+    ? lightenColor(theme.colors.text, -20)
+    : theme.colors.primary)
   
-  // Apply all theme colors to CSS variables
+  const iconHover = theme.colors.iconHover || theme.colors.accent
+
+  const cardBackground = theme.colors.cardBackground || theme.colors.surface
+  const cardText = theme.colors.cardText || theme.colors.text
+
+  const success = theme.colors.success || (isDark ? "#4CAF50" : "#2E7D32")
+  const warning = theme.colors.warning || (isDark ? "#FFA726" : "#F57C00")
+  const danger = theme.colors.danger || (isDark ? "#EF5350" : "#C62828")
+  const info = theme.colors.info || (isDark ? "#29B6F6" : "#0277BD")
+  
   root.style.setProperty("--theme-primary", theme.colors.primary)
   root.style.setProperty("--theme-secondary", theme.colors.secondary)
   root.style.setProperty("--theme-background", theme.colors.background)
@@ -423,13 +468,19 @@ export function applyTheme(theme: Theme) {
   root.style.setProperty("--theme-table-row-hover", tableRowHover)
   root.style.setProperty("--theme-table-row-selected", tableRowSelected)
   root.style.setProperty("--theme-border", border)
+  root.style.setProperty("--theme-icon", icon)
+  root.style.setProperty("--theme-icon-hover", iconHover)
+  root.style.setProperty("--theme-card-bg", cardBackground)
+  root.style.setProperty("--theme-card-text", cardText)
+  root.style.setProperty("--theme-success", success)
+  root.style.setProperty("--theme-warning", warning)
+  root.style.setProperty("--theme-danger", danger)
+  root.style.setProperty("--theme-info", info)
   
-  // Apply to document body for immediate effect
   document.body.style.backgroundColor = theme.colors.background
   document.body.style.color = theme.colors.text
 }
 
-// Helper functions
 function lightenColor(hex: string, percent: number): string {
   const num = parseInt(hex.replace("#", ""), 16)
   const amt = Math.round(2.55 * percent)

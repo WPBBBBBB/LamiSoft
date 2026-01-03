@@ -11,29 +11,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // تنسيق رقم الهاتف - إزالة المسافات وإضافة 964
     let formattedPhone = phoneNumber.replace(/\s+/g, '').replace(/\D/g, '')
     
-    // إذا كان الرقم يبدأ بـ 07، استبدله بـ 9647
     if (formattedPhone.startsWith('07')) {
       formattedPhone = '964' + formattedPhone.substring(1)
     }
-    // إذا كان يبدأ بـ 7 فقط، أضف 964
     else if (formattedPhone.startsWith('7') && formattedPhone.length === 10) {
       formattedPhone = '964' + formattedPhone
     }
-    // إذا لم يبدأ بـ 964، أضفها
     else if (!formattedPhone.startsWith('964')) {
       formattedPhone = '964' + formattedPhone
     }
     
-    // إعداد رسالة OTP
     const message = `رمز التحقق الخاص بك هو: *${otpCode}*\n\nهذا الرمز صالح لمدة 5 دقائق.\nلا تشارك هذا الرمز مع أي شخص.\n\n_AL-LamiSoft_`
 
-    // مفتاح API
-    const apiKey = '35b4b390da09293a21be2b72de6050fbf75c7bcfec892629ab44cc2d48c0bd7e'
+    const apiKey = process.env.WASENDER_API_KEY
 
-    // إرسال عبر Wasenderapi بالتنسيق الصحيح
+    if (!apiKey) {
+      return NextResponse.json({
+        success: false,
+        error: 'مفتاح API غير متوفر'
+      }, { status: 500 })
+    }
+
     const payload = {
       to: `+${formattedPhone}`,
       text: message
@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // إذا فشل الإرسال
     const errorText = await response.text()
     console.error('Wasender Error:', errorText)
     

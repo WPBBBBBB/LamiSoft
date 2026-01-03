@@ -6,6 +6,7 @@ services:
     name: al-lamisoft-app
     env: node
     plan: free
+    region: frankfurt
     buildCommand: npm install && npm run build
     startCommand: npm run start
     envVars:

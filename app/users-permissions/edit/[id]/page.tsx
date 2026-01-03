@@ -18,6 +18,7 @@ import { ArrowRight, Save, X } from "lucide-react"
 import { getUserWithPermissions, updateUser, checkUsernameExists, type User } from "@/lib/users-operations"
 import { OAuthLinking } from "@/components/oauth/oauth-linking"
 import { toast } from "sonner"
+import { PermissionGuard } from "@/components/permission-guard"
 
 export default function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
@@ -26,7 +27,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const [isSaving, setIsSaving] = useState(false)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   
-  // بيانات المستخدم الأساسية
   const [formData, setFormData] = useState({
     fullName: "",
     phoneNumber: "",
@@ -37,7 +37,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     permissionType: "" as "" | "مدير" | "محاسب" | "موظف",
   })
 
-  // صلاحيات المحاسب والموظف
   const [permissions, setPermissions] = useState({
     viewStatistics: false,
     viewReports: false,
@@ -46,11 +45,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     viewNotifications: false,
     addPurchase: false,
     viewStores: false,
+    viewStoreTransfer: false,
   })
-
-  useEffect(() => {
-    loadUserData()
-  }, [id])
 
   async function loadUserData() {
     try {
@@ -83,6 +79,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           viewNotifications: userData.permissions.view_notifications || false,
           addPurchase: userData.permissions.add_purchase || false,
           viewStores: userData.permissions.view_stores || false,
+          viewStoreTransfer: userData.permissions.view_store_transfer || false,
         })
       }
     } catch (error) {
@@ -93,7 +90,23 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     }
   }
 
+  useEffect(() => {
+    loadUserData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
+
   const handleInputChange = (field: string, value: string) => {
+    if (field === "phoneNumber") {
+      const numbersOnly = value.replace(/[^0-9]/g, "")
+      if (!numbersOnly.startsWith("07") && numbersOnly.length > 0) {
+        value = "07" + numbersOnly.replace(/^07/, "")
+      } else {
+        value = numbersOnly
+      }
+      if (value.length > 11) {
+        value = value.slice(0, 11)
+      }
+    }
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -104,7 +117,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // التحقق من البيانات
     if (!formData.fullName.trim()) {
       toast.error("يرجى إدخال الاسم الكامل")
       return
@@ -122,7 +134,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       return
     }
 
-    // التحقق من عدم تكرار اسم المستخدم
     const usernameExists = await checkUsernameExists(formData.username, id)
     if (usernameExists) {
       toast.error("اسم المستخدم موجود مسبقاً")
@@ -132,7 +143,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     setIsSaving(true)
 
     try {
-      // تحضير بيانات المستخدم
       const userData = {
         full_name: formData.fullName,
         phone_number: formData.phoneNumber || undefined,
@@ -143,7 +153,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         permission_type: formData.permissionType,
       }
 
-      // تحضير الصلاحيات للمحاسب والموظف
       let permissionsData = undefined
       if (formData.permissionType === "محاسب" || formData.permissionType === "موظف") {
         permissionsData = {
@@ -154,15 +163,17 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           view_notifications: formData.permissionType === "موظف" ? permissions.viewNotifications : false,
           add_purchase: formData.permissionType === "موظف" ? permissions.addPurchase : false,
           view_stores: formData.permissionType === "موظف" ? permissions.viewStores : false,
+          view_store_transfer: formData.permissionType === "موظف" ? permissions.viewStoreTransfer : false,
         }
       }
 
       await updateUser(id, userData, permissionsData)
       toast.success("تم تحديث المستخدم بنجاح")
       router.push("/users-permissions")
-    } catch (error: any) {
+    } catch (error) {
       console.error(error)
-      toast.error("حدث خطأ أثناء التحديث: " + (error?.message || "خطأ غير معروف"))
+      const errorMessage = error instanceof Error ? error.message : "خطأ غير معروف"
+      toast.error("حدث خطأ أثناء التحديث: " + errorMessage)
     } finally {
       setIsSaving(false)
     }
@@ -172,7 +183,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     router.back()
   }
 
-  // صلاحيات المحاسب
   const accountantPermissions = [
     { id: "viewStatistics", label: "عرض الإحصائيات" },
     { id: "viewReports", label: "عرض التقارير" },
@@ -180,15 +190,16 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     { id: "viewPeople", label: "عرض قائمة الأشخاص" },
   ]
 
-  // صلاحيات إضافية للموظف
   const employeeAdditionalPermissions = [
     { id: "viewNotifications", label: "عرض الإشعارات في الصفحة الرئيسية" },
     { id: "addPurchase", label: "عرض زر إضافة شراء" },
     { id: "viewStores", label: "عرض المخازن" },
+    { id: "viewStoreTransfer", label: "عرض النقل المخزني" },
   ]
 
   if (isLoading) {
     return (
+      <PermissionGuard requiredRole="مدير">
       <div className="flex-1 overflow-auto">
         <div className="container mx-auto p-6">
           <Card className="p-6">
@@ -196,13 +207,15 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           </Card>
         </div>
       </div>
+      </PermissionGuard>
     )
   }
 
   return (
+    <PermissionGuard requiredRole="مدير">
     <div className="flex-1 overflow-auto">
       <div className="container mx-auto p-6 space-y-6">
-        {/* Header with back button */}
+        {}
         <div className="mb-6 flex items-center gap-4">
           <Button
             variant="outline"
@@ -226,12 +239,12 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         <form onSubmit={handleSubmit}>
           <Card className="p-6">
             <div className="space-y-6">
-              {/* معلومات أساسية */}
+              {}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2">المعلومات الأساسية</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* الاسم الكامل */}
+                  {}
                   <div className="space-y-2">
                     <Label htmlFor="fullName">
                       الاسم الكامل <span className="text-destructive">*</span>
@@ -245,19 +258,20 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     />
                   </div>
 
-                  {/* رقم الهاتف */}
+                  {}
                   <div className="space-y-2">
                     <Label htmlFor="phoneNumber">رقم الهاتف</Label>
                     <Input
                       id="phoneNumber"
                       value={formData.phoneNumber}
                       onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-                      placeholder="أدخل رقم الهاتف"
+                      placeholder="07xxxxxxxxx"
                       dir="ltr"
+                      maxLength={11}
                     />
                   </div>
 
-                  {/* العنوان */}
+                  {}
                   <div className="space-y-2">
                     <Label htmlFor="address">العنوان</Label>
                     <Input
@@ -268,7 +282,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     />
                   </div>
 
-                  {/* العمر */}
+                  {}
                   <div className="space-y-2">
                     <Label htmlFor="age">العمر</Label>
                     <Input
@@ -284,12 +298,12 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 </div>
               </div>
 
-              {/* بيانات تسجيل الدخول */}
+              {}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2">بيانات تسجيل الدخول</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* اسم المستخدم */}
+                  {}
                   <div className="space-y-2">
                     <Label htmlFor="username">
                       اسم المستخدم <span className="text-destructive">*</span>
@@ -304,7 +318,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     />
                   </div>
 
-                  {/* كلمة المرور */}
+                  {}
                   <div className="space-y-2">
                     <Label htmlFor="password">
                       كلمة المرور <span className="text-destructive">*</span>
@@ -322,7 +336,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 </div>
               </div>
 
-              {/* نوع الصلاحية */}
+              {}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold border-b pb-2">نوع الصلاحية والأذونات</h3>
                 
@@ -353,7 +367,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   )}
                 </div>
 
-                {/* صلاحيات المحاسب */}
+                {}
                 {formData.permissionType === "محاسب" && (
                   <div className="space-y-3 pt-4">
                     <Label className="text-base">اختر الأجزاء المسموح له بمشاهدتها:</Label>
@@ -379,12 +393,12 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   </div>
                 )}
 
-                {/* صلاحيات الموظف */}
+                {}
                 {formData.permissionType === "موظف" && (
                   <div className="space-y-3 pt-4">
                     <Label className="text-base">اختر الأجزاء المسموح له بمشاهدتها:</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-muted/50 rounded-lg">
-                      {/* الصلاحيات المشتركة */}
+                      {}
                       {accountantPermissions.map((perm) => (
                         <div key={perm.id} className="flex items-center space-x-2 space-x-reverse">
                           <Checkbox
@@ -403,7 +417,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                         </div>
                       ))}
                       
-                      {/* الصلاحيات الإضافية للموظف */}
+                      {}
                       {employeeAdditionalPermissions.map((perm) => (
                         <div key={perm.id} className="flex items-center space-x-2 space-x-reverse">
                           <Checkbox
@@ -426,7 +440,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 )}
               </div>
 
-              {/* ربط الحسابات الخارجية */}
+              {}
               {currentUser && (
                 <OAuthLinking 
                   user={currentUser} 
@@ -434,7 +448,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 />
               )}
 
-              {/* Action buttons */}
+              {}
               <div className="flex justify-end gap-3 pt-6 border-t">
                 <Button
                   type="button"
@@ -456,5 +470,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         </form>
       </div>
     </div>
+    </PermissionGuard>
   )
 }

@@ -1,40 +1,45 @@
-import { supabase } from './supabase'
-
-// ============================================
-// دوال سعر الصرف (Exchange Rate)
-// ============================================
+﻿import { supabase } from './supabase'
 
 export interface ExchangeRate {
   id: string
   rate: number
   updated_at: string
   updated_by: string
+  full_name?: string
 }
 
-// الحصول على سعر الصرف الحالي
 export async function getCurrentExchangeRate(): Promise<number> {
   const { data, error } = await supabase
     .from('exchange_rate')
     .select('rate')
     .order('updated_at', { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
   
-  if (error || !data) {
-    console.error('Error fetching exchange rate:', { error, data })
-    return 1350 // القيمة الافتراضية
+  if (error) {
+    console.error('Error fetching exchange rate:', error)
+    return 1350
   }
+  
+  if (!data) {
+    console.warn('No exchange rate found in database, using default value')
+    return 1350
+  }
+  
   return data.rate
 }
 
-// تحديث سعر الصرف
-export async function updateExchangeRate(newRate: number, updatedBy: string = 'user'): Promise<ExchangeRate> {
-  // إدخال سجل جديد بدلاً من التحديث (للحفاظ على السجل التاريخي)
+export async function updateExchangeRate(
+  newRate: number, 
+  updatedBy: string = 'user', 
+  fullName?: string
+): Promise<ExchangeRate> {
   const { data, error } = await supabase
     .from('exchange_rate')
     .insert([{
       rate: newRate,
       updated_by: updatedBy,
+      full_name: fullName || updatedBy,
     }])
     .select()
     .single()
@@ -43,7 +48,6 @@ export async function updateExchangeRate(newRate: number, updatedBy: string = 'u
   return data
 }
 
-// الحصول على تاريخ سعر الصرف
 export async function getExchangeRateHistory(limit: number = 10): Promise<ExchangeRate[]> {
   const { data, error } = await supabase
     .from('exchange_rate')

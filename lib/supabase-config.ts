@@ -1,7 +1,4 @@
-// ============================================
-// Supabase Configuration Settings
-// ============================================
-// سيتم ربط هذه الإعدادات بصفحة الإعدادات لاحقاً
+﻿
 
 export interface SupabaseConfig {
   supabaseUrl: string
@@ -9,9 +6,7 @@ export interface SupabaseConfig {
   supabaseServiceKey?: string
 }
 
-// قراءة الإعدادات من localStorage أو متغيرات البيئة
 export function getSupabaseConfig(): SupabaseConfig {
-  // محاولة القراءة من localStorage أولاً (Client Side)
   if (typeof window !== 'undefined') {
     const savedConfig = localStorage.getItem('supabase-config')
     if (savedConfig) {
@@ -23,24 +18,21 @@ export function getSupabaseConfig(): SupabaseConfig {
     }
   }
   
-  // القيم الافتراضية من .env.local
   const config = {
-    supabaseUrl: typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SUPABASE_URL || '',
-    supabaseAnonKey: typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-    supabaseServiceKey: typeof process !== 'undefined' && process.env?.SUPABASE_SERVICE_KEY || '',
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jpupsfzitqvdrbwzlvnk.supabase.co',
+    supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdXBzZnppdHF2ZHJid3psdm5rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzUzODksImV4cCI6MjA4MDQ1MTM4OX0.aSj_Il--QY9B2VnGyDj-u9bpYS_vxe1TxlerAT-qrv8',
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY || '',
   }
   
   return config
 }
 
-// حفظ الإعدادات في localStorage
 export function saveSupabaseConfig(config: SupabaseConfig): void {
   if (typeof window !== 'undefined') {
     localStorage.setItem('supabase-config', JSON.stringify(config))
   }
 }
 
-// التحقق من صحة الإعدادات
 export function validateSupabaseConfig(config: SupabaseConfig): boolean {
   return !!(config.supabaseUrl && config.supabaseAnonKey)
 }

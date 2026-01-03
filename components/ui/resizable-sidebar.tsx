@@ -12,6 +12,8 @@ interface ResizableSidebarProps {
   onWidthChange?: (width: number) => void
   className?: string
   side?: "left" | "right"
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
 }
 
 export function ResizableSidebar({
@@ -23,13 +25,16 @@ export function ResizableSidebar({
   onWidthChange,
   className,
   side = "left",
+  onMouseEnter,
+  onMouseLeave,
 }: ResizableSidebarProps) {
   const [width, setWidth] = useState(defaultWidth)
   const [isResizing, setIsResizing] = useState(false)
   const sidebarRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    setWidth(collapsed ? 80 : defaultWidth)
+    const newWidth = collapsed ? 80 : defaultWidth
+    setWidth(newWidth)
   }, [collapsed, defaultWidth])
 
   const startResizing = () => {
@@ -54,7 +59,6 @@ export function ResizableSidebar({
       if (newWidth >= minWidth && newWidth <= maxWidth) {
         setWidth(newWidth)
         onWidthChange?.(newWidth)
-        // Update CSS variable for main sidebar
         if (className?.includes("z-40")) {
           document.documentElement.style.setProperty("--sidebar-width", `${newWidth}px`)
         }
@@ -88,6 +92,8 @@ export function ResizableSidebar({
       ref={sidebarRef}
       className={cn("relative", className)}
       style={{ width: `${width}px`, transition: isResizing ? "none" : "width 0.2s ease" }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       {children}
       

@@ -28,12 +28,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { getCustomers, createPayment, type Customer } from "@/lib/supabase-operations"
+import { getCustomers, type Customer } from "@/lib/supabase-operations"
+import { createPayment } from "@/lib/payments-operations"
+import { logAction } from "@/lib/system-log-operations"
 import { toast } from "sonner"
 
 const formSchema = z.object({
   customer_id: z.string().min(1, { message: "يرجى اختيار الزبون" }),
-  transaction_type: z.enum(["قبض", "ايداع", "سحب", "صرف", "قرض"]),
+  transaction_type: z.enum(["قبض", "صرف"]),
   currency_type: z.enum(["IQD", "USD"]),
   amount: z.string().min(1, { message: "يرجى إدخال المبلغ" }),
   notes: z.string().optional(),
@@ -111,7 +113,9 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
         return
       }
 
-      await createPayment({
+      const selectedCustomer = customers.find(c => c.id === values.customer_id)
+      
+      const result = await createPayment({
         customer_id: values.customer_id,
         amount_iqd: values.currency_type === "IQD" ? amount : 0,
         amount_usd: values.currency_type === "USD" ? amount : 0,
@@ -120,6 +124,26 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
         notes: values.notes || "",
         pay_date: new Date().toISOString(),
       })
+
+      if (!result.success) {
+        toast.error(result.error || "حدث خطأ أثناء تسجيل الدفعة")
+        return
+      }
+
+      await logAction(
+        "إضافة",
+        `تمت عملية إضافة دفعة ${values.transaction_type === 'قبض' ? 'قبض' : 'دفع'} بمبلغ ${amount} ${values.currency_type} للزبون: ${selectedCustomer?.customer_name || 'غير معروف'}`,
+        "الصندوق",
+        undefined,
+        undefined,
+        {
+          customer_name: selectedCustomer?.customer_name,
+          amount: amount,
+          currency_type: values.currency_type,
+          transaction_type: values.transaction_type,
+          notes: values.notes
+        }
+      )
 
       toast.success("تم تسجيل الدفعة بنجاح")
       onOpenChange(false)
@@ -141,7 +165,7 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
-            {/* اختيار الزبون */}
+            {}
             <FormField
               control={form.control}
               name="customer_id"
@@ -204,7 +228,7 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
               )}
             />
 
-            {/* نوع العملة */}
+            {}
             <FormField
               control={form.control}
               name="currency_type"
@@ -227,7 +251,7 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
               )}
             />
 
-            {/* نوع العملية */}
+            {}
             <FormField
               control={form.control}
               name="transaction_type"
@@ -241,11 +265,8 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="قبض">قبض</SelectItem>
-                      <SelectItem value="ايداع">ايداع</SelectItem>
-                      <SelectItem value="سحب">سحب</SelectItem>
-                      <SelectItem value="صرف">صرف</SelectItem>
-                      <SelectItem value="قرض">قرض</SelectItem>
+                      <SelectItem value="قبض">قبض (تسديد من الزبون)</SelectItem>
+                      <SelectItem value="صرف">صرف (دفع للزبون)</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -253,7 +274,7 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
               )}
             />
 
-            {/* المبلغ */}
+            {}
             <FormField
               control={form.control}
               name="amount"
@@ -291,7 +312,7 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
               )}
             />
 
-            {/* الأزرار */}
+            {}
             <div className="flex gap-4 pt-4">
               <Button type="submit" disabled={isLoading} className="flex-1">
                 {isLoading ? "جاري الحفظ..." : "تسجيل الدفعة"}

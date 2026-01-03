@@ -11,11 +11,14 @@ import { toast } from "sonner"
 import { ArrowRight, Phone, Lock, ShieldCheck, User } from "lucide-react"
 import Link from "next/link"
 import { createOTP, verifyOTP, getUserByPhone, resetPassword } from "@/lib/otp-operations"
+import { t } from "@/lib/translations"
+import { useSettings } from "@/components/providers/settings-provider"
 
 type Step = 'phone' | 'otp' | 'password'
 
 export default function ForgotPasswordPage() {
   const router = useRouter()
+  const { currentLanguage } = useSettings()
   const [isLoading, setIsLoading] = useState(false)
   const [currentStep, setCurrentStep] = useState<Step>('phone')
   const [phoneNumber, setPhoneNumber] = useState("")
@@ -26,59 +29,54 @@ export default function ForgotPasswordPage() {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
 
-  // إرسال OTP
   const handleSendOTP = async () => {
     if (!phoneNumber.trim()) {
-      toast.error("يرجى إدخال رقم الهاتف")
+      toast.error(t('pleaseEnterPhone', currentLanguage.code))
       return
     }
 
-    // التحقق من تنسيق رقم الهاتف
     const phoneRegex = /^(07[3-9]\d{8}|(\+?964|00964)?7[3-9]\d{8})$/
     if (!phoneRegex.test(phoneNumber.replace(/\s+/g, ''))) {
-      toast.error("رقم الهاتف غير صحيح. يجب أن يبدأ بـ 07")
+      toast.error(t('invalidPhoneFormat', currentLanguage.code))
       return
     }
 
     setIsLoading(true)
 
     try {
-      // البحث عن المستخدم
       const user = await getUserByPhone(phoneNumber)
       
       if (!user) {
-        toast.error("لا يوجد حساب مرتبط بهذا الرقم")
+        toast.error(t('noAccountWithPhone', currentLanguage.code))
         setIsLoading(false)
         return
       }
 
       setUserId(user.id)
       setCurrentUsername(user.username)
-      setNewUsername(user.username) // قيمة افتراضية
+      setNewUsername(user.username)
 
-      // إنشاء وإرسال OTP
       const result = await createOTP(phoneNumber)
 
       if (result.success) {
-        toast.success("تم إرسال رمز التحقق على الواتساب")
+        toast.success(t('otpSentSuccess', currentLanguage.code))
         setCurrentStep('otp')
       } else {
-        toast.error(result.error || "فشل إرسال رمز التحقق")
+        toast.error(result.error || t('otpSendFailed', currentLanguage.code))
       }
     } catch (error) {
       console.error(error)
-      toast.error("حدث خطأ أثناء إرسال رمز التحقق")
+      toast.error(t('errorSendingOtp', currentLanguage.code))
     } finally {
       setIsLoading(false)
     }
   }
 
-  // التحقق من OTP
   const handleVerifyOTP = async () => {
     const fullOTP = otpCode.join('')
     
     if (fullOTP.length !== 6) {
-      toast.error("يرجى إدخال رمز التحقق كاملاً")
+      toast.error(t('pleaseEnterFullOtp', currentLanguage.code))
       return
     }
 
@@ -88,39 +86,38 @@ export default function ForgotPasswordPage() {
       const result = await verifyOTP(phoneNumber, fullOTP)
 
       if (result.success) {
-        toast.success("تم التحقق من الرمز بنجاح")
+        toast.success(t('otpVerifiedSuccess', currentLanguage.code))
         setCurrentStep('password')
       } else {
-        toast.error(result.error || "رمز التحقق غير صحيح")
+        toast.error(result.error || t('otpIncorrect', currentLanguage.code))
         setOtpCode(["", "", "", "", "", ""])
       }
     } catch (error) {
       console.error(error)
-      toast.error("حدث خطأ أثناء التحقق من الرمز")
+      toast.error(t('errorVerifyingOtp', currentLanguage.code))
     } finally {
       setIsLoading(false)
     }
   }
 
-  // تحديث اسم المستخدم وكلمة المرور
   const handleResetPassword = async () => {
     if (!newUsername.trim()) {
-      toast.error("يرجى إدخال اسم المستخدم")
+      toast.error(t('pleaseEnterUsername', currentLanguage.code))
       return
     }
 
     if (!newPassword.trim()) {
-      toast.error("يرجى إدخال كلمة المرور الجديدة")
+      toast.error(t('pleaseEnterNewPassword', currentLanguage.code))
       return
     }
 
     if (newPassword.length < 6) {
-      toast.error("كلمة المرور يجب أن تكون 6 أحرف على الأقل")
+      toast.error(t('passwordMinLength', currentLanguage.code))
       return
     }
 
     if (newPassword !== confirmPassword) {
-      toast.error("كلمتا المرور غير متطابقتين")
+      toast.error(t('passwordsNotMatch', currentLanguage.code))
       return
     }
 
@@ -130,37 +127,34 @@ export default function ForgotPasswordPage() {
       const result = await resetPassword(userId, newPassword, newUsername)
 
       if (result.success) {
-        toast.success("تم تحديث بيانات الحساب بنجاح")
+        toast.success(t('accountUpdatedSuccess', currentLanguage.code))
         setTimeout(() => {
           router.push('/login')
         }, 1500)
       } else {
-        toast.error(result.error || "فشل تحديث بيانات الحساب")
+        toast.error(result.error || t('accountUpdateFailed', currentLanguage.code))
       }
     } catch (error) {
       console.error(error)
-      toast.error("حدث خطأ أثناء تحديث بيانات الحساب")
+      toast.error(t('errorUpdatingAccount', currentLanguage.code))
     } finally {
       setIsLoading(false)
     }
   }
 
-  // التعامل مع إدخال OTP
   const handleOTPChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return // فقط أرقام
+    if (!/^\d*$/.test(value)) return
 
     const newOTP = [...otpCode]
-    newOTP[index] = value.slice(-1) // أخذ آخر رقم فقط
+    newOTP[index] = value.slice(-1)
     setOtpCode(newOTP)
 
-    // الانتقال للحقل التالي تلقائياً
     if (value && index < 5) {
       const nextInput = document.getElementById(`otp-${index + 1}`)
       nextInput?.focus()
     }
   }
 
-  // التعامل مع مفتاح Backspace
   const handleOTPKeyDown = (index: number, e: React.KeyboardEvent) => {
     if (e.key === 'Backspace' && !otpCode[index] && index > 0) {
       const prevInput = document.getElementById(`otp-${index - 1}`)
@@ -174,7 +168,7 @@ export default function ForgotPasswordPage() {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl font-bold">إعادة تعيين كلمة المرور</CardTitle>
+            <CardTitle className="text-2xl font-bold">{t('resetPassword', currentLanguage.code)}</CardTitle>
             <Link href="/login">
               <Button variant="ghost" size="icon">
                 <ArrowRight className="h-5 w-5" />
@@ -182,17 +176,17 @@ export default function ForgotPasswordPage() {
             </Link>
           </div>
           <CardDescription>
-            {currentStep === 'phone' && 'أدخل رقم هاتفك المرتبط بالحساب'}
-            {currentStep === 'otp' && 'أدخل رمز التحقق المرسل على الواتساب'}
-            {currentStep === 'password' && 'أدخل اسم المستخدم وكلمة المرور الجديدة'}
+            {currentStep === 'phone' && t('enterPhoneLinkedToAccount', currentLanguage.code)}
+            {currentStep === 'otp' && t('enterOtpSentWhatsApp', currentLanguage.code)}
+            {currentStep === 'password' && t('enterNewUsernamePassword', currentLanguage.code)}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* الخطوة 1: إدخال رقم الهاتف */}
+          {}
           {currentStep === 'phone' && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="phone">رقم الهاتف</Label>
+                <Label htmlFor="phone">{t('phoneNumber', currentLanguage.code)}</Label>
                 <div className="relative">
                   <Phone className="absolute right-3 top-[50%] -translate-y-[50%] h-4 w-4 text-muted-foreground" />
                   <Input
@@ -207,7 +201,7 @@ export default function ForgotPasswordPage() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  سيتم إرسال رمز التحقق عبر الواتساب
+                  {t('otpWillBeSentWhatsApp', currentLanguage.code)}
                 </p>
               </div>
 
@@ -216,16 +210,16 @@ export default function ForgotPasswordPage() {
                 onClick={handleSendOTP}
                 disabled={isLoading}
               >
-                {isLoading ? 'جاري الإرسال...' : 'إرسال رمز التحقق'}
+                {isLoading ? t('sending', currentLanguage.code) : t('sendOtpCode', currentLanguage.code)}
               </Button>
             </>
           )}
 
-          {/* الخطوة 2: إدخال OTP */}
+          {}
           {currentStep === 'otp' && (
             <>
               <div className="space-y-2">
-                <Label>رمز التحقق (OTP)</Label>
+                <Label>{t('otpCode', currentLanguage.code)}</Label>
                 <div className="flex gap-2 justify-center" dir="ltr">
                   {otpCode.map((digit, index) => (
                     <Input
@@ -243,7 +237,7 @@ export default function ForgotPasswordPage() {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground text-center">
-                  تحقق من رسائل الواتساب الخاصة بك
+                  {t('checkWhatsAppMessages', currentLanguage.code)}
                 </p>
               </div>
 
@@ -253,7 +247,7 @@ export default function ForgotPasswordPage() {
                   onClick={handleVerifyOTP}
                   disabled={isLoading}
                 >
-                  {isLoading ? 'جاري التحقق...' : 'التحقق من الرمز'}
+                  {isLoading ? t('verifying', currentLanguage.code) : t('verifyCode', currentLanguage.code)}
                 </Button>
 
                 <Button 
@@ -262,23 +256,23 @@ export default function ForgotPasswordPage() {
                   onClick={handleSendOTP}
                   disabled={isLoading}
                 >
-                  إعادة إرسال الرمز
+                  {t('resendCode', currentLanguage.code)}
                 </Button>
               </div>
             </>
           )}
 
-          {/* الخطوة 3: إدخال اسم المستخدم وكلمة المرور الجديدة */}
+          {}
           {currentStep === 'password' && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="newUsername">اسم المستخدم</Label>
+                <Label htmlFor="newUsername">{t('username', currentLanguage.code)}</Label>
                 <div className="relative">
                   <User className="absolute right-3 top-[50%] -translate-y-[50%] h-4 w-4 text-muted-foreground" />
                   <Input
                     id="newUsername"
                     type="text"
-                    placeholder="أدخل اسم المستخدم الجديد"
+                    placeholder={t('enterNewUsername', currentLanguage.code)}
                     value={newUsername}
                     onChange={(e) => setNewUsername(e.target.value)}
                     className="pr-10"
@@ -287,18 +281,18 @@ export default function ForgotPasswordPage() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  اسم المستخدم الحالي: {currentUsername}
+                  {t('currentUsername', currentLanguage.code)}: {currentUsername}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="newPassword">كلمة المرور الجديدة</Label>
+                <Label htmlFor="newPassword">{t('newPassword', currentLanguage.code)}</Label>
                 <div className="relative">
                   <Lock className="absolute right-3 top-[50%] -translate-y-[50%] h-4 w-4 text-muted-foreground" />
                   <Input
                     id="newPassword"
                     type="password"
-                    placeholder="أدخل كلمة المرور الجديدة"
+                    placeholder={t('enterNewPassword', currentLanguage.code)}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     className="pr-10"
@@ -310,13 +304,13 @@ export default function ForgotPasswordPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
+                <Label htmlFor="confirmPassword">{t('confirmPassword', currentLanguage.code)}</Label>
                 <div className="relative">
                   <Lock className="absolute right-3 top-[50%] -translate-y-[50%] h-4 w-4 text-muted-foreground" />
                   <Input
                     id="confirmPassword"
                     type="password"
-                    placeholder="أعد إدخال كلمة المرور"
+                    placeholder={t('reEnterPassword', currentLanguage.code)}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="pr-10"
@@ -331,7 +325,7 @@ export default function ForgotPasswordPage() {
                 onClick={handleResetPassword}
                 disabled={isLoading}
               >
-                {isLoading ? 'جاري التحديث...' : 'تحديث كلمة المرور'}
+                {isLoading ? t('updating', currentLanguage.code) : t('updatePassword', currentLanguage.code)}
               </Button>
             </>
           )}

@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -122,7 +121,8 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--border);
+    outline-color: color-mix(in oklch, var(--ring), transparent 50%);
   }
   
   :root {
@@ -240,6 +240,55 @@
     border-color: var(--theme-primary);
   }
   
+  /* Icon theme styles */
+  .theme-icon {
+    color: var(--theme-icon) !important;
+  }
+  
+  .theme-icon:hover {
+    color: var(--theme-icon-hover) !important;
+  }
+
+  /* Card with dynamic background */
+  .theme-card-dynamic {
+    background-color: var(--theme-card-bg) !important;
+    color: var(--theme-card-text) !important;
+    border-color: var(--theme-border) !important;
+  }
+
+  /* Status colors */
+  .theme-success {
+    color: var(--theme-success) !important;
+  }
+
+  .theme-success-bg {
+    background-color: var(--theme-success) !important;
+  }
+
+  .theme-warning {
+    color: var(--theme-warning) !important;
+  }
+
+  .theme-warning-bg {
+    background-color: var(--theme-warning) !important;
+  }
+
+  .theme-danger {
+    color: var(--theme-danger) !important;
+  }
+
+  .theme-danger-bg {
+    background-color: var(--theme-danger) !important;
+  }
+
+  .theme-info {
+    color: var(--theme-info) !important;
+  }
+
+  .theme-info-bg {
+    background-color: var(--theme-info) !important;
+  }
+
   /* Smooth transitions for theme changes */
   * {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, font-family 0.2s ease;
@@ -248,5 +297,22 @@
   /* Disable transitions when resizing */
   .resizing * {
     transition: none !important;
+  }
+
+  /* Force English numerals for all number inputs and datetime inputs */
+  input[type="number"],
+  input[type="datetime-local"],
+  input[type="date"],
+  input[type="time"],
+  .ltr-numbers {
+    direction: ltr !important;
+    font-variant-numeric: lining-nums tabular-nums;
+    unicode-bidi: plaintext;
+  }
+
+  /* Ensure input placeholders are also LTR */
+  input[type="number"]::placeholder,
+  input[type="datetime-local"]::placeholder {
+    direction: ltr !important;
   }
 }

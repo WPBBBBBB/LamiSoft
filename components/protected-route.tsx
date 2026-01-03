@@ -20,16 +20,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       const isPublicRoute = publicRoutes.includes(pathname)
       
       if (!user && !isPublicRoute) {
-        // المستخدم غير مسجل دخول ويحاول الوصول لصفحة محمية
         router.replace("/login")
       } else if (user && pathname === "/login") {
-        // المستخدم مسجل دخول ويحاول الوصول لصفحة تسجيل الدخول
         router.replace("/home")
       }
     }
   }, [user, loading, pathname, router])
 
-  // عرض شاشة تحميل أثناء التحقق
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -41,10 +38,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
-  // السماح بعرض المحتوى إذا كان المستخدم في المكان الصحيح
   const isPublicRoute = publicRoutes.includes(pathname)
   if (!user && !isPublicRoute) {
-    return null // سيتم إعادة التوجيه في useEffect
+    return null
   }
 
   return <>{children}</>
