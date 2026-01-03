@@ -2,6 +2,8 @@ export type CookieConsent = "accepted" | "rejected"
 
 type SameSite = "lax" | "strict" | "none"
 
+const COOKIE_CONSENT_STORAGE_KEY = "als_cookie_consent"
+
 function isBrowser(): boolean {
   return typeof document !== "undefined"
 }
@@ -37,21 +39,18 @@ export function setCookie(
   const sameSite = options?.sameSite ?? "lax"
   const secure = options?.secure ?? window.location.protocol === "https:"
 
-  let cookie = `${name}=${encodeURIComponent(value)}; Path=${path}; SameSite=${sameSite}`
+  const sameSiteAttr =
+    sameSite === "lax" ? "Lax" : sameSite === "strict" ? "Strict" : "None"
+
+  let cookie = `${name}=${encodeURIComponent(value)}; Path=${path}; SameSite=${sameSiteAttr}`
 
   if (typeof options?.maxAgeDays === "number") {
     const maxAgeSeconds = Math.floor(options.maxAgeDays * 24 * 60 * 60)
     cookie += `; Max-Age=${maxAgeSeconds}`
   }
 
-  if (secure && sameSite !== "none") {
-    cookie += "; Secure"
-  }
-
   // If SameSite=None, Secure is required by modern browsers.
-  if (sameSite === "none") {
-    cookie += "; Secure"
-  }
+  if (secure || sameSite === "none") cookie += "; Secure"
 
   document.cookie = cookie
 }
@@ -66,6 +65,11 @@ export const COOKIE_CONSENT_NAME = "als_cookie_consent"
 export function getCookieConsent(): CookieConsent | null {
   const value = getCookie(COOKIE_CONSENT_NAME)
   if (value === "accepted" || value === "rejected") return value
+
+  // Fallback: if cookies are blocked/not persisted, use localStorage.
+  const stored = safeLocalStorageGet(COOKIE_CONSENT_STORAGE_KEY)
+  if (stored === "accepted" || stored === "rejected") return stored
+
   return null
 }
 
@@ -74,6 +78,7 @@ export function hasAcceptedCookieConsent(): boolean {
 }
 
 export function setCookieConsent(value: CookieConsent): void {
+  safeLocalStorageSet(COOKIE_CONSENT_STORAGE_KEY, value)
   setCookie(COOKIE_CONSENT_NAME, value, { maxAgeDays: 365 })
 }
 
