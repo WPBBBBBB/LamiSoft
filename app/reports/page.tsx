@@ -954,7 +954,7 @@ export default function ReportsPage() {
                               <TableCell>
                                 <span
                                   className={`px-2 py-1 rounded text-xs ${
-                                    sale.paytype === "????"
+                                    sale.paytype === "نقدي"
                                       ? "bg-green-100 text-green-800"
                                       : "bg-orange-100 text-orange-800"
                                   }`}
@@ -1201,9 +1201,9 @@ export default function ReportsPage() {
                               <TableCell>
                                 <span
                                   className={`px-2 py-1 rounded text-xs ${
-                                    purchase.typeofbuy === "????"
+                                    purchase.typeofbuy === "محلي"
                                       ? "bg-blue-100 text-blue-800"
-                                      : purchase.typeofbuy === "???????"
+                                      : purchase.typeofbuy === "استيراد"
                                       ? "bg-purple-100 text-purple-800"
                                       : "bg-gray-100 text-gray-800"
                                   }`}
@@ -1214,7 +1214,7 @@ export default function ReportsPage() {
                               <TableCell>
                                 <span
                                   className={`px-2 py-1 rounded text-xs ${
-                                    purchase.typeofpayment === "????"
+                                    purchase.typeofpayment === "نقدي"
                                       ? "bg-green-100 text-green-800"
                                       : "bg-orange-100 text-orange-800"
                                   }`}

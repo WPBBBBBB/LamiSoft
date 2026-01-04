@@ -63,8 +63,8 @@ interface ProductRow extends PurchaseProductDetail {
 
 function toEnglishDigits(value: string): string {
   return value
-    .replace(/[?-?]/g, (d) => String("??????????".indexOf(d)))
-    .replace(/[?-?]/g, (d) => String("??????????".indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
 }
 
 function normalizeDateTimeInput(raw: string): string {
@@ -89,9 +89,9 @@ export default function PurchaseAddPage() {
   const [loadingEditData, setLoadingEditData] = useState(false)
 
   const [numberofpurchase, setNumberOfPurchase] = useState("")
-  const [typeofbuy, setTypeOfBuy] = useState<"?????" | "????" | "???????">("????")
-  const [typeofpayment, setTypeOfPayment] = useState<"????" | "???">("????")
-  const [currencyType, setCurrencyType] = useState<"?????" | "?????">("?????")
+  const [typeofbuy, setTypeOfBuy] = useState<"إعادة" | "محلي" | "استيراد">("محلي")
+  const [typeofpayment, setTypeOfPayment] = useState<"نقدي" | "آجل">("نقدي")
+  const [currencyType, setCurrencyType] = useState<"دينار" | "دولار">("دينار")
   const [purchasestoreid, setPurchaseStoreId] = useState("")
   const [datetime, setDateTime] = useState("")
   const [details, setDetails] = useState("")
@@ -105,7 +105,7 @@ export default function PurchaseAddPage() {
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const [hasAmountReceived, setHasAmountReceived] = useState(false)
-  const [amountCurrency, setAmountCurrency] = useState<"?????" | "?????">("?????")
+  const [amountCurrency, setAmountCurrency] = useState<"دينار" | "دولار">("دينار")
   const [amountReceivedIQD, setAmountReceivedIQD] = useState(0)
   const [amountReceivedUSD, setAmountReceivedUSD] = useState(0)
 
@@ -121,7 +121,7 @@ export default function PurchaseAddPage() {
     productcode1: "",
     nameofproduct: "",
     quantity: 0,
-    unit: "????",
+    unit: "قطعة",
     purchasesinglepriceiqd: 0,
     purchasesinglepriceusd: 0,
     sellsinglepriceiqd: 0,
@@ -136,7 +136,7 @@ export default function PurchaseAddPage() {
   
   const [viewingNote, setViewingNote] = useState<string | null>(null)
   
-  // ???? ???? ????? ???????
+  // تعارضات أسعار المواد
   const [priceConflicts, setPriceConflicts] = useState<Array<{
     product: PurchaseProductDetail
     existingPriceIQD: number
@@ -190,7 +190,7 @@ export default function PurchaseAddPage() {
             setNameOfSupplier(newSupplier.name)
             setSupplierBalanceIQD(newSupplier.balanceiqd || 0)
             setSupplierBalanceUSD(newSupplier.balanceusd || 0)
-            toast.success(`?? ?????? ??????: ${newSupplier.name}`)
+            toast.success(`تم اختيار المجهز: ${newSupplier.name}`)
           }
           
           const newUrl = window.location.pathname + (editId ? `?edit=${editId}` : '')
@@ -214,7 +214,7 @@ export default function PurchaseAddPage() {
       const rate = await getCurrentExchangeRate()
       setExchangeRate(rate)
     } catch (error) {
-      toast.error("??? ????? ????????")
+      toast.error("فشل تحميل البيانات")
     }
   }
 
@@ -240,7 +240,7 @@ export default function PurchaseAddPage() {
         
         if (!data) {
           updateNewItem("productcode1", productCode)
-          toast.success(`?? ????? ??? ????: ${productCode}`)
+          toast.success(`تم إنشاء رمز مادة: ${productCode}`)
           break
         }
         
@@ -248,10 +248,10 @@ export default function PurchaseAddPage() {
       }
       
       if (attempts >= maxAttempts) {
-        toast.error('??? ????? ??? ???? ??? ??? ???????')
+        toast.error('فشل إنشاء رمز فريد بعد عدة محاولات')
       }
     } catch (error) {
-      toast.error('??? ??? ????? ????? ??? ??????')
+      toast.error('حدث خطأ أثناء إنشاء رمز المادة')
     } finally {
       setGeneratingProductCode(false)
     }
@@ -279,7 +279,7 @@ export default function PurchaseAddPage() {
         
         if (!data) {
           setNumberOfPurchase(purchaseNumber)
-          toast.success(`?? ????? ??? ?????: ${purchaseNumber}`)
+          toast.success(`تم إنشاء رقم قائمة: ${purchaseNumber}`)
           break
         }
         
@@ -287,10 +287,10 @@ export default function PurchaseAddPage() {
       }
       
       if (attempts >= maxAttempts) {
-        toast.error('??? ????? ??? ???? ??? ??? ???????')
+        toast.error('فشل إنشاء رقم فريد بعد عدة محاولات')
       }
     } catch (error) {
-      toast.error('??? ??? ????? ????? ??? ???????')
+      toast.error('حدث خطأ أثناء إنشاء رقم القائمة')
     } finally {
       setGeneratingNumber(false)
     }
@@ -302,7 +302,7 @@ export default function PurchaseAddPage() {
       
       const purchaseData = await getPurchaseById(purchaseId)
       if (!purchaseData) {
-        toast.error("?? ??? ?????? ??? ???????")
+        toast.error("لم يتم العثور على القائمة")
         router.push("/reports")
         return
       }
@@ -310,7 +310,7 @@ export default function PurchaseAddPage() {
       setNumberOfPurchase(purchaseData.numberofpurchase)
       setTypeOfBuy(purchaseData.typeofbuy)
       setTypeOfPayment(purchaseData.typeofpayment)
-      setCurrencyType(purchaseData.currency || "?????")
+      setCurrencyType(purchaseData.currency || "دينار")
       setPurchaseStoreId(purchaseData.purchasestoreid)
       setDateTime(new Date(purchaseData.datetime).toISOString().slice(0, 16))
       setDetails(purchaseData.details || "")
@@ -330,9 +330,9 @@ export default function PurchaseAddPage() {
       }))
       setProducts(productsWithTempId)
       
-      toast.success("?? ????? ?????? ???????")
+      toast.success("تم تحميل بيانات القائمة")
     } catch (error) {
-      toast.error("??? ????? ?????? ???????")
+      toast.error("فشل تحميل بيانات القائمة")
       router.push("/reports")
     } finally {
       setLoadingEditData(false)
@@ -364,12 +364,12 @@ export default function PurchaseAddPage() {
 
   const addItemFromNew = () => {
     if (!newItem.productcode1.trim() || !newItem.nameofproduct.trim()) {
-      toast.error("?????? ????? ??? ?????? ???? ??????")
+      toast.error("الرجاء إدخال رمز المادة واسم المادة")
       return
     }
 
     if (newItem.quantity <= 0) {
-      toast.error("?????? ????? ???? ?????")
+      toast.error("الرجاء إدخال كمية صحيحة")
       return
     }
 
@@ -384,7 +384,7 @@ export default function PurchaseAddPage() {
       productcode1: "",
       nameofproduct: "",
       quantity: 0,
-      unit: "????",
+        unit: "قطعة",
       purchasesinglepriceiqd: 0,
       purchasesinglepriceusd: 0,
       sellsinglepriceiqd: 0,
@@ -392,7 +392,7 @@ export default function PurchaseAddPage() {
       details: "",
     })
 
-    toast.success("?? ????? ??????")
+    toast.success("تم إضافة المادة")
   }
 
   const removeRow = (tempId: string) => {
@@ -472,7 +472,7 @@ export default function PurchaseAddPage() {
   const remainingAmountUSD = totalPurchaseUSD - amountReceivedUSD
 
   const handleAmountReceivedChange = (value: number) => {
-    if (amountCurrency === "?????") {
+    if (amountCurrency === "دينار") {
       setAmountReceivedIQD(value)
       setAmountReceivedUSD(0)
     } else {
@@ -486,19 +486,19 @@ export default function PurchaseAddPage() {
     saveInFlightRef.current = true
 
     if (!numberofpurchase.trim()) {
-      toast.error("?????? ????? ??? ???????")
+      toast.error("الرجاء إدخال رقم القائمة")
       saveInFlightRef.current = false
       return
     }
 
     if (!purchasestoreid) {
-      toast.error("?????? ?????? ??????")
+      toast.error("الرجاء اختيار المخزن")
       saveInFlightRef.current = false
       return
     }
 
     if (!supplierid) {
-      toast.error("?????? ?????? ??????")
+      toast.error("الرجاء اختيار المجهز")
       saveInFlightRef.current = false
       return
     }
@@ -508,17 +508,17 @@ export default function PurchaseAddPage() {
     )
 
     if (validProducts.length === 0) {
-      toast.error("?????? ????? ???? ????? ??? ?????")
+      toast.error("الرجاء إضافة مادة واحدة على الأقل")
       saveInFlightRef.current = false
       return
     }
 
-    // ?????? ?? ????? ??????? ??? ?????
+    // التحقق من تعارض الأسعار قبل الحفظ
     if (!isEditMode) {
       const conflictsCheck = await checkProductsPriceConflicts(purchasestoreid, validProducts)
       
       if (conflictsCheck.success && conflictsCheck.conflicts.length > 0) {
-        // ??? ???? ????? ???????
+        // عرض حوار تعارض الأسعار
         setPriceConflicts(conflictsCheck.conflicts)
         setShowPriceConflictDialog(true)
         saveInFlightRef.current = false
@@ -555,7 +555,7 @@ export default function PurchaseAddPage() {
 
       let result
       if (isEditMode && editId) {
-        // ??????? ???? ???????
+        // استخدام دالة التعديل
         result = await updatePurchase(
           editId,
           purchaseMain,
@@ -563,7 +563,7 @@ export default function PurchaseAddPage() {
           purchasestoreid
         )
       } else {
-        // ??????? ???? ??????? ?? ?????? ????? ???????
+        // استخدام دالة الإضافة مع قرارات تحديث الأسعار
         result = await createPurchase(
           purchaseMain,
           validProducts,
@@ -581,9 +581,9 @@ export default function PurchaseAddPage() {
         
         if (isEditMode) {
           await logAction(
-            "?????",
-            `?? ????? ????? ???? ??? ${numberofpurchase} ??????: ${selectedSupplier?.name || '??? ?????'}`,
-            "?????????",
+            "تعديل",
+            `تم تعديل قائمة شراء رقم ${numberofpurchase} للمجهز: ${selectedSupplier?.name || 'غير معروف'}`,
+            "المشتريات",
             undefined,
             undefined,
             {
@@ -595,13 +595,13 @@ export default function PurchaseAddPage() {
               items_count: validProducts.length
             }
           )
-          toast.success("?? ????? ????? ?????? ?????")
+          toast.success("تم تعديل قائمة الشراء بنجاح")
           router.push("/reports")
         } else {
           await logAction(
-            "?????",
-            `??? ????? ????? ????? ???? ??? ${numberofpurchase} ??????: ${selectedSupplier?.name || '??? ?????'} ????? ${total.toLocaleString('en-US')} ${currency}`,
-            "?????????",
+            "إضافة",
+            `تمت عملية إضافة قائمة شراء رقم ${numberofpurchase} للمجهز: ${selectedSupplier?.name || 'غير معروف'} بمبلغ ${total.toLocaleString('en-US')} ${currency}`,
+            "المشتريات",
             undefined,
             undefined,
             {
@@ -617,9 +617,9 @@ export default function PurchaseAddPage() {
           
           for (const product of validProducts) {
             await logAction(
-              "????? ??????",
-              `??? ????? ???? ${product.nameofproduct} ????? ${product.quantity} ${product.unit} ??? ??????`,
-              "???????",
+              "إضافة للمخزن",
+              `تمت إضافة مادة ${product.nameofproduct} بكمية ${product.quantity} ${product.unit} إلى المخزن`,
+              "المخزون",
               undefined,
               undefined,
               {
@@ -633,9 +633,9 @@ export default function PurchaseAddPage() {
             )
           }
           
-          toast.success("?? ??? ????? ?????? ?????")
+          toast.success("تم حفظ قائمة الشراء بنجاح")
           
-          // ????? ????? ???????
+          // إعادة تعيين النموذج
           setProducts([])
           setNumberOfPurchase("")
           setDetails("")
@@ -649,7 +649,7 @@ export default function PurchaseAddPage() {
             productcode1: "",
             nameofproduct: "",
             quantity: 0,
-            unit: "????",
+            unit: "قطعة",
             purchasesinglepriceiqd: 0,
             purchasesinglepriceusd: 0,
             sellsinglepriceiqd: 0,
@@ -658,10 +658,10 @@ export default function PurchaseAddPage() {
           })
         }
       } else {
-        toast.error(result.error || "??? ??? ????? ??????")
+        toast.error(result.error || "فشل حفظ قائمة الشراء")
       }
     } catch (error) {
-      toast.error("??? ??? ????? ??? ???????")
+      toast.error("حدث خطأ أثناء حفظ القائمة")
     } finally {
       setIsSaving(false)
       saveInFlightRef.current = false
@@ -711,7 +711,7 @@ export default function PurchaseAddPage() {
       >
         <div className="flex items-center gap-3 rounded-lg border bg-background px-4 py-3 shadow">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span className="text-sm">???? ??? ???????...</span>
+          <span className="text-sm">جاري حفظ القائمة...</span>
         </div>
       </div>
     )}
@@ -727,13 +727,13 @@ export default function PurchaseAddPage() {
             <ArrowRight className="h-5 w-5 theme-icon" />
           </Button>
           <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
-            {isViewMode ? "??? ????? ????" : isEditMode ? "????? ????? ????" : "????? ????? ????"}
+            {isViewMode ? "كشف قائمة شراء" : isEditMode ? "تعديل قائمة شراء" : "إضافة قائمة شراء"}
           </h1>
         </div>
         {loadingEditData && (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span>???? ????? ????????...</span>
+            <span>جاري تحميل البيانات...</span>
           </div>
         )}
       </div>
@@ -744,13 +744,13 @@ export default function PurchaseAddPage() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           {}
           <div className="space-y-2">
-            <Label htmlFor="numberofpurchase">??? ???????</Label>
+            <Label htmlFor="numberofpurchase">رقم القائمة</Label>
             <div className="relative">
               <Input
                 id="numberofpurchase"
                 value={numberofpurchase}
                 onChange={(e) => setNumberOfPurchase(e.target.value)}
-                placeholder="??? ???????"
+                placeholder="رقم القائمة"
                 readOnly={isViewMode}
                 className="pr-10"
               />
@@ -762,7 +762,7 @@ export default function PurchaseAddPage() {
                   className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7"
                   onClick={generateUniquePurchaseNumber}
                   disabled={generatingNumber}
-                  title="????? ??? ??????"
+                  title="إنشاء رقم عشوائي"
                 >
                   <RefreshCw className={cn("h-4 w-4", generatingNumber && "animate-spin")} />
                 </Button>
@@ -772,59 +772,59 @@ export default function PurchaseAddPage() {
 
           {}
           <div className="space-y-2">
-            <Label>??? ??????</Label>
-            <Select value={typeofbuy} onValueChange={(v: "?????" | "????" | "???????") => setTypeOfBuy(v)} disabled={isViewMode}>
+            <Label>نوع الشراء</Label>
+            <Select value={typeofbuy} onValueChange={(v: "إعادة" | "محلي" | "استيراد") => setTypeOfBuy(v)} disabled={isViewMode}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="?????">?????</SelectItem>
-                <SelectItem value="????">????</SelectItem>
-                <SelectItem value="???????">???????</SelectItem>
+                <SelectItem value="إعادة">إعادة</SelectItem>
+                <SelectItem value="محلي">محلي</SelectItem>
+                <SelectItem value="استيراد">استيراد</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {}
           <div className="space-y-2">
-            <Label>??? ?????</Label>
+            <Label>نوع الدفع</Label>
             <Select
               value={typeofpayment}
-              onValueChange={(v: "????" | "???") => setTypeOfPayment(v)}
+              onValueChange={(v: "نقدي" | "آجل") => setTypeOfPayment(v)}
               disabled={isViewMode}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="????">????</SelectItem>
-                <SelectItem value="???">???</SelectItem>
+                <SelectItem value="نقدي">نقدي</SelectItem>
+                <SelectItem value="آجل">آجل</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {}
           <div className="space-y-2">
-            <Label>??? ??????</Label>
+            <Label>نوع العملة</Label>
             <Select
               value={currencyType}
-              onValueChange={(v: "?????" | "?????") => setCurrencyType(v)}
+              onValueChange={(v: "دينار" | "دولار") => setCurrencyType(v)}
               disabled={isViewMode}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="?????">?????</SelectItem>
-                <SelectItem value="?????">?????</SelectItem>
+                <SelectItem value="دينار">دينار</SelectItem>
+                <SelectItem value="دولار">دولار</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>??????</Label>
+            <Label>المخزن</Label>
             <Select value={purchasestoreid} onValueChange={setPurchaseStoreId}>
               <SelectTrigger>
-                <SelectValue placeholder="???? ??????" />
+                <SelectValue placeholder="اختر المخزن" />
               </SelectTrigger>
               <SelectContent>
                 {stores.map((store) => (
@@ -841,10 +841,10 @@ export default function PurchaseAddPage() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
           {}
           <div className="space-y-2 md:col-span-3">
-            <Label>??? ??????</Label>
+            <Label>اسم المجهز</Label>
             <div className="relative" ref={dropdownRef}>
                 <Input
-                  placeholder="???? ?? ????..."
+                  placeholder="ابحث عن مجهز..."
                   value={searchSupplier || (supplierid ? suppliers.find(s => s.id === supplierid)?.name : "")}
                   onChange={(e) => {
                     setSearchSupplier(e.target.value)
@@ -864,7 +864,7 @@ export default function PurchaseAddPage() {
                       )
                       if (filteredSuppliers.length === 0) {
                         const currentPath = window.location.pathname + window.location.search
-                        router.push(`/customers/add?type=????&returnTo=${encodeURIComponent(currentPath)}&name=${encodeURIComponent(searchSupplier)}`)
+                        router.push(`/customers/add?type=مجهز&returnTo=${encodeURIComponent(currentPath)}&name=${encodeURIComponent(searchSupplier)}`)
                       }
                     }
                   }}
@@ -881,10 +881,10 @@ export default function PurchaseAddPage() {
                         return (
                           <div className="px-3 py-3 text-center space-y-1">
                             <div className="text-sm text-muted-foreground">
-                              ?? ???? ??? ?????
+                              لا يوجد اسم مطابق
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              ???? <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Enter</kbd> ?????? ???? ????
+                              اضغط <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Enter</kbd> لإضافة مجهز جديد
                             </div>
                           </div>
                         )
@@ -913,7 +913,7 @@ export default function PurchaseAddPage() {
 
           {}
           <div className="space-y-2 md:col-span-2">
-            <Label className="font-semibold text-blue-600 dark:text-blue-400">???? ???? ?????</Label>
+            <Label className="font-semibold text-blue-600 dark:text-blue-400">رصيد سابق دينار</Label>
             <div className="flex items-center gap-2">
               <Input
                 value={supplierBalanceIQD.toLocaleString('en-US')}
@@ -924,7 +924,7 @@ export default function PurchaseAddPage() {
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label className="font-semibold text-green-600 dark:text-green-400">???? ???? ?????</Label>
+            <Label className="font-semibold text-green-600 dark:text-green-400">رصيد سابق دولار</Label>
             <div className="flex items-center gap-2">
               <Input
                 value={supplierBalanceUSD.toLocaleString('en-US')}
@@ -935,7 +935,7 @@ export default function PurchaseAddPage() {
           </div>
 
           {}
-          {typeofpayment === "???" && (
+          {typeofpayment === "آجل" && (
             <div className="space-y-2 md:col-span-3">
               <div className="flex items-center space-x-2 space-x-reverse h-full">
                 <Checkbox
@@ -947,7 +947,7 @@ export default function PurchaseAddPage() {
                   disabled={isViewMode}
                 />
                 <Label htmlFor="hasAmountReceived" className="cursor-pointer">
-                  ???? ????
+                  مبلغ واصل
                 </Label>
               </div>
 
@@ -955,27 +955,27 @@ export default function PurchaseAddPage() {
                 <div className="flex gap-2">
                   <Select
                     value={amountCurrency}
-                    onValueChange={(v: "?????" | "?????") => setAmountCurrency(v)}
+                    onValueChange={(v: "دينار" | "دولار") => setAmountCurrency(v)}
                   >
                     <SelectTrigger className="w-[100px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="?????">?????</SelectItem>
-                      <SelectItem value="?????">?????</SelectItem>
+                      <SelectItem value="دينار">دينار</SelectItem>
+                      <SelectItem value="دولار">دولار</SelectItem>
                     </SelectContent>
                   </Select>
                   <Input
                     type="number"
                     value={
-                      amountCurrency === "?????"
+                      amountCurrency === "دينار"
                         ? amountReceivedIQD || ""
                         : amountReceivedUSD || ""
                     }
                     onChange={(e) =>
                       handleAmountReceivedChange(parseFloat(e.target.value) || 0)
                     }
-                    placeholder="??????"
+                    placeholder="0"
                   />
                 </div>
               )}
@@ -984,7 +984,7 @@ export default function PurchaseAddPage() {
 
           {}
           <div className="space-y-2 md:col-span-2">
-            <Label>??? ?????</Label>
+            <Label>سعر الصرف</Label>
             <Input
               value={exchangeRate.toLocaleString('en-US')}
               readOnly
@@ -997,7 +997,7 @@ export default function PurchaseAddPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {}
           <div className="space-y-2">
-            <Label htmlFor="datetime">??????? ??????</Label>
+            <Label htmlFor="datetime">التاريخ والوقت</Label>
             <div className="relative">
               <Input
                 id="datetime"
@@ -1019,12 +1019,12 @@ export default function PurchaseAddPage() {
 
           {}
           <div className="space-y-2">
-            <Label htmlFor="details">?????????</Label>
+            <Label htmlFor="details">الملاحظات</Label>
             <Textarea
               id="details"
               value={details}
               onChange={(e) => setDetails(e.target.value)}
-              placeholder="??????? ??????..."
+              placeholder="ملاحظات إضافية..."
               rows={2}
               readOnly={isViewMode}
             />
@@ -1036,7 +1036,7 @@ export default function PurchaseAddPage() {
       <Card className="p-6" style={{ backgroundColor: "var(--theme-surface)", color: "var(--theme-text)" }}>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold" style={{ color: "var(--theme-text)" }}>
-            ?????? ?????? ????????
+            تفاصيل المواد المشتراة
           </h2>
         </div>
 
@@ -1049,16 +1049,16 @@ export default function PurchaseAddPage() {
                 }}
               >
                 <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>#</TableHead>
-                <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>???</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>??? ??????</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>??? ??????</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>?????</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>??????</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>?.???? ?????</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>?.???? ?????</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>?.??? ?????</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>?.??? ?????</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>??????</TableHead>
+                <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>حذف</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>رمز المادة</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>اسم المادة</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>العدد</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>الوحدة</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>س.شراء دينار</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>س.شراء دولار</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>س.بيع دينار</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>س.بيع دولار</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>ملاحظة</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1066,7 +1066,7 @@ export default function PurchaseAddPage() {
               {!isViewMode && (
               <TableRow style={{ backgroundColor: "var(--theme-accent)", opacity: 0.9 }}>
                 <TableCell className="text-center font-bold" style={{ color: "var(--theme-text)" }}>
-                  ????
+                  جديد
                 </TableCell>
                 <TableCell className="text-center">
                   <Plus className="h-5 w-5 theme-success mx-auto" />
@@ -1078,7 +1078,7 @@ export default function PurchaseAddPage() {
                         value={newItem.productcode1}
                         onChange={(e) => updateNewItem("productcode1", e.target.value)}
                         onKeyPress={(e) => handleNewItemKeyPress(e, "productcode1")}
-                        placeholder="??? ??????"
+                        placeholder="رمز المادة"
                         className="bg-green-50 dark:bg-green-950/20 h-8 pl-7"
                         title={newItem.productcode1}
                       />
@@ -1090,7 +1090,7 @@ export default function PurchaseAddPage() {
                           className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-6"
                           onClick={generateUniqueProductCode}
                           disabled={generatingProductCode}
-                          title="????? ??? ??????"
+                          title="إنشاء رمز عشوائي"
                         >
                           <RefreshCw className={cn("h-3 w-3", generatingProductCode && "animate-spin")} />
                         </Button>
@@ -1114,7 +1114,7 @@ export default function PurchaseAddPage() {
                       value={newItem.nameofproduct}
                       onChange={(e) => updateNewItem("nameofproduct", e.target.value)}
                       onKeyPress={(e) => handleNewItemKeyPress(e, "nameofproduct")}
-                      placeholder="??? ??????"
+                      placeholder="اسم المادة"
                       className="bg-green-50 dark:bg-green-950/20 h-8 flex-1"
                       title={newItem.nameofproduct}
                     />
@@ -1143,7 +1143,7 @@ export default function PurchaseAddPage() {
                 <TableCell>
                   <Select
                     value={newItem.unit}
-                    onValueChange={(v: "??????" | "????" | "???" | "???") =>
+                    onValueChange={(v: "كارتون" | "قطعة" | "لتر" | "كغم") =>
                       updateNewItem("unit", v)
                     }
                   >
@@ -1151,10 +1151,10 @@ export default function PurchaseAddPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="??????">??????</SelectItem>
-                      <SelectItem value="????">????</SelectItem>
-                      <SelectItem value="???">???</SelectItem>
-                      <SelectItem value="???">???</SelectItem>
+                      <SelectItem value="كارتون">كارتون</SelectItem>
+                      <SelectItem value="قطعة">قطعة</SelectItem>
+                      <SelectItem value="لتر">لتر</SelectItem>
+                      <SelectItem value="كغم">كغم</SelectItem>
                     </SelectContent>
                   </Select>
                 </TableCell>
@@ -1204,7 +1204,7 @@ export default function PurchaseAddPage() {
                       value={newItem.details || ""}
                       onChange={(e) => updateNewItem("details", e.target.value)}
                       onKeyPress={(e) => handleNewItemKeyPress(e, "details")}
-                      placeholder="??????..."
+                      placeholder="ملاحظة..."
                       className="bg-green-50 dark:bg-green-950/20 h-8 flex-1"
                       title={newItem.details}
                     />
@@ -1247,7 +1247,7 @@ export default function PurchaseAddPage() {
                           onChange={(e) =>
                             updateProduct(product.tempId, "productcode1", e.target.value)
                           }
-                          placeholder="??? ??????"
+                          placeholder="رمز المادة"
                           className="bg-amber-50 dark:bg-amber-950/20 h-8 flex-1"
                           title={product.productcode1}
                         />
@@ -1270,7 +1270,7 @@ export default function PurchaseAddPage() {
                           onChange={(e) =>
                             updateProduct(product.tempId, "nameofproduct", e.target.value)
                           }
-                          placeholder="??? ??????"
+                          placeholder="اسم المادة"
                           className="h-8 flex-1"
                           title={product.nameofproduct}
                         />
@@ -1304,7 +1304,7 @@ export default function PurchaseAddPage() {
                     <TableCell>
                       <Select
                         value={product.unit}
-                        onValueChange={(v: "??????" | "????" | "???" | "???") =>
+                        onValueChange={(v: "كارتون" | "قطعة" | "لتر" | "كغم") =>
                           updateProduct(product.tempId, "unit", v)
                         }
                       >
@@ -1312,10 +1312,10 @@ export default function PurchaseAddPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="??????">??????</SelectItem>
-                          <SelectItem value="????">????</SelectItem>
-                          <SelectItem value="???">???</SelectItem>
-                          <SelectItem value="???">???</SelectItem>
+                          <SelectItem value="كارتون">كارتون</SelectItem>
+                          <SelectItem value="قطعة">قطعة</SelectItem>
+                          <SelectItem value="لتر">لتر</SelectItem>
+                          <SelectItem value="كغم">كغم</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
@@ -1386,7 +1386,7 @@ export default function PurchaseAddPage() {
                           onChange={(e) =>
                             updateProduct(product.tempId, "details", e.target.value)
                           }
-                          placeholder="??????"
+                          placeholder="ملاحظة"
                           className="flex-1 h-8"
                           title={product.details}
                         />
@@ -1413,39 +1413,39 @@ export default function PurchaseAddPage() {
           {}
           <div className="flex flex-wrap items-center justify-between gap-6 mb-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">??? ??????:</span>
+              <span className="text-sm font-medium">عدد المواد:</span>
               <span className="ltr-numbers font-bold text-lg">{totalProductsCount}</span>
             </div>
             
             <div className="flex items-center gap-2">
-              <span className="text-sm">?????? ?????:</span>
+              <span className="text-sm">إجمالي دينار:</span>
               <span className="ltr-numbers font-bold text-lg text-green-600 dark:text-green-400">{totalPurchaseIQD.toLocaleString('en-US')}</span>
             </div>
             
             <div className="flex items-center gap-2">
-              <span className="text-sm">?????? ?????:</span>
+              <span className="text-sm">إجمالي دولار:</span>
               <span className="ltr-numbers font-bold text-lg text-blue-600 dark:text-blue-400">{totalPurchaseUSD.toLocaleString('en-US')}</span>
             </div>
             
             {hasAmountReceived && (
               <>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">???? ?????:</span>
+                  <span className="text-sm">واصل دينار:</span>
                   <span className="ltr-numbers font-bold text-lg">{amountReceivedIQD.toLocaleString('en-US')}</span>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">???? ?????:</span>
+                  <span className="text-sm">واصل دولار:</span>
                   <span className="ltr-numbers font-bold text-lg">{amountReceivedUSD.toLocaleString('en-US')}</span>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">????? ?????:</span>
+                  <span className="text-sm">متبقي دينار:</span>
                   <span className="ltr-numbers font-bold text-lg text-orange-600 dark:text-orange-400">{remainingAmountIQD.toLocaleString('en-US')}</span>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">????? ?????:</span>
+                  <span className="text-sm">متبقي دولار:</span>
                   <span className="ltr-numbers font-bold text-lg text-orange-600 dark:text-orange-400">{remainingAmountUSD.toLocaleString('en-US')}</span>
                 </div>
               </>
@@ -1463,12 +1463,12 @@ export default function PurchaseAddPage() {
               {isSaving ? (
                 <>
                   <Loader2 className="h-5 w-5 ml-2 animate-spin theme-icon" />
-                  ???? ?????...
+                  جاري الحفظ...
                 </>
               ) : (
                 <>
                   <Save className="h-5 w-5 ml-2 theme-success" />
-                  ????? ????? ??????
+                  إضافة قائمة الشراء
                 </>
               )}
             </Button>
@@ -1480,13 +1480,13 @@ export default function PurchaseAddPage() {
       <Dialog open={viewingNote !== null} onOpenChange={(open) => !open && setViewingNote(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>????????</DialogTitle>
+            <DialogTitle>الملاحظة</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <p className="whitespace-pre-wrap">{viewingNote}</p>
           </div>
           <DialogFooter>
-            <Button onClick={() => setViewingNote(null)}>?????</Button>
+            <Button onClick={() => setViewingNote(null)}>إغلاق</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1496,22 +1496,22 @@ export default function PurchaseAddPage() {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-orange-600">
-              ?? ?????: ?????? ?? ???????
+              ⚠️ تحذير: اختلاف في الأسعار
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              ??? ???????? ?????? ?????? ?? ?????? ?????? ??????. ???? ??? ???? ??????? ?? ???? ????????:
+              بعض المنتجات موجودة بالفعل في المخزن بأسعار مختلفة. اختر كيف تريد التعامل مع جميع المنتجات:
             </p>
 
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>??????</TableHead>
-                  <TableHead>????? ??????</TableHead>
-                  <TableHead>????? ??????</TableHead>
-                  <TableHead>?????</TableHead>
+                  <TableHead>المنتج</TableHead>
+                  <TableHead>السعر الحالي</TableHead>
+                  <TableHead>السعر الجديد</TableHead>
+                  <TableHead>الفرق</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1521,7 +1521,7 @@ export default function PurchaseAddPage() {
                       <div>
                         <div className="font-medium">{conflict.product.nameofproduct}</div>
                         <div className="text-sm text-muted-foreground">
-                          ???: {conflict.product.productcode1}
+                          كود: {conflict.product.productcode1}
                         </div>
                       </div>
                     </TableCell>
@@ -1590,19 +1590,19 @@ export default function PurchaseAddPage() {
               variant="outline"
               onClick={() => handleApplyAllPriceDecisions('cancel')}
             >
-              ?????
+              إلغاء
             </Button>
             <Button
               variant="secondary"
               onClick={() => handleApplyAllPriceDecisions('quantity-only')}
             >
-              ????? ?????? ???
+              تحديث الكمية فقط
             </Button>
             <Button
               onClick={() => handleApplyAllPriceDecisions('update-all')}
               className="bg-green-600 hover:bg-green-700"
             >
-              ????? ?????? ??????
+              تحديث الكمية والسعر
             </Button>
           </DialogFooter>
         </DialogContent>

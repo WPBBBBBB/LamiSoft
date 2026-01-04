@@ -26,13 +26,13 @@ export interface SaleMain {
   salestoreid: string
   customerid: string
   customername: string
-  pricetype: "????" | "????"
-  paytype: "????" | "???"
-  currencytype: "?????" | "?????"
+  pricetype: "جملة" | "مفرد"
+  paytype: "نقدي" | "آجل"
+  currencytype: "دينار" | "دولار"
   details?: string
   datetime: string
   discountenabled: boolean
-  discountcurrency?: "?????" | "?????"
+  discountcurrency?: "دينار" | "دولار"
   discountiqd: number
   discountusd: number
   totalsaleiqd: number
@@ -66,7 +66,7 @@ export async function getAllCustomers(): Promise<Customer[]> {
     const { data, error } = await supabase
       .from("customers")
       .select("id, customer_name, type, balanceiqd, balanceusd")
-      .eq("type", "????")
+      .eq("type", "زبون")
       .order("customer_name")
 
     if (error) throw error
@@ -138,8 +138,8 @@ export async function createSale(
   saleMain: SaleMain,
   saleDetails: SaleDetail[],
   storeId: string,
-  payType: "????" | "???",
-  currencyType: "?????" | "?????"
+  payType: "نقدي" | "آجل",
+  currencyType: "دينار" | "دولار"
 ): Promise<{ success: boolean; saleId?: string; error?: string }> {
   try {
     const isDuplicateSaleNumberError = (err: unknown) => {
@@ -187,7 +187,7 @@ export async function createSale(
     }
 
     if (!mainData) {
-      throw lastInsertError || new Error("??? ????? ????? ?????")
+      throw lastInsertError || new Error("فشل إدخال قائمة البيع")
     }
 
     const saleMainId = mainData.id
@@ -215,15 +215,17 @@ export async function createSale(
           detail.quantity
         )
       } catch (invError) {
-        throw new Error(`??? ?? ????? ??????? ?????? ${detail.productname}: ${invError instanceof Error ? invError.message : String(invError)}`)
+        throw new Error(
+          `خطأ في تحديث المخزون للمادة ${detail.productname}: ${invError instanceof Error ? invError.message : String(invError)}`
+        )
       }
     }
-    if (payType === "???") {
+    if (payType === "آجل") {
       const remainingIQD = saleMain.finaltotaliqd - saleMain.amountreceivediqd
       const remainingUSD = saleMain.finaltotalusd - saleMain.amountreceivedusd
 
-      const balanceIQD = currencyType === "?????" ? remainingIQD : 0
-      const balanceUSD = currencyType === "?????" ? remainingUSD : 0
+      const balanceIQD = currencyType === "دينار" ? remainingIQD : 0
+      const balanceUSD = currencyType === "دولار" ? remainingUSD : 0
 
       await updateCustomerBalance(
         saleMain.customerid,
@@ -231,20 +233,20 @@ export async function createSale(
         balanceUSD
       )
       if (saleMain.amountreceivediqd > 0 || saleMain.amountreceivedusd > 0) {
-        const paymentNote = `???? ????? ?????? ??? ${saleMain.numberofsale} - ${saleMain.customername}`
+        const paymentNote = `دفعة واصلة لقائمة بيع ${saleMain.numberofsale} - ${saleMain.customername}`
 
         const { error: paymentError } = await supabase.from("payments").insert([{
           customer_id: saleMain.customerid,
           amount_iqd: saleMain.amountreceivediqd,
           amount_usd: saleMain.amountreceivedusd,
           currency_type: saleMain.amountreceivediqd > 0 ? 'IQD' : 'USD',
-          transaction_type: "???",
+          transaction_type: "قبض",
           notes: paymentNote,
           pay_date: new Date().toISOString(),
           salesmainid: saleMainId,
           paymentamountiqd: saleMain.amountreceivediqd,
           paymentamountusd: saleMain.amountreceivedusd,
-          paymenttype: "???",
+          paymenttype: "قبض",
         }])
 
         if (paymentError) {
@@ -255,7 +257,7 @@ export async function createSale(
 
     return { success: true, saleId: saleMainId }
   } catch (error: unknown) {
-    let errorMessage = "خطأ غير متوقع"
+    let errorMessage = "حدث خطأ غير متوقع"
     
     if (error instanceof Error) {
       errorMessage = error.message
@@ -266,12 +268,12 @@ export async function createSale(
       } else if (typeof errRecord.details === 'string' && errRecord.details) {
         errorMessage = errRecord.details
       } else if (typeof errRecord.code === 'string' && errRecord.code) {
-        errorMessage = `??? ?? ????? ????????: ${errRecord.code}`
+        errorMessage = `خطأ في قاعدة البيانات: ${errRecord.code}`
       } else {
         try {
           errorMessage = JSON.stringify(errRecord)
         } catch {
-          errorMessage = "??? ??? ??? ?????"
+          errorMessage = "حدث خطأ غير متوقع"
         }
       }
     } else if (typeof error === 'string') {
@@ -295,7 +297,7 @@ export async function updateSale(
   try {
 
     if (!saleId) {
-      return { success: false, error: "????? ??????? ??? ????" }
+      return { success: false, error: "معرّف القائمة غير صالح" }
     }
 
     step = "fetch-old"
@@ -305,7 +307,7 @@ export async function updateSale(
     ])
 
     if (!oldMain) {
-      return { success: false, error: "?? ??? ?????? ??? ??????? ????????" }
+      return { success: false, error: "لم يتم العثور على القائمة المطلوبة" }
     }
 
     const oldStoreId = oldMain.salestoreid
@@ -418,12 +420,12 @@ export async function updateSale(
 
     step = "customer-balance"
     const computeBalanceDelta = (main: SaleMain) => {
-      if (main.paytype !== "???") return { iqd: 0, usd: 0 }
+      if (main.paytype !== "آجل") return { iqd: 0, usd: 0 }
       const remainingIQD = (main.finaltotaliqd || 0) - (main.amountreceivediqd || 0)
       const remainingUSD = (main.finaltotalusd || 0) - (main.amountreceivedusd || 0)
       return {
-        iqd: main.currencytype === "?????" ? remainingIQD : 0,
-        usd: main.currencytype === "?????" ? remainingUSD : 0,
+        iqd: main.currencytype === "دينار" ? remainingIQD : 0,
+        usd: main.currencytype === "دولار" ? remainingUSD : 0,
       }
     }
 
@@ -688,12 +690,12 @@ export async function deleteSale(saleId: string): Promise<{
     let restoredIQD = 0
     let restoredUSD = 0
 
-    if (saleMain.paytype === "???") {
+    if (saleMain.paytype === "آجل") {
       const remainingIQD = (saleMain.finaltotaliqd || 0) - (saleMain.amountreceivediqd || 0)
       const remainingUSD = (saleMain.finaltotalusd || 0) - (saleMain.amountreceivedusd || 0)
 
-      restoredIQD = saleMain.currencytype === "?????" ? remainingIQD : 0
-      restoredUSD = saleMain.currencytype === "?????" ? remainingUSD : 0
+      restoredIQD = saleMain.currencytype === "دينار" ? remainingIQD : 0
+      restoredUSD = saleMain.currencytype === "دولار" ? remainingUSD : 0
 
       // 4?? ??????? ?????? ?? ???? ?????? (??? ?????? ?? ??????)
       if (restoredIQD !== 0 || restoredUSD !== 0) {

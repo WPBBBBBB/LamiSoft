@@ -11,11 +11,11 @@ export interface Supplier {
 export interface PurchaseMain {
   id?: string
   purchasestoreid: string
-  typeofbuy: "?????" | "????" | "???????"
-  typeofpayment: "????" | "???"
+  typeofbuy: "إعادة" | "محلي" | "استيراد"
+  typeofpayment: "نقدي" | "آجل"
   nameofsupplier: string
   supplierid: string
-  currency?: "?????" | "?????"
+  currency?: "دينار" | "دولار"
   numberofpurchase: string
   details?: string
   datetime: string
@@ -31,7 +31,7 @@ export interface PurchaseProductDetail {
   productcode1: string
   nameofproduct: string
   quantity: number
-  unit: "??????" | "????" | "???" | "???"
+  unit: "كارتون" | "قطعة" | "لتر" | "كغم"
   purchasesinglepriceiqd: number
   purchasesinglepriceusd: number
   sellsinglepriceiqd: number
@@ -43,7 +43,7 @@ export interface Payment {
   id?: string
   paymentamountiqd: number
   paymentamountusd: number
-  paymenttype: "???" | "???"
+  paymenttype: "قبض" | "صرف"
   supplierid: string
   customerid?: string
   purchasemainid?: string
@@ -56,7 +56,7 @@ export async function getSuppliers(): Promise<Supplier[]> {
     const { data, error } = await supabase
       .from("customers")
       .select("id, customer_name, type, balanceiqd, balanceusd")
-      .eq("type", "????")
+      .eq("type", "مجهز")
       .order("customer_name")
 
     if (error) throw error
@@ -103,8 +103,8 @@ export async function createPurchase(
   purchaseMain: PurchaseMain,
   products: PurchaseProductDetail[],
   storeId: string,
-  typeOfPayment: "????" | "???",
-  currencyType: "?????" | "?????",
+  typeOfPayment: "نقدي" | "آجل",
+  currencyType: "دينار" | "دولار",
   priceUpdateDecisions?: Map<string, boolean>
 ): Promise<{ success: boolean; purchaseId?: string; error?: string }> {
   try {
@@ -158,12 +158,12 @@ export async function createPurchase(
       )
     }
 
-    if (typeOfPayment === "???") {
+    if (typeOfPayment === "آجل") {
       const remainingIQD = purchaseMain.totalpurchaseiqd - purchaseMain.amountreceivediqd
       const remainingUSD = purchaseMain.totalpurchaseusd - purchaseMain.amountreceivedusd
       
-      const balanceIQD = currencyType === "?????" ? -remainingIQD : 0
-      const balanceUSD = currencyType === "?????" ? -remainingUSD : 0
+      const balanceIQD = currencyType === "دينار" ? -remainingIQD : 0
+      const balanceUSD = currencyType === "دولار" ? -remainingUSD : 0
       
       await updateSupplierBalance(
         purchaseMain.supplierid,
@@ -172,21 +172,21 @@ export async function createPurchase(
       )
       
       if (purchaseMain.amountreceivediqd > 0 || purchaseMain.amountreceivedusd > 0) {
-        const paymentNote = `???? ????? ?????? ???? ${purchaseMain.numberofpurchase} - ${purchaseMain.nameofsupplier}`
+        const paymentNote = `دفعة واصلة لقائمة شراء ${purchaseMain.numberofpurchase} - ${purchaseMain.nameofsupplier}`
         
         const { error: paymentError } = await supabase.from("payments").insert([{
           customer_id: purchaseMain.supplierid,
           amount_iqd: purchaseMain.amountreceivediqd,
           amount_usd: purchaseMain.amountreceivedusd,
           currency_type: purchaseMain.amountreceivediqd > 0 ? 'IQD' : 'USD',
-          transaction_type: "???",
+          transaction_type: "صرف",
           notes: paymentNote,
           pay_date: new Date().toISOString(),
           supplierid: purchaseMain.supplierid,
           purchasemainid: purchaseMainId,
           paymentamountiqd: purchaseMain.amountreceivediqd,
           paymentamountusd: purchaseMain.amountreceivedusd,
-          paymenttype: "???",
+          paymenttype: "صرف",
         }])
         
         if (paymentError) throw paymentError
@@ -209,7 +209,7 @@ export async function updatePurchase(
 
   try {
     if (!purchaseId) {
-      return { success: false, error: "????? ??????? ??? ????" }
+      return { success: false, error: "معرّف القائمة غير صالح" }
     }
 
     step = "fetch-old"
@@ -219,7 +219,7 @@ export async function updatePurchase(
     ])
 
     if (!oldMain) {
-      return { success: false, error: "?? ??? ?????? ??? ??????? ????????" }
+      return { success: false, error: "لم يتم العثور على القائمة المطلوبة" }
     }
 
     const oldStoreId = oldMain.purchasestoreid
@@ -350,12 +350,12 @@ export async function updatePurchase(
     // ?????? ???? ??????
     step = "supplier-balance"
     const computeBalanceDelta = (main: PurchaseMain) => {
-      if (main.typeofpayment !== "???") return { iqd: 0, usd: 0 }
+      if (main.typeofpayment !== "آجل") return { iqd: 0, usd: 0 }
       const remainingIQD = (main.totalpurchaseiqd || 0) - (main.amountreceivediqd || 0)
       const remainingUSD = (main.totalpurchaseusd || 0) - (main.amountreceivedusd || 0)
       return {
-        iqd: (main.currency === "?????" ? -remainingIQD : 0),
-        usd: (main.currency === "?????" ? -remainingUSD : 0),
+        iqd: (main.currency === "دينار" ? -remainingIQD : 0),
+        usd: (main.currency === "دولار" ? -remainingUSD : 0),
       }
     }
 
@@ -387,22 +387,22 @@ export async function updatePurchase(
       .delete()
       .eq("purchasemainid", purchaseId)
 
-    if (purchaseMain.typeofpayment === "???" && (purchaseMain.amountreceivediqd > 0 || purchaseMain.amountreceivedusd > 0)) {
-      const paymentNote = `???? ????? ?????? ???? ${purchaseMain.numberofpurchase} - ${purchaseMain.nameofsupplier}`
+    if (purchaseMain.typeofpayment === "آجل" && (purchaseMain.amountreceivediqd > 0 || purchaseMain.amountreceivedusd > 0)) {
+      const paymentNote = `دفعة واصلة لقائمة شراء ${purchaseMain.numberofpurchase} - ${purchaseMain.nameofsupplier}`
       
       await supabase.from("payments").insert([{
         customer_id: purchaseMain.supplierid,
         amount_iqd: purchaseMain.amountreceivediqd,
         amount_usd: purchaseMain.amountreceivedusd,
         currency_type: purchaseMain.amountreceivediqd > 0 ? 'IQD' : 'USD',
-        transaction_type: "???",
+        transaction_type: "صرف",
         notes: paymentNote,
         pay_date: new Date().toISOString(),
         supplierid: purchaseMain.supplierid,
         purchasemainid: purchaseId,
         paymentamountiqd: purchaseMain.amountreceivediqd,
         paymentamountusd: purchaseMain.amountreceivedusd,
-        paymenttype: "???",
+        paymenttype: "صرف",
       }])
     }
 
@@ -423,7 +423,7 @@ export async function updatePurchase(
     }
 
     const info = getErrorInfo(error)
-    return { success: false, error: `??? ????? ????? ?????? (${step}): ${info.message}` }
+    return { success: false, error: `فشل تعديل قائمة الشراء (${step}): ${info.message}` }
   }
 }
 
@@ -672,12 +672,12 @@ export async function deletePurchase(purchaseId: string): Promise<{
     let restoredIQD = 0
     let restoredUSD = 0
 
-    if (purchaseMain.typeofpayment === "???") {
+    if (purchaseMain.typeofpayment === "آجل") {
       const remainingIQD = (purchaseMain.totalpurchaseiqd || 0) - (purchaseMain.amountreceivediqd || 0)
       const remainingUSD = (purchaseMain.totalpurchaseusd || 0) - (purchaseMain.amountreceivedusd || 0)
 
-      restoredIQD = purchaseMain.currency === "?????" ? remainingIQD : 0
-      restoredUSD = purchaseMain.currency === "?????" ? remainingUSD : 0
+      restoredIQD = purchaseMain.currency === "دينار" ? remainingIQD : 0
+      restoredUSD = purchaseMain.currency === "دولار" ? remainingUSD : 0
 
       // 4?? ??????? ?????? ?? ???? ?????? (????? ??? ?????? ??? ????)
       if (restoredIQD !== 0 || restoredUSD !== 0) {

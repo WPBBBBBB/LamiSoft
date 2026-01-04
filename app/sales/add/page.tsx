@@ -61,13 +61,13 @@ export default function SaleAddPage() {
   const [loadingEditData, setLoadingEditData] = useState(false)
 
   const [numberofsale, setNumberOfSale] = useState("")
-  const [pricetype, setPriceType] = useState<"????" | "????">("????")
-  const [paytype, setPayType] = useState<"????" | "???">("????")
-  const [currencyType, setCurrencyType] = useState<"?????" | "?????">("?????")
+  const [pricetype, setPriceType] = useState<"جملة" | "مفرد">("مفرد")
+  const [paytype, setPayType] = useState<"نقدي" | "آجل">("نقدي")
+  const [currencyType, setCurrencyType] = useState<"دينار" | "دولار">("دينار")
   const [salestoreid, setSaleStoreId] = useState("")
   const [datetime, setDateTime] = useState("")
   const [details, setDetails] = useState("")
-  const [barcode, setBarcode] = useState("") // ???????? ???????
+  const [barcode, setBarcode] = useState("") // الباركود المحفوظ
 
   const [customerid, setCustomerId] = useState("")
   const [customername, setCustomerName] = useState("")
@@ -78,12 +78,12 @@ export default function SaleAddPage() {
   const customerDropdownRef = useRef<HTMLDivElement>(null)
 
   const [hasAmountReceived, setHasAmountReceived] = useState(false)
-  const [amountCurrency, setAmountCurrency] = useState<"?????" | "?????">("?????")
+  const [amountCurrency, setAmountCurrency] = useState<"دينار" | "دولار">("دينار")
   const [amountReceivedIQD, setAmountReceivedIQD] = useState(0)
   const [amountReceivedUSD, setAmountReceivedUSD] = useState(0)
 
   const [discountEnabled, setDiscountEnabled] = useState(false)
-  const [discountCurrency, setDiscountCurrency] = useState<"?????" | "?????">("?????")
+  const [discountCurrency, setDiscountCurrency] = useState<"دينار" | "دولار">("دينار")
   const [discountIQD, setDiscountIQD] = useState(0)
   const [discountUSD, setDiscountUSD] = useState(0)
 
@@ -201,11 +201,11 @@ export default function SaleAddPage() {
           setCustomerBalanceUSD(newCustomer.balanceusd ?? 0)
           setSearchCustomer("")
           
-          toast.success(`?? ?????? ??????: ${newCustomer.customer_name}`)
+          toast.success(`تم اختيار الزبون: ${newCustomer.customer_name}`)
         }
       }
     } catch {
-      toast.error("??? ????? ????????")
+      toast.error("فشل تحميل البيانات")
     }
   }
 
@@ -216,7 +216,7 @@ export default function SaleAddPage() {
       setNumberOfSale(newNumber)
       return newNumber
     } catch {
-      toast.error("??? ????? ??? ???????")
+      toast.error("فشل توليد رقم القائمة")
       return ""
     }
   }
@@ -227,7 +227,7 @@ export default function SaleAddPage() {
       
       const saleData = await getSaleById(saleId)
       if (!saleData) {
-        toast.error("?? ??? ?????? ??? ???????")
+        toast.error("لم يتم العثور على القائمة")
         router.push("/reports")
         return
       }
@@ -258,7 +258,7 @@ export default function SaleAddPage() {
       }
       
       setDiscountEnabled(saleData.discountenabled)
-      setDiscountCurrency(saleData.discountcurrency || "?????")
+      setDiscountCurrency(saleData.discountcurrency || "دينار")
       setDiscountIQD(saleData.discountiqd)
       setDiscountUSD(saleData.discountusd)
       
@@ -274,9 +274,9 @@ export default function SaleAddPage() {
       }))
       setProducts(productsWithTempId)
       
-      toast.success("?? ????? ?????? ???????")
+      toast.success("تم تحميل بيانات القائمة")
     } catch {
-      toast.error("??? ????? ?????? ???????")
+      toast.error("فشل تحميل بيانات القائمة")
       router.push("/reports")
     } finally {
       setLoadingEditData(false)
@@ -288,12 +288,12 @@ export default function SaleAddPage() {
       const items = await getInventoryByStore(storeId)
       setInventory(items)
       if (items.length === 0) {
-        toast.info("?? ???? ???? ?????? ?? ??? ??????")
+        toast.info("لا توجد مواد متوفرة في هذا المخزن")
       } else {
-        toast.success(`?? ????? ${items.length} ???? ?? ??????`)
+        toast.success(`تم تحميل ${items.length} مادة من المخزن`)
       }
     } catch {
-      toast.error("??? ????? ??????")
+      toast.error("فشل تحميل المواد")
     }
   }
 
@@ -336,11 +336,11 @@ export default function SaleAddPage() {
       setSearchCustomer("")
       setCustomerSelectOpen(false)
       
-      toast.success(`?? ????? ??????: ${newCustomer.customer_name}`)
+      toast.success(`تم إضافة الزبون: ${newCustomer.customer_name}`)
       
       return newCustomer
     } catch (error) {
-      toast.error("??? ????? ??????")
+      toast.error("فشل إضافة الزبون")
       throw error
     }
   }
@@ -412,18 +412,18 @@ export default function SaleAddPage() {
 
   const addItemFromNew = () => {
     if (!newItem.productcode.trim() || !newItem.productname.trim()) {
-      toast.error("?????? ?????? ??????")
+      toast.error("الرجاء اختيار المادة")
       return
     }
 
     if (newItem.quantity <= 0) {
-      toast.error("?????? ????? ???? ?????")
+      toast.error("الرجاء إدخال كمية صحيحة")
       return
     }
 
     const inventoryItem = inventory.find((i) => i.productcode === newItem.productcode)
     if (inventoryItem && newItem.quantity > inventoryItem.quantity) {
-      toast.error(`?????? ????????: ${inventoryItem.quantity} ???`)
+      toast.error(`الكمية المتوفرة: ${inventoryItem.quantity} فقط`)
       return
     }
 
@@ -435,7 +435,7 @@ export default function SaleAddPage() {
     }
 
     setProducts([...products, newProduct])
-    toast.success("??? ????? ??????")
+  toast.success("تمت إضافة المادة")
 
     setProductSearchCode("")
     setProductSearchName("")
@@ -514,7 +514,7 @@ export default function SaleAddPage() {
 
   const deleteProduct = (tempId: string) => {
     setProducts(products.filter((p) => p.tempId !== tempId))
-    toast.success("?? ??? ??????")
+    toast.success("تم حذف المادة")
   }
 
   const totalProductsCount = products.filter((p) => p.productcode && p.quantity > 0).length
@@ -529,7 +529,7 @@ export default function SaleAddPage() {
   const finalTotalUSD = afterDiscountUSD - amountReceivedUSD
 
   const handleAmountReceivedChange = (value: number) => {
-    if (amountCurrency === "?????") {
+    if (amountCurrency === "دينار") {
       setAmountReceivedIQD(value)
       setAmountReceivedUSD(0)
     } else {
@@ -539,7 +539,7 @@ export default function SaleAddPage() {
   }
 
   const handleDiscountChange = (value: number) => {
-    if (discountCurrency === "?????") {
+    if (discountCurrency === "دينار") {
       setDiscountIQD(value)
       setDiscountUSD(0)
     } else {
@@ -552,29 +552,29 @@ export default function SaleAddPage() {
     if (saveInFlightRef.current || isSaving) return
 
     if (isViewMode) {
-      toast.error("?? ???? ????? ?? ??? ?????")
+      toast.error("لا يمكن الحفظ في وضع العرض")
       return
     }
 
     if (!numberofsale.trim()) {
-      toast.error("?????? ????? ??? ???????")
+      toast.error("الرجاء إدخال رقم القائمة")
       return
     }
 
     if (!salestoreid) {
-      toast.error("?????? ?????? ??????")
+      toast.error("الرجاء اختيار المخزن")
       return
     }
 
     if (!customerid) {
-      toast.error("?????? ?????? ??????")
+      toast.error("الرجاء اختيار الزبون")
       return
     }
 
     const validProducts = products.filter((p) => p.productcode && p.quantity > 0)
 
     if (validProducts.length === 0) {
-      toast.error("?????? ????? ???? ????? ??? ?????")
+      toast.error("الرجاء إضافة مادة واحدة على الأقل")
       return
     }
 
@@ -678,7 +678,7 @@ export default function SaleAddPage() {
           }
         }
         
-        toast.success(isEditMode ? "?? ????? ????? ????? ?????" : "?? ??? ????? ????? ?????")
+        toast.success(isEditMode ? "تم تعديل قائمة البيع بنجاح" : "تم حفظ قائمة البيع بنجاح")
 
         setProducts([])
         setDetails("")
@@ -713,10 +713,10 @@ export default function SaleAddPage() {
           loadInventory(salestoreid)
         }
       } else {
-        toast.error(result.error || "??? ??? ????? ?????")
+        toast.error(result.error || "فشل حفظ قائمة البيع")
       }
     } catch {
-      toast.error("??? ??? ????? ??? ???????")
+      toast.error("حدث خطأ أثناء حفظ القائمة")
     } finally {
       setIsSaving(false)
       saveInFlightRef.current = false
@@ -725,17 +725,17 @@ export default function SaleAddPage() {
   
   const handlePrintInvoice = () => {
     if (!customerid || !customername) {
-      toast.error("?????? ?????? ?????? ?????")
+      toast.error("الرجاء اختيار الزبون")
       return
     }
 
     if (products.length === 0) {
-      toast.error("?????? ????? ?????? ?????")
+      toast.error("الرجاء إضافة مادة واحدة على الأقل")
       return
     }
 
     const selectedStore = stores.find(s => s.id === salestoreid)
-    const storeName = selectedStore?.storename || "?????? ???????"
+    const storeName = selectedStore?.storename || "المخزن الرئيسي"
 
     const isExistingSale = Boolean(editId)
     const receivedIQD = hasAmountReceived ? amountReceivedIQD : 0
@@ -766,25 +766,25 @@ export default function SaleAddPage() {
       saleNumber: numberofsale,
       barcode: barcode || numberofsale, // ??????? ??? ??????? ???
       previousBalanceIQD:
-        paytype === "???"
+        paytype === "آجل"
           ? isExistingSale
             ? (customerBalanceIQD ?? 0) - Math.max(0, afterDiscountIQD - receivedIQD)
             : (customerBalanceIQD ?? 0)
           : (customerBalanceIQD ?? 0),
       nextBalanceIQD:
-        paytype === "???"
+        paytype === "آجل"
           ? isExistingSale
             ? (customerBalanceIQD ?? 0)
             : (customerBalanceIQD ?? 0) + Math.max(0, afterDiscountIQD - receivedIQD)
           : (customerBalanceIQD ?? 0),
       previousBalanceUSD:
-        paytype === "???"
+        paytype === "آجل"
           ? isExistingSale
             ? (customerBalanceUSD ?? 0) - Math.max(0, afterDiscountUSD - receivedUSD)
             : (customerBalanceUSD ?? 0)
           : (customerBalanceUSD ?? 0),
       nextBalanceUSD:
-        paytype === "???"
+        paytype === "آجل"
           ? isExistingSale
             ? (customerBalanceUSD ?? 0)
             : (customerBalanceUSD ?? 0) + Math.max(0, afterDiscountUSD - receivedUSD)
@@ -809,7 +809,7 @@ export default function SaleAddPage() {
       >
         <div className="flex items-center gap-3 rounded-lg border bg-background px-4 py-3 shadow">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span className="text-sm">???? ??? ???????...</span>
+          <span className="text-sm">جاري حفظ القائمة...</span>
         </div>
       </div>
     )}
@@ -821,13 +821,13 @@ export default function SaleAddPage() {
             <ArrowRight className="h-5 w-5 theme-icon" />
           </Button>
           <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
-            {isViewMode ? "??? ????? ???" : isEditMode ? "????? ????? ???" : "????? ????? ???"}
+            {isViewMode ? "كشف قائمة بيع" : isEditMode ? "تعديل قائمة بيع" : "إضافة قائمة بيع"}
           </h1>
         </div>
         {loadingEditData && (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span>???? ????? ????????...</span>
+            <span>جاري تحميل البيانات...</span>
           </div>
         )}
       </div>
@@ -838,7 +838,7 @@ export default function SaleAddPage() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           {}
           <div className="space-y-2">
-            <Label htmlFor="numberofsale">??? ??????? (??????)</Label>
+            <Label htmlFor="numberofsale">رقم القائمة (تلقائي)</Label>
             <Input
               id="numberofsale"
               value={numberofsale}
@@ -850,53 +850,53 @@ export default function SaleAddPage() {
 
           {}
           <div className="space-y-2">
-            <Label>??? ???????</Label>
-            <Select value={pricetype} onValueChange={(v: "????" | "????") => setPriceType(v)} disabled={isViewMode}>
+            <Label>نوع التسعير</Label>
+            <Select value={pricetype} onValueChange={(v: "جملة" | "مفرد") => setPriceType(v)} disabled={isViewMode}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="????">????</SelectItem>
-                <SelectItem value="????">????</SelectItem>
+                <SelectItem value="مفرد">مفرد</SelectItem>
+                <SelectItem value="جملة">جملة</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {}
           <div className="space-y-2">
-            <Label>??? ?????</Label>
-            <Select value={paytype} onValueChange={(v: "????" | "???") => setPayType(v)} disabled={isViewMode}>
+            <Label>نوع الدفع</Label>
+            <Select value={paytype} onValueChange={(v: "نقدي" | "آجل") => setPayType(v)} disabled={isViewMode}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="????">????</SelectItem>
-                <SelectItem value="???">???</SelectItem>
+                <SelectItem value="نقدي">نقدي</SelectItem>
+                <SelectItem value="آجل">آجل</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {}
           <div className="space-y-2">
-            <Label>??? ??????</Label>
+            <Label>نوع العملة</Label>
             <Select
               value={currencyType}
-              onValueChange={(v: "?????" | "?????") => setCurrencyType(v)}
+              onValueChange={(v: "دينار" | "دولار") => setCurrencyType(v)}
               disabled={isViewMode}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="?????">?????</SelectItem>
-                <SelectItem value="?????">?????</SelectItem>
+                <SelectItem value="دينار">دينار</SelectItem>
+                <SelectItem value="دولار">دولار</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {}
           <div className="space-y-2">
-            <Label>??? ????? ??????</Label>
+            <Label>سعر الصرف الحالي</Label>
             <div className="flex items-center h-10 px-3 rounded-md border bg-muted">
               <span className="font-semibold text-lg">{exchangeRate.toLocaleString()}</span>
             </div>
@@ -907,10 +907,10 @@ export default function SaleAddPage() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
           {}
           <div className="space-y-2 md:col-span-3">
-            <Label>??? ??????</Label>
+            <Label>اسم الزبون</Label>
             <div className="relative" ref={customerDropdownRef}>
               <Input
-                placeholder="???? ?? ????..."
+                placeholder="ابحث عن زبون..."
                 value={searchCustomer || customername || ""}
                 onChange={(e) => {
                   setSearchCustomer(e.target.value)
@@ -930,11 +930,11 @@ export default function SaleAddPage() {
                     )
                     
                     if (filteredCustomers.length === 0) {
-                      // ????? ?????? ?????? ???? ??? ????
+                      // إضافة الزبون مباشرة بدون فتح صفحة
                       e.preventDefault()
                       await handleCreateNewCustomer(searchCustomer)
                     } else if (filteredCustomers.length === 1) {
-                      // ??? ??? ???? ???? ???? ???? ????? ??????
+                      // إذا كان هناك زبون واحد فقط مطابق، اختاره مباشرة
                       e.preventDefault()
                       handleCustomerChange(filteredCustomers[0].id)
                       setSearchCustomer("")
@@ -988,7 +988,7 @@ export default function SaleAddPage() {
           {}
           <div className="space-y-2 md:col-span-2">
             <Label className="font-semibold text-blue-600 dark:text-blue-400">
-              ???? ???? ?????
+              رصيد سابق دينار
             </Label>
             <div className="flex items-center h-10 px-3 rounded-md border bg-muted">
               <span className="font-semibold text-lg">
@@ -1000,7 +1000,7 @@ export default function SaleAddPage() {
           {}
           <div className="space-y-2 md:col-span-2">
             <Label className="font-semibold text-green-600 dark:text-green-400">
-              ???? ???? ?????
+              رصيد سابق دولار
             </Label>
             <div className="flex items-center h-10 px-3 rounded-md border bg-muted">
               <span className="font-semibold text-lg">
@@ -1011,10 +1011,10 @@ export default function SaleAddPage() {
 
           {}
           <div className="space-y-2 md:col-span-3">
-            <Label>??????</Label>
+            <Label>المخزن</Label>
             <Select value={salestoreid} onValueChange={setSaleStoreId} disabled={isViewMode}>
               <SelectTrigger>
-                <SelectValue placeholder="???? ??????" />
+                <SelectValue placeholder="اختر المخزن" />
               </SelectTrigger>
               <SelectContent>
                 {stores.map((store) => (
@@ -1027,7 +1027,7 @@ export default function SaleAddPage() {
           </div>
 
           {}
-          {paytype === "???" && (
+          {paytype === "آجل" && (
             <div className="space-y-2 flex items-end">
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -1043,7 +1043,7 @@ export default function SaleAddPage() {
                   disabled={isViewMode}
                 />
                 <Label htmlFor="hasAmountReceived" className="cursor-pointer">
-                  ???? ????
+                  مبلغ واصل
                 </Label>
               </div>
             </div>
@@ -1054,10 +1054,10 @@ export default function SaleAddPage() {
         {hasAmountReceived && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 rounded-lg bg-accent/50">
             <div className="space-y-2">
-              <Label>???? ?????? ??????</Label>
+              <Label>عملة المبلغ الواصل</Label>
               <Select
                 value={amountCurrency}
-                onValueChange={(v: "?????" | "?????") => {
+                onValueChange={(v: "دينار" | "دولار") => {
                   setAmountCurrency(v)
                   setAmountReceivedIQD(0)
                   setAmountReceivedUSD(0)
@@ -1067,18 +1067,18 @@ export default function SaleAddPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="?????">?????</SelectItem>
-                  <SelectItem value="?????">?????</SelectItem>
+                  <SelectItem value="دينار">دينار</SelectItem>
+                  <SelectItem value="دولار">دولار</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>?????? ??????</Label>
+              <Label>المبلغ الواصل</Label>
               <Input
                 type="number"
                 value={
-                  amountCurrency === "?????" ? amountReceivedIQD : amountReceivedUSD
+                  amountCurrency === "دينار" ? amountReceivedIQD : amountReceivedUSD
                 }
                 onChange={(e) => handleAmountReceivedChange(parseFloat(e.target.value) || 0)}
                 placeholder="0"
@@ -1090,7 +1090,7 @@ export default function SaleAddPage() {
         {}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="space-y-2">
-            <Label>????? ???????</Label>
+            <Label>تاريخ العملية</Label>
             <Input
               type="datetime-local"
               value={datetime}
@@ -1100,11 +1100,11 @@ export default function SaleAddPage() {
           </div>
 
           <div className="space-y-2 md:col-span-3">
-            <Label>???????</Label>
+            <Label>ملاحظات</Label>
             <Textarea
               value={details}
               onChange={(e) => setDetails(e.target.value)}
-              placeholder="??????? ??????"
+              placeholder="ملاحظات إضافية"
               rows={2}
               readOnly={isViewMode}
             />
@@ -1127,17 +1127,17 @@ export default function SaleAddPage() {
               disabled={isViewMode}
             />
             <Label htmlFor="discountEnabled" className="cursor-pointer font-semibold">
-              ????? ?????
+              تفعيل الخصم
             </Label>
           </div>
 
           {discountEnabled && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-lg bg-accent/50">
               <div className="space-y-2">
-                <Label>???? ?????</Label>
+                <Label>عملة الخصم</Label>
                 <Select
                   value={discountCurrency}
-                  onValueChange={(v: "?????" | "?????") => {
+                  onValueChange={(v: "دينار" | "دولار") => {
                     setDiscountCurrency(v)
                     setDiscountIQD(0)
                     setDiscountUSD(0)
@@ -1147,17 +1147,17 @@ export default function SaleAddPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="?????">?????</SelectItem>
-                    <SelectItem value="?????">?????</SelectItem>
+                    <SelectItem value="دينار">دينار</SelectItem>
+                    <SelectItem value="دولار">دولار</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>???? ?????</Label>
+                <Label>مبلغ الخصم</Label>
                 <Input
                   type="number"
-                  value={discountCurrency === "?????" ? discountIQD : discountUSD}
+                  value={discountCurrency === "دينار" ? discountIQD : discountUSD}
                   onChange={(e) => handleDiscountChange(parseFloat(e.target.value) || 0)}
                   placeholder="0"
                 />
@@ -1170,19 +1170,19 @@ export default function SaleAddPage() {
         <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: "var(--theme-surface)", borderLeft: "4px solid var(--theme-primary)" }}>
           <div className="flex flex-wrap items-center justify-between gap-6">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium" style={{ color: "var(--theme-text)" }}>??? ??????:</span>
+              <span className="text-sm font-medium" style={{ color: "var(--theme-text)" }}>عدد المواد:</span>
               <span className="font-bold text-lg" style={{ color: "var(--theme-text)" }}>{totalProductsCount}</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm" style={{ color: "var(--theme-text)" }}>?????? ?????:</span>
+              <span className="text-sm" style={{ color: "var(--theme-text)" }}>إجمالي دينار:</span>
               <span className="font-bold text-lg text-green-600 dark:text-green-400">
                 {totalSaleIQD.toLocaleString()}
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm" style={{ color: "var(--theme-text)" }}>?????? ?????:</span>
+              <span className="text-sm" style={{ color: "var(--theme-text)" }}>إجمالي دولار:</span>
               <span className="font-bold text-lg text-blue-600 dark:text-blue-400">
                 {totalSaleUSD.toLocaleString()}
               </span>
@@ -1191,14 +1191,14 @@ export default function SaleAddPage() {
             {discountEnabled && (
               <>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>??? ????? ?????:</span>
+                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>بعد الخصم دينار:</span>
                   <span className="font-bold text-lg text-purple-600 dark:text-purple-400">
                     {afterDiscountIQD.toLocaleString()}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>??? ????? ?????:</span>
+                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>بعد الخصم دولار:</span>
                   <span className="font-bold text-lg text-purple-600 dark:text-purple-400">
                     {afterDiscountUSD.toLocaleString()}
                   </span>
@@ -1209,24 +1209,24 @@ export default function SaleAddPage() {
             {hasAmountReceived && (
               <>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>???? ?????:</span>
+                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>واصل دينار:</span>
                   <span className="font-bold text-lg" style={{ color: "var(--theme-text)" }}>{amountReceivedIQD.toLocaleString()}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>???? ?????:</span>
+                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>واصل دولار:</span>
                   <span className="font-bold text-lg" style={{ color: "var(--theme-text)" }}>{amountReceivedUSD.toLocaleString()}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>??????? ?????:</span>
+                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>المتبقي دينار:</span>
                   <span className="font-bold text-lg text-orange-600 dark:text-orange-400">
                     {finalTotalIQD.toLocaleString()}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>??????? ?????:</span>
+                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>المتبقي دولار:</span>
                   <span className="font-bold text-lg text-orange-600 dark:text-orange-400">
                     {finalTotalUSD.toLocaleString()}
                   </span>
@@ -1249,15 +1249,15 @@ export default function SaleAddPage() {
                 }}
               >
                 <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>#</TableHead>
-                <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>???</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>??? ??????</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>??? ??????</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>??????</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>?. ???? ?????</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>?. ???? ?????</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>?????? ?????</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>?????? ?????</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>??????</TableHead>
+                <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>حذف</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>رمز المادة</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>اسم المادة</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>الكمية</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>س. مفرد دينار</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>س. مفرد دولار</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>إجمالي دينار</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>إجمالي دولار</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>ملاحظة</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1265,7 +1265,7 @@ export default function SaleAddPage() {
             {!isViewMode && (
             <TableRow style={{ backgroundColor: "var(--theme-accent)", opacity: 0.9 }}>
               <TableCell className="text-center font-bold" style={{ color: "var(--theme-text)" }}>
-                ????
+                جديد
               </TableCell>
                 <TableCell className="text-center">
                   <Plus className="h-5 w-5 theme-success mx-auto" />
@@ -1280,7 +1280,7 @@ export default function SaleAddPage() {
                         setShowSuggestions(true)
                         updateSuggestionPosition(codeInputRef)
                       }}
-                      placeholder="??? ??????"
+                      placeholder="رمز المادة"
                       className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
                     />
                   </div>
@@ -1295,7 +1295,7 @@ export default function SaleAddPage() {
                         setShowSuggestions(true)
                         updateSuggestionPosition(nameInputRef)
                       }}
-                      placeholder="??? ??????"
+                      placeholder="اسم المادة"
                       className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
                     />
                   </div>
@@ -1357,7 +1357,7 @@ export default function SaleAddPage() {
                     value={newItem.notes}
                     onChange={(e) => updateNewItem("notes", e.target.value)}
                     onKeyPress={(e) => handleNewItemKeyPress(e)}
-                    placeholder="??????"
+                    placeholder="ملاحظة"
                     className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
                   />
                 </TableCell>
@@ -1488,7 +1488,7 @@ export default function SaleAddPage() {
                         onChange={(e) =>
                           updateProduct(product.tempId, "notes", e.target.value)
                         }
-                        placeholder="??????"
+                        placeholder="ملاحظة"
                         className="flex-1 h-8 text-foreground"
                         title={product.notes}
                       />
@@ -1524,12 +1524,12 @@ export default function SaleAddPage() {
               {isSaving ? (
                 <>
                   <Loader2 className="h-5 w-5 ml-2 animate-spin theme-icon" />
-                  ???? ?????...
+                  جاري الحفظ...
                 </>
               ) : (
                 <>
                   <Save className="h-5 w-5 ml-2 theme-success" />
-                  {isEditMode ? "????? ???????" : "????? ????? ?????"}
+                  {isEditMode ? "تحديث القائمة" : "إضافة قائمة البيع"}
                 </>
               )}
             </Button>
@@ -1542,7 +1542,7 @@ export default function SaleAddPage() {
               className="flex-1 md:flex-initial"
             >
               <Printer className="h-5 w-5 ml-2" />
-              ????? ????????
+              طباعة الفاتورة
             </Button>
           </div>
         )}
@@ -1556,7 +1556,7 @@ export default function SaleAddPage() {
               className="w-full md:w-auto"
             >
               <Printer className="h-5 w-5 ml-2" />
-              ????? ????????
+              طباعة الفاتورة
             </Button>
           </div>
         )}
@@ -1566,13 +1566,13 @@ export default function SaleAddPage() {
       <Dialog open={viewingNote !== null} onOpenChange={(open) => !open && setViewingNote(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>????????</DialogTitle>
+            <DialogTitle>التفاصيل</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <p className="whitespace-pre-wrap">{viewingNote}</p>
           </div>
           <DialogFooter>
-            <Button onClick={() => setViewingNote(null)}>?????</Button>
+            <Button onClick={() => setViewingNote(null)}>إغلاق</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1611,7 +1611,7 @@ export default function SaleAddPage() {
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <span>?? ?????????? ??????? ({filteredInventory.length})</span>
+          <span>🎯 الاقتراحات المتاحة ({filteredInventory.length})</span>
           <button
             onClick={() => setShowSuggestions(false)}
             style={{
@@ -1624,7 +1624,7 @@ export default function SaleAddPage() {
               fontWeight: 'bold'
             }}
           >
-            ? ?????
+            ✕ إغلاق
           </button>
         </div>
         
@@ -1642,35 +1642,35 @@ export default function SaleAddPage() {
                   fontWeight: 'bold',
                   color: 'var(--theme-text)',
                   fontSize: '15px'
-                }}>??? ??????</th>
+                }}>رمز المادة</th>
                 <th style={{ 
                   padding: '14px 16px', 
                   textAlign: 'right', 
                   fontWeight: 'bold',
                   color: 'var(--theme-text)',
                   fontSize: '15px'
-                }}>??? ??????</th>
+                }}>اسم المادة</th>
                 <th style={{ 
                   padding: '14px 16px', 
                   textAlign: 'center', 
                   fontWeight: 'bold',
                   color: 'var(--theme-text)',
                   fontSize: '15px'
-                }}>?. ?????</th>
+                }}>س. دينار</th>
                 <th style={{ 
                   padding: '14px 16px', 
                   textAlign: 'center', 
                   fontWeight: 'bold',
                   color: 'var(--theme-text)',
                   fontSize: '15px'
-                }}>?. ?????</th>
+                }}>س. دولار</th>
                 <th style={{ 
                   padding: '14px 16px', 
                   textAlign: 'center', 
                   fontWeight: 'bold',
                   color: 'var(--theme-text)',
                   fontSize: '15px'
-                }}>???????</th>
+                }}>المتوفر</th>
               </tr>
             </thead>
             <tbody>
@@ -1752,7 +1752,7 @@ export default function SaleAddPage() {
           fontSize: '14px',
           fontWeight: 'bold'
         }}>
-          ?? ??? ???????: {filteredInventory.length} | ???? ??? ?? ?? ???????? ??
+          📊 عدد النتائج: {filteredInventory.length} | اضغط على أي صف للاختيار ⬇️
         </div>
       </div>,
       document.body
