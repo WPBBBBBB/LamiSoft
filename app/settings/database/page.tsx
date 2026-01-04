@@ -12,7 +12,8 @@ import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Database, Download, Upload, Clock, Info, CheckCircle, HardDrive, Cloud } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Database, Download, Upload, Clock, Info, CheckCircle, HardDrive, Cloud, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 interface BackupLog {
@@ -33,6 +34,8 @@ export default function DatabaseSettingsPage() {
   const [autoBackups, setAutoBackups] = useState<BackupLog[]>([])
   const [selectedBackup, setSelectedBackup] = useState<BackupLog | null>(null)
   const [showConfirmRestore, setShowConfirmRestore] = useState(false)
+  const [selectedBackupIds, setSelectedBackupIds] = useState<Set<string>>(new Set())
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false)
 
   const [dbInfo, setDbInfo] = useState({
     lastBackup: "Not done yet",
@@ -343,6 +346,61 @@ export default function DatabaseSettingsPage() {
     setShowConfirmRestore(true)
   }
 
+  const handleToggleBackupSelection = (backupId: string) => {
+    setSelectedBackupIds(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(backupId)) {
+        newSet.delete(backupId)
+      } else {
+        newSet.add(backupId)
+      }
+      return newSet
+    })
+  }
+
+  const handleToggleAllBackups = () => {
+    if (selectedBackupIds.size === autoBackups.length) {
+      setSelectedBackupIds(new Set())
+    } else {
+      setSelectedBackupIds(new Set(autoBackups.map(b => b.id)))
+    }
+  }
+
+  const handleDeleteSelectedBackups = () => {
+    if (selectedBackupIds.size === 0) {
+      toast.error(t('selectBackupsToDelete', currentLanguage.code))
+      return
+    }
+    setShowConfirmDelete(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    setShowConfirmDelete(false)
+    setIsLoading(true)
+
+    try {
+      const { supabase } = await import("@/lib/supabase")
+      
+      const { error } = await supabase
+        .from("backup_logs")
+        .delete()
+        .in("id", Array.from(selectedBackupIds))
+
+      if (error) throw error
+
+      // Update the list
+      setAutoBackups(prev => prev.filter(b => !selectedBackupIds.has(b.id)))
+      setSelectedBackupIds(new Set())
+      
+      toast.success(t('backupsDeletedSuccessfully', currentLanguage.code))
+    } catch (error) {
+      console.error("Error deleting backups:", error)
+      toast.error(t('failedToDeleteBackups', currentLanguage.code))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleConfirmRestore = async () => {
     if (!selectedBackup) return
 
@@ -541,13 +599,31 @@ export default function DatabaseSettingsPage() {
 
       {}
       <Dialog open={showAutoBackupsList} onOpenChange={setShowAutoBackupsList}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-auto">
           <DialogHeader>
-            <DialogTitle>{t('autoBackupList', currentLanguage.code)}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-right">{t('autoBackupList', currentLanguage.code)}</DialogTitle>
+            <DialogDescription className="text-right">
               {t('selectBackupToRestore', currentLanguage.code)}
             </DialogDescription>
           </DialogHeader>
+          
+          {selectedBackupIds.size > 0 && (
+            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+              <span className="text-sm">
+                {selectedBackupIds.size} {t('selected', currentLanguage.code)}
+              </span>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={handleDeleteSelectedBackups}
+                disabled={isLoading}
+              >
+                <Trash2 className="h-4 w-4 ml-2" />
+                {t('deleteSelected', currentLanguage.code)}
+              </Button>
+            </div>
+          )}
+
           <div className="py-4">
             {autoBackups.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
@@ -557,6 +633,13 @@ export default function DatabaseSettingsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="text-right w-12">#</TableHead>
+                    <TableHead className="text-center w-12">
+                      <Checkbox
+                        checked={selectedBackupIds.size === autoBackups.length}
+                        onCheckedChange={handleToggleAllBackups}
+                      />
+                    </TableHead>
                     <TableHead className="text-right">{t('date', currentLanguage.code)}</TableHead>
                     <TableHead className="text-right">{t('time', currentLanguage.code)}</TableHead>
                     <TableHead className="text-right">{t('recordsCount', currentLanguage.code)}</TableHead>
@@ -564,12 +647,21 @@ export default function DatabaseSettingsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {autoBackups.map((backup) => {
+                  {autoBackups.map((backup, index) => {
                     const date = new Date(backup.backup_date)
                     const totalRecords = Object.values(backup.records_count || {}).reduce((a, b) => a + b, 0)
                     
                     return (
                       <TableRow key={backup.id}>
+                        <TableCell className="font-medium text-right">
+                          {autoBackups.length - index}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Checkbox
+                            checked={selectedBackupIds.has(backup.id)}
+                            onCheckedChange={() => handleToggleBackupSelection(backup.id)}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">
                           {date.toLocaleDateString("en-US")}
                         </TableCell>
@@ -619,6 +711,31 @@ export default function DatabaseSettingsPage() {
             <AlertDialogCancel>{t('cancel', currentLanguage.code)}</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmRestore} className="bg-destructive hover:bg-destructive/90">
               {t('yesRestoreBackup', currentLanguage.code)}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {}
+      <AlertDialog open={showConfirmDelete} onOpenChange={setShowConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-right">{t('confirmDelete', currentLanguage.code)}</AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              {t('areYouSureDeleteBackups', currentLanguage.code)}
+              <br />
+              <br />
+              <strong>{t('selectedCount', currentLanguage.code)}:</strong> {selectedBackupIds.size} {t('backup', currentLanguage.code)}
+              <br />
+              <br />
+              {t('actionCannotBeUndone', currentLanguage.code)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel', currentLanguage.code)}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">
+              <Trash2 className="h-4 w-4 ml-2" />
+              {t('yesDelete', currentLanguage.code)}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
