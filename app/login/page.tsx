@@ -259,11 +259,25 @@ export default function LoginPage() {
 
         if (event.data.user && typeof event.data.user === 'object') {
           const user = event.data.user as Record<string, unknown>
+          
+          // Close the popup first
+          authWindow.close()
+          
+          // Wait a moment for cookies to be fully set
+          await new Promise(resolve => setTimeout(resolve, 300))
+          
+          // Set user in context
           login(user as never)
+          
+          // Show success message
           toast.success(`${t('welcome', currentLanguage.code)} ${String(user.full_name || '')}!`)
-          router.replace('/home')
+          
+          // Wait a bit more to ensure everything is synced
+          await new Promise(resolve => setTimeout(resolve, 200))
+          
+          // Navigate to home
+          window.location.href = '/home'
         }
-        authWindow.close()
         cleanup()
       } else if (event.data.type === 'oauth-error' || event.data.type === 'oauth_login_error') {
         if (finished) return
