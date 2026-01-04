@@ -381,7 +381,9 @@ export async function updateSale(
         try {
           await increaseInventoryQuantity(oldStoreId, detail.productcode, Number(detail.quantity || 0))
         } catch (invError) {
-          throw new Error(`??? ?? ??????? ??????? ?????? ${detail.productname}: ${invError instanceof Error ? invError.message : String(invError)}`)
+          throw new Error(
+            `خطأ في استرجاع المخزون للمادة ${detail.productname}: ${invError instanceof Error ? invError.message : String(invError)}`
+          )
         }
       }
 
@@ -390,7 +392,9 @@ export async function updateSale(
         try {
           await reduceInventoryQuantity(storeId, detail.productcode, Number(detail.quantity || 0))
         } catch (invError) {
-          throw new Error(`??? ?? ????? ??????? ?????? ${detail.productname || detail.productcode}: ${invError instanceof Error ? invError.message : String(invError)}`)
+          throw new Error(
+            `خطأ في تحديث المخزون للمادة ${detail.productname || detail.productcode}: ${invError instanceof Error ? invError.message : String(invError)}`
+          )
         }
       }
     } else {
@@ -413,7 +417,9 @@ export async function updateSale(
         } catch (invError) {
           const productDetail = saleDetails.find(d => d.productcode === code)
           const productName = productDetail?.productname || code
-          throw new Error(`??? ?? ????? ??????? ?????? ${productName}: ${invError instanceof Error ? invError.message : String(invError)}`)
+          throw new Error(
+            `خطأ في تحديث المخزون للمادة ${productName}: ${invError instanceof Error ? invError.message : String(invError)}`
+          )
         }
       }
     }
@@ -448,7 +454,9 @@ export async function updateSale(
           )
         }
       } catch (balanceError) {
-        throw new Error(`??? ?? ????? ???? ??????: ${balanceError instanceof Error ? balanceError.message : String(balanceError)}`)
+        throw new Error(
+          `خطأ في تحديث رصيد الزبون: ${balanceError instanceof Error ? balanceError.message : String(balanceError)}`
+        )
       }
     }
 
@@ -493,7 +501,7 @@ export async function updateSale(
     }
 
     const info = getErrorInfo(error)
-    return { success: false, error: `??? ????? ????? ????? (${step}): ${info.message}` }
+    return { success: false, error: `حدث خطأ أثناء تحديث البيع (${step}): ${info.message}` }
   }
 }
 
@@ -503,34 +511,48 @@ async function reduceInventoryQuantity(
   quantitySold: number
 ): Promise<void> {
   try {
-    const { data: item, error: fetchError } = await supabase
+    if (!productCode || quantitySold <= 0) return
+
+    const { data: items, error: fetchError } = await supabase
       .from("tb_inventory")
-      .select("*")
+      .select("id, quantity")
       .eq("storeid", storeId)
       .eq("productcode", productCode)
-      .single()
+      .order("id", { ascending: true })
 
     if (fetchError) {
-      throw new Error(`??? ?? ??? ??????: ${fetchError.message || JSON.stringify(fetchError)}`)
+      throw new Error(`خطأ في جلب بيانات المخزون: ${fetchError.message || JSON.stringify(fetchError)}`)
     }
 
-    if (!item) {
-      throw new Error(`?????? ${productCode} ??? ?????? ?? ??????`)
+    if (!items || items.length === 0) {
+      throw new Error(`المادة ${productCode} غير موجودة في المخزون`)
     }
 
-    // ?????? ?????? ??? ?? ???? ?????? ???? ?? ??????? (???? ??????? ???????)
-    const newQuantity = item.quantity - quantitySold
-    
-    const { error: updateError } = await supabase
-      .from("tb_inventory")
-      .update({ quantity: newQuantity })
-      .eq("id", item.id)
+    let remaining = quantitySold
 
-    if (updateError) {
-      throw new Error(`??? ?? ????? ??????: ${updateError.message || JSON.stringify(updateError)}`)
+    for (let i = 0; i < items.length && remaining > 0; i++) {
+      const item = items[i]
+      const currentQuantity = Number(item.quantity ?? 0)
+      const available = Math.max(0, currentQuantity)
+
+      const isLastRow = i === items.length - 1
+      const decrement = isLastRow ? remaining : Math.min(available, remaining)
+
+      const newQuantity = currentQuantity - decrement
+
+      const { error: updateError } = await supabase
+        .from("tb_inventory")
+        .update({ quantity: newQuantity })
+        .eq("id", item.id)
+
+      if (updateError) {
+        throw new Error(`خطأ في تحديث كمية المخزون: ${updateError.message || JSON.stringify(updateError)}`)
+      }
+
+      remaining -= decrement
     }
-    
-    } catch (error) {
+
+  } catch (error) {
     throw error
   }
 }
@@ -541,22 +563,26 @@ async function increaseInventoryQuantity(
   quantityToAdd: number
 ): Promise<void> {
   try {
-    const { data: item, error: fetchError } = await supabase
+    if (!productCode || quantityToAdd <= 0) return
+
+    const { data: items, error: fetchError } = await supabase
       .from("tb_inventory")
-      .select("*")
+      .select("id, quantity")
       .eq("storeid", storeId)
       .eq("productcode", productCode)
-      .single()
+      .order("id", { ascending: true })
 
     if (fetchError) {
-      throw new Error(`??? ?? ??? ??????: ${fetchError.message || JSON.stringify(fetchError)}`)
+      throw new Error(`خطأ في جلب بيانات المخزون: ${fetchError.message || JSON.stringify(fetchError)}`)
     }
 
-    if (!item) {
-      throw new Error(`?????? ${productCode} ??? ?????? ?? ??????`)
+    if (!items || items.length === 0) {
+      throw new Error(`المادة ${productCode} غير موجودة في المخزون`)
     }
 
-    const newQuantity = (item.quantity || 0) + quantityToAdd
+    const item = items[0]
+
+    const newQuantity = Number(item.quantity ?? 0) + quantityToAdd
 
     const { error: updateError } = await supabase
       .from("tb_inventory")
@@ -564,7 +590,7 @@ async function increaseInventoryQuantity(
       .eq("id", item.id)
 
     if (updateError) {
-      throw new Error(`??? ?? ????? ??????: ${updateError.message || JSON.stringify(updateError)}`)
+      throw new Error(`خطأ في تحديث كمية المخزون: ${updateError.message || JSON.stringify(updateError)}`)
     }
   } catch (error) {
     throw error
@@ -584,7 +610,7 @@ async function updateCustomerBalance(
       .single()
 
     if (fetchError) {
-      throw new Error(`??? ?? ??? ?????? ??????: ${fetchError.message || JSON.stringify(fetchError)}`)
+      throw new Error(`خطأ في جلب بيانات الزبون: ${fetchError.message || JSON.stringify(fetchError)}`)
     }
 
     const { error: updateError } = await supabase
@@ -597,10 +623,10 @@ async function updateCustomerBalance(
       .eq("id", customerId)
 
     if (updateError) {
-      throw new Error(`??? ?? ????? ???? ??????: ${updateError.message || JSON.stringify(updateError)}`)
+      throw new Error(`خطأ في تحديث رصيد الزبون: ${updateError.message || JSON.stringify(updateError)}`)
     }
-    
-    } catch (error) {
+
+  } catch (error) {
     throw error
   }
 }

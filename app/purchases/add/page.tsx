@@ -130,7 +130,6 @@ export default function PurchaseAddPage() {
   })
 
   const [isSaving, setIsSaving] = useState(false)
-  const saveInFlightRef = useRef(false)
   const [generatingNumber, setGeneratingNumber] = useState(false)
   const [generatingProductCode, setGeneratingProductCode] = useState(false)
   
@@ -482,24 +481,20 @@ export default function PurchaseAddPage() {
   }
 
   const handleSavePurchase = async () => {
-    if (saveInFlightRef.current || isSaving) return
-    saveInFlightRef.current = true
+    if (isSaving) return
 
     if (!numberofpurchase.trim()) {
       toast.error("الرجاء إدخال رقم القائمة")
-      saveInFlightRef.current = false
       return
     }
 
     if (!purchasestoreid) {
       toast.error("الرجاء اختيار المخزن")
-      saveInFlightRef.current = false
       return
     }
 
     if (!supplierid) {
       toast.error("الرجاء اختيار المجهز")
-      saveInFlightRef.current = false
       return
     }
 
@@ -509,7 +504,6 @@ export default function PurchaseAddPage() {
 
     if (validProducts.length === 0) {
       toast.error("الرجاء إضافة مادة واحدة على الأقل")
-      saveInFlightRef.current = false
       return
     }
 
@@ -521,7 +515,6 @@ export default function PurchaseAddPage() {
         // عرض حوار تعارض الأسعار
         setPriceConflicts(conflictsCheck.conflicts)
         setShowPriceConflictDialog(true)
-        saveInFlightRef.current = false
         return
       }
     }
@@ -530,9 +523,7 @@ export default function PurchaseAddPage() {
   }
 
   const savePurchaseData = async (validProducts: ProductRow[], priceDecisions?: Map<string, boolean>) => {
-    if (saveInFlightRef.current || isSaving) return
-
-    saveInFlightRef.current = true
+    if (isSaving) return
     setIsSaving(true)
 
     try {
@@ -664,7 +655,6 @@ export default function PurchaseAddPage() {
       toast.error("حدث خطأ أثناء حفظ القائمة")
     } finally {
       setIsSaving(false)
-      saveInFlightRef.current = false
     }
   }
 

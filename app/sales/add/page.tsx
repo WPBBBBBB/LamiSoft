@@ -421,9 +421,12 @@ export default function SaleAddPage() {
       return
     }
 
-    const inventoryItem = inventory.find((i) => i.productcode === newItem.productcode)
-    if (inventoryItem && newItem.quantity > inventoryItem.quantity) {
-      toast.error(`الكمية المتوفرة: ${inventoryItem.quantity} فقط`)
+    const availableQuantity = inventory
+      .filter((i) => i.productcode === newItem.productcode)
+      .reduce((sum, i) => sum + Number(i.quantity || 0), 0)
+
+    if (availableQuantity > 0 && newItem.quantity > availableQuantity) {
+      toast.error(`الكمية المتوفرة: ${availableQuantity} فقط`)
       return
     }
 
@@ -1676,7 +1679,7 @@ export default function SaleAddPage() {
             <tbody>
             {filteredInventory.slice(0, 20).map((item, index) => (
               <tr
-                key={item.productcode}
+                key={item.id}
                 style={{
                   backgroundColor: index % 2 === 0 ? 'var(--theme-background)' : 'var(--theme-surface)',
                   cursor: 'pointer',

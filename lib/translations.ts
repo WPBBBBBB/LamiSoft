@@ -830,7 +830,8 @@ export const systemTranslations = {
 
 export function t(key: string, lang: string = 'ar'): string {
   const translations = systemTranslations as Record<string, Record<string, string>>
-  return translations[key]?.[lang] || translations[key]?.['en'] || key
+  const normalizedLang = (lang || 'ar').trim().toLowerCase().split(/[-_]/)[0] || 'ar'
+  return translations[key]?.[normalizedLang] || translations[key]?.['en'] || key
 }
 
 export function useTranslation(lang: string = 'ar') {

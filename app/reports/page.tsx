@@ -218,8 +218,9 @@ export default function ReportsPage() {
       const data = await getAllSales()
       setSales(data)
       setFilteredSales(data)
-    } catch {
-      toast.error("??? ????? ????????")
+    } catch (error) {
+      console.error("Error loading sales:", error)
+      toast.error("فشل تحميل المبيعات")
     } finally {
       setLoading(false)
     }
@@ -233,10 +234,11 @@ export default function ReportsPage() {
         setPayments(result.data)
         setFilteredPayments(result.data)
       } else {
-        toast.error(result.error || "??? ????? ????? ???????")
+        toast.error(result.error || "فشل تحميل حركات الصندوق")
       }
-    } catch {
-      toast.error("??? ????? ????? ???????")
+    } catch (error) {
+      console.error("Error loading payments:", error)
+      toast.error("فشل تحميل حركات الصندوق")
     } finally {
       setPaymentsLoading(false)
     }
@@ -248,8 +250,9 @@ export default function ReportsPage() {
       const data = await getAllStoreTransfers()
       setTransfers(data)
       setFilteredTransfers(data)
-    } catch {
-      toast.error("??? ????? ?????? ?????")
+    } catch (error) {
+      console.error("Error loading transfers:", error)
+      toast.error("فشل تحميل عمليات النقل")
     } finally {
       setTransfersLoading(false)
     }
@@ -261,8 +264,9 @@ export default function ReportsPage() {
       const data = await getAllPurchases()
       setPurchases(data)
       setFilteredPurchases(data)
-    } catch {
-      toast.error("??? ????? ?????????")
+    } catch (error) {
+      console.error("Error loading purchases:", error)
+      toast.error("فشل تحميل المشتريات")
     } finally {
       setPurchasesLoading(false)
     }
@@ -291,7 +295,7 @@ export default function ReportsPage() {
 
   const handleDelete = async () => {
     if (selectedSales.length === 0) {
-      toast.error("?????? ????? ????? ????? ??? ?????")
+      toast.error("الرجاء تحديد قائمة واحدة على الأقل")
       return
     }
 
@@ -307,15 +311,15 @@ export default function ReportsPage() {
       }
 
       if (result.success) {
-        // ????? ???????? ?? ??? ??????
+        // تسجيل العمليات في سجل النظام
         for (const sale of salesToDelete) {
           const total = sale.totalsaleiqd || sale.totalsaleusd
           const currency = sale.totalsaleiqd ? 'IQD' : 'USD'
           
           await logAction(
-            "???",
-            `?? ??? ????? ??? ??? ${sale.numberofsale} ??????: ${sale.customername} ????? ${total.toLocaleString()} ${currency}`,
-            "????????",
+            "حذف",
+            `تم حذف قائمة بيع رقم ${sale.numberofsale} للزبون: ${sale.customername} بمبلغ ${total.toLocaleString()} ${currency}`,
+            "المبيعات",
             undefined,
             {
               id: sale.id,
@@ -330,45 +334,46 @@ export default function ReportsPage() {
           )
         }
         
-        // ????? ????? ?????
+        // رسالة تأكيد مفصلة
         if (selectedSales.length === 1 && 'restoredAmount' in result && result.restoredAmount) {
           const { iqd, usd } = result.restoredAmount
-          let message = `? ?? ??? ????? ????? ??? ${'saleNumber' in result ? result.saleNumber : ''} ?????`
+          let message = `✅ تم حذف قائمة البيع رقم ${'saleNumber' in result ? result.saleNumber : ''} بنجاح`
           
           if (iqd > 0 || usd > 0) {
-            message += `\n?? ?? ??????? ?????? ?? ???? ??????: ${'customerName' in result ? result.customerName : ''}`
-            if (iqd > 0) message += `\n   - ${iqd.toLocaleString()} ?????`
-            if (usd > 0) message += `\n   - ${usd.toLocaleString()} ?????`
+            message += `\n💰 تم استرجاع المبلغ من رصيد الزبون: ${'customerName' in result ? result.customerName : ''}`
+            if (iqd > 0) message += `\n   - ${iqd.toLocaleString()} دينار`
+            if (usd > 0) message += `\n   - ${usd.toLocaleString()} دولار`
           }
           
-          message += `\n?? ?? ????? ??????? ???????`
+          message += `\n📦 تم إرجاع الكميات للمخزون`
           
           toast.success(message, { duration: 6000 })
         } else if (selectedSales.length > 1 && 'totalRestored' in result && result.totalRestored) {
           const { iqd, usd } = result.totalRestored
-          let message = `? ?? ??? ${'deletedCount' in result ? result.deletedCount : selectedSales.length} ????? ?????`
+          let message = `✅ تم حذف ${'deletedCount' in result ? result.deletedCount : selectedSales.length} قائمة بنجاح`
           
           if (iqd > 0 || usd > 0) {
-            message += `\n?? ?????? ??????? ?????????:`
-            if (iqd > 0) message += `\n   - ${iqd.toLocaleString()} ?????`
-            if (usd > 0) message += `\n   - ${usd.toLocaleString()} ?????`
+            message += `\n💰 إجمالي المبالغ المسترجعة:`
+            if (iqd > 0) message += `\n   - ${iqd.toLocaleString()} دينار`
+            if (usd > 0) message += `\n   - ${usd.toLocaleString()} دولار`
           }
           
-          message += `\n?? ?? ????? ???? ??????? ???????`
+          message += `\n📦 تم إرجاع جميع الكميات للمخزون`
           
           toast.success(message, { duration: 6000 })
         } else {
-          toast.success(`?? ??? ${selectedSales.length} ????? ?????`)
+          toast.success(`تم حذف ${selectedSales.length} قائمة بنجاح`)
         }
         
         setSelectedSales([])
         setShowDeleteDialog(false)
         await loadSales()
       } else {
-        toast.error(result.error || "??? ?????")
+        toast.error(result.error || "فشل الحذف")
       }
-    } catch {
-      toast.error("??? ??? ????? ?????")
+    } catch (error) {
+      console.error("Error deleting sales:", error)
+      toast.error("حدث خطأ أثناء الحذف")
     } finally {
       setDeleteLoading(false)
     }
@@ -376,11 +381,11 @@ export default function ReportsPage() {
 
   const handleEdit = () => {
     if (selectedSales.length === 0) {
-      toast.error("?????? ????? ????? ?????")
+      toast.error("الرجاء تحديد قائمة واحدة")
       return
     }
     if (selectedSales.length > 1) {
-      toast.error("?????? ????? ????? ????? ??? ???????")
+      toast.error("الرجاء تحديد قائمة واحدة فقط للتعديل")
       return
     }
 
@@ -389,11 +394,11 @@ export default function ReportsPage() {
 
   const handleView = () => {
     if (selectedSales.length === 0) {
-      toast.error("?????? ????? ????? ?????")
+      toast.error("الرجاء تحديد قائمة واحدة")
       return
     }
     if (selectedSales.length > 1) {
-      toast.error("?????? ????? ????? ????? ??? ?????")
+      toast.error("الرجاء تحديد قائمة واحدة فقط للعرض")
       return
     }
 
@@ -433,7 +438,7 @@ export default function ReportsPage() {
 
   const handleDeletePurchases = async () => {
     if (selectedPurchases.length === 0) {
-      toast.error("?????? ????? ????? ????? ??? ?????")
+      toast.error("الرجاء تحديد قائمة واحدة على الأقل")
       return
     }
 
@@ -449,15 +454,15 @@ export default function ReportsPage() {
       }
 
       if (result.success) {
-        // ????? ???????? ?? ??? ??????
+        // تسجيل العمليات في سجل النظام
         for (const purchase of purchasesToDelete) {
           const total = purchase.totalpurchaseiqd || purchase.totalpurchaseusd
           const currency = purchase.totalpurchaseiqd ? 'IQD' : 'USD'
           
           await logAction(
-            "???",
-            `?? ??? ????? ???? ??? ${purchase.numberofpurchase} ??????: ${purchase.nameofsupplier} ????? ${total.toLocaleString()} ${currency}`,
-            "?????????",
+            "حذف",
+            `تم حذف قائمة شراء رقم ${purchase.numberofpurchase} للمجهز: ${purchase.nameofsupplier} بمبلغ ${total.toLocaleString()} ${currency}`,
+            "المشتريات",
             undefined,
             {
               id: purchase.id,
@@ -472,45 +477,46 @@ export default function ReportsPage() {
           )
         }
         
-        // ????? ????? ?????
+        // رسالة تأكيد مفصلة
         if (selectedPurchases.length === 1 && 'restoredAmount' in result && result.restoredAmount) {
           const { iqd, usd } = result.restoredAmount
-          let message = `? ?? ??? ????? ?????? ??? ${'purchaseNumber' in result ? result.purchaseNumber : ''} ?????`
+          let message = `✅ تم حذف قائمة الشراء رقم ${'purchaseNumber' in result ? result.purchaseNumber : ''} بنجاح`
           
           if (iqd > 0 || usd > 0) {
-            message += `\n?? ?? ????? ????? ?? ???? ??????: ${'supplierName' in result ? result.supplierName : ''}`
-            if (iqd > 0) message += `\n   - ${iqd.toLocaleString()} ?????`
-            if (usd > 0) message += `\n   - ${usd.toLocaleString()} ?????`
+            message += `\n💰 تم تسديد الدين من رصيد المجهز: ${'supplierName' in result ? result.supplierName : ''}`
+            if (iqd > 0) message += `\n   - ${iqd.toLocaleString()} دينار`
+            if (usd > 0) message += `\n   - ${usd.toLocaleString()} دولار`
           }
           
-          message += `\n?? ?? ??? ??????? ?? ???????`
+          message += `\n📦 تم خصم الكميات من المخزون`
           
           toast.success(message, { duration: 6000 })
         } else if (selectedPurchases.length > 1 && 'totalRestored' in result && result.totalRestored) {
           const { iqd, usd } = result.totalRestored
-          let message = `? ?? ??? ${'deletedCount' in result ? result.deletedCount : selectedPurchases.length} ????? ?????`
+          let message = `✅ تم حذف ${'deletedCount' in result ? result.deletedCount : selectedPurchases.length} قائمة بنجاح`
           
           if (iqd > 0 || usd > 0) {
-            message += `\n?? ?????? ?????? ???????:`
-            if (iqd > 0) message += `\n   - ${iqd.toLocaleString()} ?????`
-            if (usd > 0) message += `\n   - ${usd.toLocaleString()} ?????`
+            message += `\n💰 إجمالي الديون المسددة:`
+            if (iqd > 0) message += `\n   - ${iqd.toLocaleString()} دينار`
+            if (usd > 0) message += `\n   - ${usd.toLocaleString()} دولار`
           }
           
-          message += `\n?? ?? ??? ???? ??????? ?? ???????`
+          message += `\n📦 تم خصم جميع الكميات من المخزون`
           
           toast.success(message, { duration: 6000 })
         } else {
-          toast.success(`?? ??? ${selectedPurchases.length} ????? ?????`)
+          toast.success(`تم حذف ${selectedPurchases.length} قائمة بنجاح`)
         }
         
         setSelectedPurchases([])
         setShowPurchasesDeleteDialog(false)
         await loadPurchases()
       } else {
-        toast.error(result.error || "??? ?????")
+        toast.error(result.error || "فشل الحذف")
       }
-    } catch {
-      toast.error("??? ??? ????? ?????")
+    } catch (error) {
+      console.error("Error deleting purchases:", error)
+      toast.error("حدث خطأ أثناء الحذف")
     } finally {
       setPurchasesDeleteLoading(false)
     }
@@ -518,11 +524,11 @@ export default function ReportsPage() {
 
   const handleEditPurchase = () => {
     if (selectedPurchases.length === 0) {
-      toast.error("?????? ????? ????? ?????")
+      toast.error("الرجاء تحديد قائمة واحدة")
       return
     }
     if (selectedPurchases.length > 1) {
-      toast.error("?????? ????? ????? ????? ??? ???????")
+      toast.error("الرجاء تحديد قائمة واحدة فقط للتعديل")
       return
     }
 
@@ -531,11 +537,11 @@ export default function ReportsPage() {
 
   const handleViewPurchase = () => {
     if (selectedPurchases.length === 0) {
-      toast.error("?????? ????? ????? ?????")
+      toast.error("الرجاء تحديد قائمة واحدة")
       return
     }
     if (selectedPurchases.length > 1) {
-      toast.error("?????? ????? ????? ????? ??? ?????")
+      toast.error("الرجاء تحديد قائمة واحدة فقط للعرض")
       return
     }
 
@@ -565,7 +571,7 @@ export default function ReportsPage() {
 
   const handleDeletePayments = async () => {
     if (selectedPayments.length === 0) {
-      toast.error("?????? ????? ???? ????? ??? ?????")
+      toast.error("الرجاء تحديد حركة واحدة على الأقل")
       return
     }
 
@@ -583,12 +589,12 @@ export default function ReportsPage() {
       if (result.success) {
         for (const payment of paymentsToDelete) {
           const amount = payment.amount_iqd || payment.amount_usd
-          const customerName = payment.customer_name || payment.supplier_name || '??? ????'
+          const customerName = payment.customer_name || payment.supplier_name || 'غير محدد'
           
           await logAction(
-            "???",
-            `?? ??? ???? ${payment.transaction_type} ????? ${amount.toLocaleString()} ${payment.currency_type} ??????: ${customerName}`,
-            "???????",
+            "حذف",
+            `تم حذف دفعة ${payment.transaction_type} بمبلغ ${amount.toLocaleString()} ${payment.currency_type} للزبون: ${customerName}`,
+            "الصندوق",
             undefined,
             {
               id: payment.id,
@@ -605,15 +611,16 @@ export default function ReportsPage() {
           )
         }
         
-        toast.success(`?? ??? ${selectedPayments.length} ???? ?????`)
+        toast.success(`تم حذف ${selectedPayments.length} حركة بنجاح`)
         setSelectedPayments([])
         setShowPaymentsDeleteDialog(false)
         await loadPayments()
       } else {
-        toast.error(result.error || "??? ??? ???????")
+        toast.error(result.error || "فشل حذف الحركات")
       }
-    } catch {
-      toast.error("??? ??? ????? ?????")
+    } catch (error: unknown) {
+      console.error("Error deleting payments:", error)
+      toast.error("حدث خطأ أثناء الحذف")
     } finally {
       setPaymentsDeleteLoading(false)
     }
@@ -621,11 +628,11 @@ export default function ReportsPage() {
 
   const handleViewPayment = async () => {
     if (selectedPayments.length === 0) {
-      toast.error("?????? ????? ???? ????????")
+      toast.error("الرجاء تحديد حركة للمعاينة")
       return
     }
     if (selectedPayments.length > 1) {
-      toast.error("?????? ????? ???? ????? ???")
+      toast.error("الرجاء تحديد حركة واحدة فقط")
       return
     }
     
@@ -659,7 +666,7 @@ export default function ReportsPage() {
 
   const handleDeleteTransfers = async () => {
     if (selectedTransfers.length === 0) {
-      toast.error("?????? ????? ????? ??? ????? ??? ?????")
+      toast.error("الرجاء تحديد عملية نقل واحدة على الأقل")
       return
     }
 
@@ -677,9 +684,9 @@ export default function ReportsPage() {
       if (result.success) {
         for (const transfer of transfersToDelete) {
           await logAction(
-            "???",
-            `?? ??? ????? ??? ????? ??????: ${transfer.productname} ?? ${transfer.fromstorename} ??? ${transfer.tostorename}`,
-            "????? ???????",
+            "حذف",
+            `تم حذف عملية نقل مخزني للمادة: ${transfer.productname} من ${transfer.fromstorename} إلى ${transfer.tostorename}`,
+            "النقل المخزني",
             undefined,
             {
               productname: transfer.productname,
@@ -693,15 +700,16 @@ export default function ReportsPage() {
           )
         }
         
-        toast.success(`?? ??? ${selectedTransfers.length} ????? ??? ?????`)
+        toast.success(`تم حذف ${selectedTransfers.length} عملية نقل بنجاح`)
         setSelectedTransfers([])
         setShowTransfersDeleteDialog(false)
         await loadTransfers()
       } else {
-        toast.error(result.error || "??? ??? ?????? ?????")
+        toast.error(result.error || "فشل حذف عمليات النقل")
       }
-    } catch {
-      toast.error("??? ??? ????? ?????")
+    } catch (error: unknown) {
+      console.error("Error deleting transfers:", error)
+      toast.error("حدث خطأ أثناء الحذف")
     } finally {
       setTransfersDeleteLoading(false)
     }
@@ -709,11 +717,11 @@ export default function ReportsPage() {
 
   const handleViewTransfer = () => {
     if (selectedTransfers.length === 0) {
-      toast.error("?????? ????? ????? ??? ????????")
+      toast.error("الرجاء تحديد عملية نقل للمعاينة")
       return
     }
     if (selectedTransfers.length > 1) {
-      toast.error("?????? ????? ????? ??? ????? ???")
+      toast.error("الرجاء تحديد عملية نقل واحدة فقط")
       return
     }
     
@@ -726,19 +734,19 @@ export default function ReportsPage() {
 
   const handleExportCustomersReport = async () => {
     try {
-      toast.loading("???? ????? ?????? ???????...")
+      toast.loading("جاري تحميل بيانات الزبائن...")
       
-      // ??? ?????? ???????
+      // جلب بيانات الزبائن
       const customersData = await getCustomersWithBalances()
       
       if (!customersData || customersData.length === 0) {
         toast.dismiss()
-        toast.error("?? ???? ?????? ???????")
+        toast.error("لا توجد بيانات للزبائن")
         return
       }
 
       const generatedAt = new Date()
-      const generatedBy = currentUser?.full_name || currentUser?.username || "??? ?????"
+      const generatedBy = currentUser?.full_name || currentUser?.username || "غير معروف"
 
       const payload = {
         generatedAtISO: generatedAt.toISOString(),
@@ -752,25 +760,26 @@ export default function ReportsPage() {
       localStorage.setItem(CUSTOMERS_REPORT_LATEST_TOKEN_KEY, token)
 
       toast.dismiss()
-      toast.success("?? ??? ????? ???????")
+      toast.success("تم فتح تقرير الزبائن")
 
       const url = `/reports/customers-report?token=${encodeURIComponent(token)}`
       const win = window.open(url, "_blank", "noopener,noreferrer")
       if (!win) {
-        toast.info("??????? ???? ??? ???????. ???? ???? popups ?? ???? ??? ?????.")
+        toast.info("المتصفح مانع فتح التبويب. اسمح بالـ popups ثم حاول مرة ثانية.")
       }
       
-      // ????? ???????
+      // تسجيل العملية
       await logAction(
-        "?????",
-        `????? ????? ??????? - ??? ???????: ${customersData.length}`,
-        "????????",
+        "تصدير",
+        `تصدير تقرير الزبائن - عدد الزبائن: ${customersData.length}`,
+        "التقارير",
         undefined,
         { customersCount: customersData.length }
       )
-    } catch {
+    } catch (error) {
+      console.error("خطأ في تصدير التقرير:", error)
       toast.dismiss()
-      toast.error("??? ??? ????? ????? ???????")
+      toast.error("حدث خطأ أثناء تصدير التقرير")
     }
   }
 
@@ -795,7 +804,7 @@ export default function ReportsPage() {
             (currentUser?.permission_type === 'موظف' && currentUser?.permissions?.view_store_transfer)) && (
             <TabsTrigger value="transfer">{t('storeTransfer', currentLanguage.code)}</TabsTrigger>
           )}
-          {/* ??? ????? ???????? ??? ?????? ?? ??????? ???? ???? ?????? */}
+          {/* عرض تبويب التقارير فقط للمدير أو المحاسب الذي لديه صلاحية */}
           {(currentUser?.permission_type === 'مدير' || 
             (currentUser?.permission_type === 'محاسب' && currentUser?.permissions?.view_reports)) && (
             <TabsTrigger value="reports">{t('reports', currentLanguage.code)}</TabsTrigger>
@@ -838,7 +847,7 @@ export default function ReportsPage() {
                 <Button
                   onClick={() => {
                     if (selectedSales.length === 0) {
-                      toast.error("?????? ????? ????? ????? ??? ?????")
+                      toast.error("الرجاء تحديد قائمة واحدة على الأقل")
                       return
                     }
                     setShowDeleteDialog(true)
@@ -865,7 +874,7 @@ export default function ReportsPage() {
                   disabled={selectedSales.length !== 1}
                 >
                   <FileText className="h-4 w-4" />
-                  ???
+                  كشف
                 </Button>
               </div>
 
@@ -873,12 +882,12 @@ export default function ReportsPage() {
               <div className="flex flex-wrap gap-2 items-center">
                 <Button variant="outline" className="gap-2">
                   <FileText className="h-4 w-4" />
-                  ?????
+                  الملف
                 </Button>
                 <div className="flex-1 min-w-[300px] relative">
                   <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
-                    placeholder="??? ??? ??? ???????? ??? ??????? ??? ?????..."
+                    placeholder="بحث حسب رقم القائمة، اسم الزبون، نوع الدفع..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pr-10"
@@ -888,7 +897,7 @@ export default function ReportsPage() {
                   variant="outline"
                   size="icon"
                   onClick={() => setSearchTerm("")}
-                  title="?????"
+                  title="تنظيف"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -896,7 +905,7 @@ export default function ReportsPage() {
                   variant="outline"
                   size="icon"
                   onClick={loadSales}
-                  title="?????"
+                  title="تحديث"
                   disabled={loading}
                 >
                   <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -923,18 +932,18 @@ export default function ReportsPage() {
                             />
                           </TableHead>
                           <TableHead className="w-20 text-center">#</TableHead>
-                          <TableHead>??? ???????</TableHead>
-                          <TableHead>??? ??????</TableHead>
-                          <TableHead>??? ?????</TableHead>
-                          <TableHead>???????</TableHead>
-                          <TableHead>????? ???????</TableHead>
+                          <TableHead>رقم القائمة</TableHead>
+                          <TableHead>اسم الزبون</TableHead>
+                          <TableHead>نوع الدفع</TableHead>
+                          <TableHead>ملاحظات</TableHead>
+                          <TableHead>تاريخ الإضافة</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {currentSales.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
-                              ?? ???? ????? ??????
+                              لا توجد قوائم مبيعات
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -995,7 +1004,7 @@ export default function ReportsPage() {
                     {totalPages > 1 && (
                       <div className="flex items-center justify-between px-4 py-3 border-t">
                         <div className="text-sm text-muted-foreground">
-                          ??? {startIndex + 1} - {Math.min(endIndex, filteredSales.length)} ??{" "}
+                          عرض {startIndex + 1} - {Math.min(endIndex, filteredSales.length)} من{" "}
                           {filteredSales.length}
                         </div>
                         <div className="flex items-center gap-2">
@@ -1008,7 +1017,7 @@ export default function ReportsPage() {
                             <ChevronRight className="h-4 w-4" />
                           </Button>
                           <span className="text-sm">
-                            ???? {currentPage} ?? {totalPages}
+                            صفحة {currentPage} من {totalPages}
                           </span>
                           <Button
                             variant="outline"
@@ -1028,7 +1037,7 @@ export default function ReportsPage() {
               {}
               {selectedSales.length > 0 && (
                 <div className="text-sm text-muted-foreground">
-                  ?? ????? {selectedSales.length} ?????
+                  تم تحديد {selectedSales.length} قائمة
                 </div>
               )}
             </CardContent>
@@ -1038,13 +1047,13 @@ export default function ReportsPage() {
         <TabsContent value="purchases" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>????? ?????????</CardTitle>
-              <CardDescription>??? ?????? ???? ????? ?????????</CardDescription>
+              <CardTitle>إدارة المشتريات</CardTitle>
+              <CardDescription>عرض وإدارة جميع قوائم المشتريات</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {}
               <div className="flex flex-wrap gap-2">
-                {/* ??? ????? ??????? ???????? ?????? ??? ?????? ?? ?????? ???? ???? ?????? */}
+                {/* عرض أزرار الإضافة والتعديل والحذف فقط للمدير أو الموظف الذي لديه صلاحية */}
                 {(currentUser?.permission_type === 'مدير' || 
                   (currentUser?.permission_type === 'موظف' && currentUser?.permissions?.add_purchase)) && (
                   <>
@@ -1057,7 +1066,7 @@ export default function ReportsPage() {
                       }}
                     >
                       <Plus className="h-4 w-4" />
-                      ?????
+                      إضافة
                     </Button>
                     <Button
                       onClick={handleEditPurchase}
@@ -1066,12 +1075,12 @@ export default function ReportsPage() {
                       disabled={selectedPurchases.length !== 1}
                     >
                       <Edit className="h-4 w-4" />
-                      ?????
+                      تعديل
                     </Button>
                     <Button
                       onClick={() => {
                         if (selectedPurchases.length === 0) {
-                          toast.error("?????? ????? ????? ????? ??? ?????")
+                          toast.error("الرجاء تحديد قائمة واحدة على الأقل")
                           return
                         }
                         setShowPurchasesDeleteDialog(true)
@@ -1081,13 +1090,13 @@ export default function ReportsPage() {
                       disabled={selectedPurchases.length === 0}
                     >
                       <Trash2 className="h-4 w-4" />
-                      ???
+                      حذف
                     </Button>
                   </>
                 )}
                 <Button variant="outline" className="gap-2">
                   <Printer className="h-4 w-4" />
-                  ?????
+                  طباعة
                 </Button>
                 <Button
                   onClick={handleViewPurchase}
@@ -1096,7 +1105,7 @@ export default function ReportsPage() {
                   disabled={selectedPurchases.length !== 1}
                 >
                   <FileText className="h-4 w-4" />
-                  ???
+                  كشف
                 </Button>
               </div>
 
@@ -1104,12 +1113,12 @@ export default function ReportsPage() {
               <div className="flex flex-wrap gap-2 items-center">
                 <Button variant="outline" className="gap-2">
                   <FileText className="h-4 w-4" />
-                  ?????
+                  الملف
                 </Button>
                 <div className="flex-1 min-w-[300px] relative">
                   <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
-                    placeholder="??? ??? ??? ???????? ??? ??????? ??? ??????..."
+                    placeholder="بحث حسب رقم القائمة، اسم المورد، نوع الشراء..."
                     value={purchasesSearchTerm}
                     onChange={(e) => setPurchasesSearchTerm(e.target.value)}
                     className="pr-10"
@@ -1119,7 +1128,7 @@ export default function ReportsPage() {
                   variant="outline"
                   size="icon"
                   onClick={() => setPurchasesSearchTerm("")}
-                  title="?????"
+                  title="تنظيف"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -1127,7 +1136,7 @@ export default function ReportsPage() {
                   variant="outline"
                   size="icon"
                   onClick={loadPurchases}
-                  title="?????"
+                  title="تحديث"
                   disabled={purchasesLoading}
                 >
                   <RefreshCw className={`h-4 w-4 ${purchasesLoading ? "animate-spin" : ""}`} />
@@ -1145,7 +1154,7 @@ export default function ReportsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          {/* ??? ???? ???????? ??? ?????? ???????? ?? ?????? ???? ???? ?????? */}
+                          {/* عرض عمود الاختيار فقط للمدير والمحاسب أو الموظف الذي لديه صلاحية */}
                           {(currentUser?.permission_type === 'مدير' ||
                             (currentUser?.permission_type === 'موظف' && currentUser?.permissions?.add_purchase)) && (
                             <TableHead className="w-[60px] text-center">
@@ -1158,12 +1167,12 @@ export default function ReportsPage() {
                             </TableHead>
                           )}
                           <TableHead className="w-20 text-center">#</TableHead>
-                          <TableHead>??? ???????</TableHead>
-                          <TableHead>??? ??????</TableHead>
-                          <TableHead>??? ??????</TableHead>
-                          <TableHead>??? ?????</TableHead>
-                          <TableHead>????????</TableHead>
-                          <TableHead>????? ??????</TableHead>
+                          <TableHead>رقم القائمة</TableHead>
+                          <TableHead>اسم المورد</TableHead>
+                          <TableHead>نوع الشراء</TableHead>
+                          <TableHead>نوع الدفع</TableHead>
+                          <TableHead>التفاصيل</TableHead>
+                          <TableHead>تاريخ الشراء</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1177,13 +1186,13 @@ export default function ReportsPage() {
                               } 
                               className="text-center py-10 text-muted-foreground"
                             >
-                              ?? ???? ????? ???????
+                              لا توجد قوائم مشتريات
                             </TableCell>
                           </TableRow>
                         ) : (
                           currentPurchases.map((purchase, index) => (
                             <TableRow key={purchase.id}>
-                              {/* ??? ???? ???????? ??? ?????? ???????? ?? ?????? ???? ???? ?????? */}
+                              {/* عرض عمود الاختيار فقط للمدير والمحاسب أو الموظف الذي لديه صلاحية */}
                               {(currentUser?.permission_type === 'مدير' ||
                                 (currentUser?.permission_type === 'موظف' && currentUser?.permissions?.add_purchase)) && (
                                 <TableCell className="text-center">
@@ -1255,7 +1264,7 @@ export default function ReportsPage() {
                     {purchasesTotalPages > 1 && (
                       <div className="flex items-center justify-between px-4 py-3 border-t">
                         <div className="text-sm text-muted-foreground">
-                          ??? {purchasesStartIndex + 1} - {Math.min(purchasesEndIndex, filteredPurchases.length)} ??{" "}
+                          عرض {purchasesStartIndex + 1} - {Math.min(purchasesEndIndex, filteredPurchases.length)} من{" "}
                           {filteredPurchases.length}
                         </div>
                         <div className="flex items-center gap-2">
@@ -1268,7 +1277,7 @@ export default function ReportsPage() {
                             <ChevronRight className="h-4 w-4" />
                           </Button>
                           <span className="text-sm">
-                            ???? {purchasesCurrentPage} ?? {purchasesTotalPages}
+                            صفحة {purchasesCurrentPage} من {purchasesTotalPages}
                           </span>
                           <Button
                             variant="outline"
@@ -1288,7 +1297,7 @@ export default function ReportsPage() {
               {}
               {selectedPurchases.length > 0 && (
                 <div className="text-sm text-muted-foreground">
-                  ?? ????? {selectedPurchases.length} ?????
+                  تم تحديد {selectedPurchases.length} قائمة
                 </div>
               )}
             </CardContent>
@@ -1298,8 +1307,8 @@ export default function ReportsPage() {
         <TabsContent value="cash" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>????? ???????</CardTitle>
-              <CardDescription>??? ?????? ????? ???????</CardDescription>
+              <CardTitle>إدارة الصندوق</CardTitle>
+              <CardDescription>عرض وإدارة حركات الصندوق</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {}
@@ -1313,7 +1322,7 @@ export default function ReportsPage() {
                   }}
                 >
                   <Plus className="h-4 w-4" />
-                  ?????
+                  إضافة
                 </Button>
                 <Button
                   onClick={() => setShowPaymentsDeleteDialog(true)}
@@ -1322,7 +1331,7 @@ export default function ReportsPage() {
                   disabled={selectedPayments.length === 0}
                 >
                   <Trash2 className="h-4 w-4" />
-                  ??? ({selectedPayments.length})
+                  حذف ({selectedPayments.length})
                 </Button>
                 <Button
                   onClick={() => window.print()}
@@ -1330,7 +1339,7 @@ export default function ReportsPage() {
                   className="gap-2"
                 >
                   <Printer className="h-4 w-4" />
-                  ?????
+                  طباعة
                 </Button>
                 <Button
                   onClick={handleViewPayment}
@@ -1339,7 +1348,7 @@ export default function ReportsPage() {
                   disabled={selectedPayments.length !== 1}
                 >
                   <FileText className="h-4 w-4" />
-                  ???
+                  كشف
                 </Button>
               </div>
 
@@ -1347,7 +1356,7 @@ export default function ReportsPage() {
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="????? ?? ????? ???????..."
+                  placeholder="البحث في حركات الصندوق..."
                   value={paymentsSearchTerm}
                   onChange={(e) => setPaymentsSearchTerm(e.target.value)}
                   className="pr-10"
@@ -1385,20 +1394,20 @@ export default function ReportsPage() {
                             />
                           </TableHead>
                           <TableHead className="text-center">#</TableHead>
-                          <TableHead>??? ????????</TableHead>
-                          <TableHead>??? ??????</TableHead>
-                          <TableHead>??? ??????</TableHead>
-                          <TableHead>?????? ?????</TableHead>
-                          <TableHead>?????? ?????</TableHead>
-                          <TableHead>????????</TableHead>
-                          <TableHead>????? ??????</TableHead>
+                          <TableHead>رقم الفاتورة</TableHead>
+                          <TableHead>اسم الزبون</TableHead>
+                          <TableHead>نوع الحركة</TableHead>
+                          <TableHead>المبلغ دينار</TableHead>
+                          <TableHead>المبلغ دولار</TableHead>
+                          <TableHead>الملاحظة</TableHead>
+                          <TableHead>تاريخ الحركة</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredPayments.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                              ?? ???? ?????
+                              لا توجد حركات
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -1418,7 +1427,7 @@ export default function ReportsPage() {
                               <TableCell>
                                 <span
                                   className={`px-2 py-1 rounded text-xs ${
-                                    payment.transaction_type === "???"
+                                    payment.transaction_type === "قبض"
                                       ? "bg-green-100 text-green-800"
                                       : "bg-red-100 text-red-800"
                                   }`}
@@ -1427,7 +1436,7 @@ export default function ReportsPage() {
                                 </span>
                               </TableCell>
                               <TableCell className="font-medium text-green-700">
-                                {payment.amount_iqd.toLocaleString()} ?.?
+                                {payment.amount_iqd.toLocaleString()} د.ع
                               </TableCell>
                               <TableCell className="font-medium text-blue-700">
                                 ${payment.amount_usd.toLocaleString()}
@@ -1465,7 +1474,7 @@ export default function ReportsPage() {
                     {paymentsTotalPages > 1 && (
                       <div className="flex items-center justify-between px-4 py-3 border-t">
                         <div className="text-sm text-muted-foreground">
-                          ??? {paymentsStartIndex + 1} - {Math.min(paymentsEndIndex, filteredPayments.length)} ??{" "}
+                          عرض {paymentsStartIndex + 1} - {Math.min(paymentsEndIndex, filteredPayments.length)} من{" "}
                           {filteredPayments.length}
                         </div>
                         <div className="flex items-center gap-2">
@@ -1478,7 +1487,7 @@ export default function ReportsPage() {
                             <ChevronRight className="h-4 w-4" />
                           </Button>
                           <span className="text-sm">
-                            ???? {paymentsCurrentPage} ?? {paymentsTotalPages}
+                            صفحة {paymentsCurrentPage} من {paymentsTotalPages}
                           </span>
                           <Button
                             variant="outline"
@@ -1498,7 +1507,7 @@ export default function ReportsPage() {
               {}
               {selectedPayments.length > 0 && (
                 <div className="text-sm text-muted-foreground">
-                  ?? ????? {selectedPayments.length} ????
+                  تم تحديد {selectedPayments.length} حركة
                 </div>
               )}
             </CardContent>
@@ -1508,13 +1517,13 @@ export default function ReportsPage() {
         <TabsContent value="transfer" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>????? ????? ???????</CardTitle>
-              <CardDescription>??? ?????? ?????? ????? ??? ???????</CardDescription>
+              <CardTitle>إدارة النقل المخزني</CardTitle>
+              <CardDescription>عرض وإدارة عمليات النقل بين المخازن</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {}
               <div className="flex flex-wrap gap-2">
-                {/* ??? ????? ??????? ?????? ??? ?????? ?? ?????? ???? ???? ?????? */}
+                {/* عرض أزرار الإضافة والحذف فقط للمدير أو الموظف الذي لديه صلاحية */}
                 {(currentUser?.permission_type === 'مدير' || 
                   (currentUser?.permission_type === 'موظف' && currentUser?.permissions?.view_store_transfer)) && (
                   <>
@@ -1527,7 +1536,7 @@ export default function ReportsPage() {
                       }}
                     >
                       <Plus className="h-4 w-4" />
-                      ?????
+                      إضافة
                     </Button>
                     <Button
                       onClick={() => setShowTransfersDeleteDialog(true)}
@@ -1536,7 +1545,7 @@ export default function ReportsPage() {
                       disabled={selectedTransfers.length === 0}
                     >
                       <Trash2 className="h-4 w-4" />
-                      ??? ({selectedTransfers.length})
+                      حذف ({selectedTransfers.length})
                     </Button>
                   </>
                 )}
@@ -1546,7 +1555,7 @@ export default function ReportsPage() {
                   className="gap-2"
                 >
                   <Printer className="h-4 w-4" />
-                  ?????
+                  طباعة
                 </Button>
                 <Button
                   onClick={handleViewTransfer}
@@ -1555,7 +1564,7 @@ export default function ReportsPage() {
                   disabled={selectedTransfers.length !== 1}
                 >
                   <FileText className="h-4 w-4" />
-                  ???
+                  كشف
                 </Button>
               </div>
 
@@ -1563,7 +1572,7 @@ export default function ReportsPage() {
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="????? ?? ?????? ?????..."
+                  placeholder="البحث في عمليات النقل..."
                   value={transfersSearchTerm}
                   onChange={(e) => setTransfersSearchTerm(e.target.value)}
                   className="pr-10"
@@ -1601,20 +1610,20 @@ export default function ReportsPage() {
                             />
                           </TableHead>
                           <TableHead className="text-center">#</TableHead>
-                          <TableHead>??? ??????</TableHead>
-                          <TableHead>??? ??????</TableHead>
-                          <TableHead>?????? ????????</TableHead>
-                          <TableHead>?? ??????</TableHead>
-                          <TableHead>??? ??????</TableHead>
-                          <TableHead>???????</TableHead>
-                          <TableHead>????? ?????</TableHead>
+                          <TableHead>رمز المادة</TableHead>
+                          <TableHead>اسم المادة</TableHead>
+                          <TableHead>الكمية المنقولة</TableHead>
+                          <TableHead>من المخزن</TableHead>
+                          <TableHead>إلى المخزن</TableHead>
+                          <TableHead>ملاحظات</TableHead>
+                          <TableHead>تاريخ النقل</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredTransfers.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                              ?? ???? ?????? ???
+                              لا توجد عمليات نقل
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -1677,7 +1686,7 @@ export default function ReportsPage() {
                     {transfersTotalPages > 1 && (
                       <div className="flex items-center justify-between px-4 py-3 border-t">
                         <div className="text-sm text-muted-foreground">
-                          ??? {transfersStartIndex + 1} - {Math.min(transfersEndIndex, filteredTransfers.length)} ??{" "}
+                          عرض {transfersStartIndex + 1} - {Math.min(transfersEndIndex, filteredTransfers.length)} من{" "}
                           {filteredTransfers.length}
                         </div>
                         <div className="flex items-center gap-2">
@@ -1690,7 +1699,7 @@ export default function ReportsPage() {
                             <ChevronRight className="h-4 w-4" />
                           </Button>
                           <span className="text-sm">
-                            ???? {transfersCurrentPage} ?? {transfersTotalPages}
+                            صفحة {transfersCurrentPage} من {transfersTotalPages}
                           </span>
                           <Button
                             variant="outline"
@@ -1710,7 +1719,7 @@ export default function ReportsPage() {
               {}
               {selectedTransfers.length > 0 && (
                 <div className="text-sm text-muted-foreground">
-                  ?? ????? {selectedTransfers.length} ????? ???
+                  تم تحديد {selectedTransfers.length} عملية نقل
                 </div>
               )}
             </CardContent>
@@ -1724,12 +1733,12 @@ export default function ReportsPage() {
                 {t('reports', currentLanguage.code)}
               </CardTitle>
               <CardDescription>
-                ????? ?????? ?????? ????? ????? ????? ??????
+                إنشاء وتصدير تقارير شاملة لجميع أقسام النظام
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* ?? ????? ???????? */}
+                {/* زر تقرير المبيعات */}
                 <Button
                   variant="outline"
                   className="h-28 flex flex-row-reverse items-center justify-between px-6 hover:shadow-lg transition-all group relative overflow-hidden"
@@ -1762,12 +1771,12 @@ export default function ReportsPage() {
                       {t('sales', currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      ????? ???? ????????
+                      تقرير شامل للمبيعات
                     </p>
                   </div>
                 </Button>
 
-                {/* ?? ????? ????????? */}
+                {/* زر تقرير المشتريات */}
                 <Button
                   variant="outline"
                   className="h-28 flex flex-row-reverse items-center justify-between px-6 hover:shadow-lg transition-all group relative overflow-hidden"
@@ -1800,12 +1809,12 @@ export default function ReportsPage() {
                       {t('purchases', currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      ????? ???? ?????????
+                      تقرير شامل للمشتريات
                     </p>
                   </div>
                 </Button>
 
-                {/* ?? ????? ????? ??????? */}
+                {/* زر تقرير النقل المخزني */}
                 <Button
                   variant="outline"
                   className="h-28 flex flex-row-reverse items-center justify-between px-6 hover:shadow-lg transition-all group relative overflow-hidden"
@@ -1838,12 +1847,12 @@ export default function ReportsPage() {
                       {t('storeTransfer', currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      ????? ???? ????? ???????
+                      تقرير شامل للنقل المخزني
                     </p>
                   </div>
                 </Button>
 
-                {/* ?? ????? ??????? */}
+                {/* زر تقرير الزبائن */}
                 <Button
                   onClick={handleExportCustomersReport}
                   variant="outline"
@@ -1877,12 +1886,12 @@ export default function ReportsPage() {
                       {t('customers', currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      ????? ???? ???????
+                      تقرير شامل للزبائن
                     </p>
                   </div>
                 </Button>
 
-                {/* ?? ????? ??????? */}
+                {/* زر تقرير المخازن */}
                 <Button
                   variant="outline"
                   className="h-28 flex flex-row-reverse items-center justify-between px-6 hover:shadow-lg transition-all group relative overflow-hidden"
@@ -1915,12 +1924,12 @@ export default function ReportsPage() {
                       {t('stores', currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      ????? ???? ???????
+                      تقرير شامل للمخازن
                     </p>
                   </div>
                 </Button>
 
-                {/* ?? ????? ???????? */}
+                {/* زر تقرير الصرفيات */}
                 <Button
                   variant="outline"
                   className="h-28 flex flex-row-reverse items-center justify-between px-6 hover:shadow-lg transition-all group relative overflow-hidden"
@@ -1953,7 +1962,7 @@ export default function ReportsPage() {
                       {t('cashBox', currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      ????? ???? ????????
+                      تقرير شامل للصرفيات
                     </p>
                   </div>
                 </Button>
@@ -1967,15 +1976,15 @@ export default function ReportsPage() {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>????? ?????</DialogTitle>
+            <DialogTitle>تأكيد الحذف</DialogTitle>
             <DialogDescription>
-              ?? ??? ????? ?? ??? {selectedSales.length} ?????? ???? ??? ???? ???????? ???????? ???.
-              ??? ??????? ?? ???? ??????? ???.
+              هل أنت متأكد من حذف {selectedSales.length} قائمة؟ سيتم حذف جميع التفاصيل المرتبطة بها.
+              هذا الإجراء لا يمكن التراجع عنه.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={deleteLoading}>
-              ?????
+              إلغاء
             </Button>
             <Button
               variant="destructive"
@@ -1986,12 +1995,12 @@ export default function ReportsPage() {
               {deleteLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  ???? ?????...
+                  جاري الحذف...
                 </>
               ) : (
                 <>
                   <Trash2 className="h-4 w-4" />
-                  ???
+                  حذف
                 </>
               )}
             </Button>
@@ -2003,15 +2012,15 @@ export default function ReportsPage() {
       <Dialog open={showPurchasesDeleteDialog} onOpenChange={setShowPurchasesDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>????? ?????</DialogTitle>
+            <DialogTitle>تأكيد الحذف</DialogTitle>
             <DialogDescription>
-              ?? ??? ????? ?? ??? {selectedPurchases.length} ?????? ???? ??? ???? ???????? ???????? ???.
-              ??? ??????? ?? ???? ??????? ???.
+              هل أنت متأكد من حذف {selectedPurchases.length} قائمة؟ سيتم حذف جميع التفاصيل المرتبطة بها.
+              هذا الإجراء لا يمكن التراجع عنه.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPurchasesDeleteDialog(false)} disabled={purchasesDeleteLoading}>
-              ?????
+              إلغاء
             </Button>
             <Button
               variant="destructive"
@@ -2022,12 +2031,12 @@ export default function ReportsPage() {
               {purchasesDeleteLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  ???? ?????...
+                  جاري الحذف...
                 </>
               ) : (
                 <>
                   <Trash2 className="h-4 w-4" />
-                  ???
+                  حذف
                 </>
               )}
             </Button>
@@ -2039,15 +2048,15 @@ export default function ReportsPage() {
       <Dialog open={showPaymentsDeleteDialog} onOpenChange={setShowPaymentsDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>????? ?????</DialogTitle>
+            <DialogTitle>تأكيد الحذف</DialogTitle>
             <DialogDescription>
-              ?? ??? ????? ?? ??? {selectedPayments.length} ?????
-              ??? ??????? ?? ???? ??????? ???.
+              هل أنت متأكد من حذف {selectedPayments.length} حركة؟
+              هذا الإجراء لا يمكن التراجع عنه.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPaymentsDeleteDialog(false)} disabled={paymentsDeleteLoading}>
-              ?????
+              إلغاء
             </Button>
             <Button
               variant="destructive"
@@ -2058,12 +2067,12 @@ export default function ReportsPage() {
               {paymentsDeleteLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  ???? ?????...
+                  جاري الحذف...
                 </>
               ) : (
                 <>
                   <Trash2 className="h-4 w-4" />
-                  ???
+                  حذف
                 </>
               )}
             </Button>
@@ -2075,7 +2084,7 @@ export default function ReportsPage() {
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>?????? ?????</DialogTitle>
+            <DialogTitle>تفاصيل كاملة</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <div className="p-4 bg-muted rounded-lg whitespace-pre-wrap wrap-break-word">
@@ -2084,7 +2093,7 @@ export default function ReportsPage() {
           </div>
           <DialogFooter>
             <Button onClick={() => setShowDetailsDialog(false)}>
-              ?????
+              إغلاق
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2104,31 +2113,31 @@ export default function ReportsPage() {
       <Dialog open={showPaymentDetailsDialog} onOpenChange={setShowPaymentDetailsDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>?????? ???? ???????</DialogTitle>
+            <DialogTitle>تفاصيل حركة الصندوق</DialogTitle>
           </DialogHeader>
           {selectedPaymentDetails && (
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">??? ????????</p>
+                  <p className="text-sm text-muted-foreground">رقم الفاتورة</p>
                   <p className="font-medium">{selectedPaymentDetails.invoice_number}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">??? ??????</p>
+                  <p className="text-sm text-muted-foreground">اسم الزبون</p>
                   <p className="font-medium">{selectedPaymentDetails.customer_name}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">??? ??????</p>
+                  <p className="text-sm text-muted-foreground">نوع الحركة</p>
                   <p className="font-medium">
                     <span
                       className={`px-2 py-1 rounded text-xs ${
-                        selectedPaymentDetails.transaction_type === "???"
+                        selectedPaymentDetails.transaction_type === "قبض"
                           ? "bg-green-100 text-green-800"
-                          : selectedPaymentDetails.transaction_type === "???"
+                          : selectedPaymentDetails.transaction_type === "صرف"
                           ? "bg-red-100 text-red-800"
-                          : selectedPaymentDetails.transaction_type === "?????"
+                          : selectedPaymentDetails.transaction_type === "ايداع"
                           ? "bg-blue-100 text-blue-800"
-                          : selectedPaymentDetails.transaction_type === "???"
+                          : selectedPaymentDetails.transaction_type === "سحب"
                           ? "bg-orange-100 text-orange-800"
                           : "bg-purple-100 text-purple-800"
                       }`}
@@ -2138,28 +2147,28 @@ export default function ReportsPage() {
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">??? ??????</p>
+                  <p className="text-sm text-muted-foreground">نوع العملة</p>
                   <p className="font-medium">{selectedPaymentDetails.currency_type}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">?????? ?????</p>
+                  <p className="text-sm text-muted-foreground">المبلغ دينار</p>
                   <p className="font-medium text-green-700">
-                    {selectedPaymentDetails.amount_iqd.toLocaleString()} ?.?
+                    {selectedPaymentDetails.amount_iqd.toLocaleString()} د.ع
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">?????? ?????</p>
+                  <p className="text-sm text-muted-foreground">المبلغ دولار</p>
                   <p className="font-medium text-blue-700">
                     ${selectedPaymentDetails.amount_usd.toLocaleString()}
                   </p>
                 </div>
                 <div className="space-y-1 col-span-2">
-                  <p className="text-sm text-muted-foreground">????? ??????</p>
+                  <p className="text-sm text-muted-foreground">تاريخ الحركة</p>
                   <p className="font-medium">{formatDate(selectedPaymentDetails.pay_date)}</p>
                 </div>
                 {selectedPaymentDetails.notes && (
                   <div className="space-y-1 col-span-2">
-                    <p className="text-sm text-muted-foreground">????????</p>
+                    <p className="text-sm text-muted-foreground">الملاحظة</p>
                     <div className="p-3 bg-muted rounded-lg whitespace-pre-wrap wrap-break-word">
                       {selectedPaymentDetails.notes}
                     </div>
@@ -2170,7 +2179,7 @@ export default function ReportsPage() {
           )}
           <DialogFooter>
             <Button onClick={() => setShowPaymentDetailsDialog(false)}>
-              ?????
+              إغلاق
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2180,15 +2189,15 @@ export default function ReportsPage() {
       <Dialog open={showTransfersDeleteDialog} onOpenChange={setShowTransfersDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>????? ?????</DialogTitle>
+            <DialogTitle>تأكيد الحذف</DialogTitle>
             <DialogDescription>
-              ?? ??? ????? ?? ??? {selectedTransfers.length} ????? ????
-              ??? ??????? ?? ???? ??????? ???.
+              هل أنت متأكد من حذف {selectedTransfers.length} عملية نقل؟
+              هذا الإجراء لا يمكن التراجع عنه.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowTransfersDeleteDialog(false)} disabled={transfersDeleteLoading}>
-              ?????
+              إلغاء
             </Button>
             <Button
               variant="destructive"
@@ -2199,12 +2208,12 @@ export default function ReportsPage() {
               {transfersDeleteLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  ???? ?????...
+                  جاري الحذف...
                 </>
               ) : (
                 <>
                   <Trash2 className="h-4 w-4" />
-                  ???
+                  حذف
                 </>
               )}
             </Button>
@@ -2216,31 +2225,31 @@ export default function ReportsPage() {
       <Dialog open={showTransferDetailsDialog} onOpenChange={setShowTransferDetailsDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>?????? ????? ?????</DialogTitle>
+            <DialogTitle>تفاصيل عملية النقل</DialogTitle>
           </DialogHeader>
           {selectedTransferDetails && (
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">??? ??????</p>
+                  <p className="text-sm text-muted-foreground">رمز المادة</p>
                   <p className="font-medium">{selectedTransferDetails.productcode}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">??? ??????</p>
+                  <p className="text-sm text-muted-foreground">اسم المادة</p>
                   <p className="font-medium">{selectedTransferDetails.productname}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">?????? ????????</p>
+                  <p className="text-sm text-muted-foreground">الكمية المنقولة</p>
                   <p className="font-medium text-blue-700">
                     {selectedTransferDetails.quantity.toLocaleString()}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">????? ?????</p>
+                  <p className="text-sm text-muted-foreground">تاريخ النقل</p>
                   <p className="font-medium">{formatDate(selectedTransferDetails.transferdate)}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">?? ??????</p>
+                  <p className="text-sm text-muted-foreground">من المخزن</p>
                   <p>
                     <span className="px-2 py-1 rounded text-xs bg-orange-100 text-orange-800">
                       {selectedTransferDetails.fromstorename}
@@ -2248,7 +2257,7 @@ export default function ReportsPage() {
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">??? ??????</p>
+                  <p className="text-sm text-muted-foreground">إلى المخزن</p>
                   <p>
                     <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800">
                       {selectedTransferDetails.tostorename}
@@ -2257,13 +2266,13 @@ export default function ReportsPage() {
                 </div>
                 {selectedTransferDetails.createdby && (
                   <div className="space-y-1 col-span-2">
-                    <p className="text-sm text-muted-foreground">??????</p>
+                    <p className="text-sm text-muted-foreground">بواسطة</p>
                     <p className="font-medium">{selectedTransferDetails.createdby}</p>
                   </div>
                 )}
                 {selectedTransferDetails.note && (
                   <div className="space-y-1 col-span-2">
-                    <p className="text-sm text-muted-foreground">???????</p>
+                    <p className="text-sm text-muted-foreground">ملاحظات</p>
                     <div className="p-3 bg-muted rounded-lg whitespace-pre-wrap wrap-break-word">
                       {selectedTransferDetails.note}
                     </div>
@@ -2271,7 +2280,7 @@ export default function ReportsPage() {
                 )}
                 {selectedTransferDetails.description && (
                   <div className="space-y-1 col-span-2">
-                    <p className="text-sm text-muted-foreground">?????</p>
+                    <p className="text-sm text-muted-foreground">الوصف</p>
                     <div className="p-3 bg-muted rounded-lg whitespace-pre-wrap wrap-break-word">
                       {selectedTransferDetails.description}
                     </div>
@@ -2282,7 +2291,7 @@ export default function ReportsPage() {
           )}
           <DialogFooter>
             <Button onClick={() => setShowTransferDetailsDialog(false)}>
-              ?????
+              إغلاق
             </Button>
           </DialogFooter>
         </DialogContent>
