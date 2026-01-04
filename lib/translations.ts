@@ -400,7 +400,7 @@ export const systemTranslations = {
   "required": { ar: "*", ku: "*", en: "*" },
 
   "monthlyPaymentNotifications": { ar: "إشعارات مواعيد التسديد الشهرية", ku: "ئاگاداریی کاتی پارەدانی مانگانە", en: "Monthly Payment Notifications" },
-  "unreadNotifications": { ar: "من الإشعارات غير المقروءة لمواعيد التسديد الشهرية", ku: "لە ئاگاداریی نەخوێنراوەکانی کاتی پارەدان", en: "unread notifications for monthly payments" },
+  "unreadNotifications": { ar: "إشعارات غير مقروءة لمواعيد التسديد الشهرية", ku: "ئاگاداریی نەخوێنراوەکانی کاتی پارەدان", en: "unread monthly payment notifications" },
   "youHave": { ar: "لديك", ku: "لەلایەن", en: "You have" },
   "markAsRead": { ar: "تحديد كمقروء", ku: "وەک خوێنراوە نیشان بدە", en: "Mark as Read" },
 
