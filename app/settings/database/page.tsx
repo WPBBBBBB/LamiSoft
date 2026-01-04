@@ -77,6 +77,8 @@ export default function DatabaseSettingsPage() {
       try {
         const { supabase } = await import("@/lib/supabase")
         
+        console.log("📥 Loading backup settings...")
+        
         const { data: settings, error: settingsError } = await supabase
           .from("backup_settings")
           .select("*")
@@ -84,8 +86,16 @@ export default function DatabaseSettingsPage() {
           .single()
 
         if (!settingsError && settings) {
+          console.log("✅ Settings loaded successfully:")
+          console.log("   - Auto Backup Enabled:", settings.auto_backup_enabled)
+          console.log("   - Backup Time:", settings.backup_time)
+          console.log("   - Timezone Offset:", settings.timezone_offset)
+          console.log("   - Last Updated:", settings.updated_at)
+          
           setAutoBackupEnabled(settings.auto_backup_enabled)
           setBackupTime(settings.backup_time.substring(0, 5))
+        } else if (settingsError) {
+          console.error("❌ Error loading settings:", settingsError)
         }
 
         await updateLastAutoBackupDate()
@@ -100,7 +110,7 @@ export default function DatabaseSettingsPage() {
           }))
         }
       } catch (error) {
-        console.error("Error loading settings:", error)
+        console.error("❌ Error loading settings:", error)
       }
     }
 
@@ -113,35 +123,58 @@ export default function DatabaseSettingsPage() {
     try {
       const { supabase } = await import("@/lib/supabase")
       
-      console.log("Updating backup time to:", time + ":00")
+      console.log("🕐 Updating backup time to:", time + ":00")
       
-      const { data, error } = await supabase.rpc("update_backup_time", {
-        new_time: time + ":00"
-      })
+      // Update the backup_settings table directly
+      const { error: updateError } = await supabase
+        .from("backup_settings")
+        .update({ 
+          backup_time: time + ":00",
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", 1)
 
-      if (error) {
-        console.error("Error updating backup time:", error)
-        toast.error("فشل في تحديث وقت النسخ الاحتياطي: " + error.message)
+      if (updateError) {
+        console.error("❌ Error updating backup time in settings:", updateError)
+        toast.error("فشل في تحديث وقت النسخ الاحتياطي: " + updateError.message)
         return
       }
 
-      if (data && data.length > 0) {
-        const result = data[0]
-        console.log("Backup time update result:", result)
-        
-        if (result.success) {
-          toast.success(`تم تحديث وقت النسخ الاحتياطي إلى ${time}`)
-          console.log("Message:", result.message)
-          console.log("UTC Time:", result.utc_time)
-          console.log("Cron Schedule:", result.cron_schedule)
-        } else {
-          toast.error("تحذير: " + result.message)
-        }
-      } else {
-        toast.success(`تم تحديث وقت النسخ الاحتياطي إلى ${time}`)
+      console.log("✅ Backup time saved to database successfully!")
+      
+      // Verify the saved value
+      const { data: verifyData } = await supabase
+        .from("backup_settings")
+        .select("backup_time, updated_at")
+        .eq("id", 1)
+        .single()
+      
+      if (verifyData) {
+        console.log("📋 Verified saved time:", verifyData.backup_time)
+        console.log("📅 Last updated at:", verifyData.updated_at)
       }
+
+      // Also update the cron job if the RPC exists
+      try {
+        const { data, error: rpcError } = await supabase.rpc("update_backup_time", {
+          new_time: time + ":00"
+        })
+
+        if (rpcError) {
+          console.warn("⚠️ RPC update_backup_time not available or failed:", rpcError)
+        } else if (data && data.length > 0) {
+          const result = data[0]
+          console.log("✅ Backup time update result:", result)
+          console.log("⏰ Cron Schedule:", result.cron_schedule)
+          console.log("🌍 UTC Time:", result.utc_time)
+        }
+      } catch (rpcError) {
+        console.warn("⚠️ Could not update cron job:", rpcError)
+      }
+
+      toast.success(`تم تحديث وقت النسخ الاحتياطي إلى ${time}`)
     } catch (error) {
-      console.error("Error updating backup time:", error)
+      console.error("❌ Error updating backup time:", error)
       toast.error("فشل في تحديث وقت النسخ الاحتياطي")
     }
   }
@@ -154,13 +187,30 @@ export default function DatabaseSettingsPage() {
       
       console.log("Toggling auto backup to:", enabled)
       
-      const { error } = await supabase.rpc("toggle_auto_backup", {
-        enabled
-      })
+      // Update the backup_settings table directly
+      const { error: updateError } = await supabase
+        .from("backup_settings")
+        .update({ 
+          auto_backup_enabled: enabled,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", 1)
 
-      if (error) {
-        console.error("Error toggling auto backup:", error)
-        throw error
+      if (updateError) {
+        console.error("Error updating auto backup setting:", updateError)
+        throw updateError
+      }
+
+      // Also try to update cron job if RPC exists
+      try {
+        const { error: rpcError } = await supabase.rpc("toggle_auto_backup", {
+          enabled
+        })
+        if (rpcError) {
+          console.warn("RPC toggle_auto_backup not available or failed:", rpcError)
+        }
+      } catch (rpcError) {
+        console.warn("Could not update cron job:", rpcError)
       }
 
       setAutoBackupEnabled(enabled)
@@ -188,7 +238,7 @@ export default function DatabaseSettingsPage() {
     try {
       const { supabase } = await import("@/lib/supabase")
       
-      const [salesMain, salesDetails, purchasesMain, purchaseProductsDetails, inventory, store, storeTransfers, customers, payments, users, userPermissions] = await Promise.all([
+      const [salesMain, salesDetails, purchasesMain, purchaseProductsDetails, inventory, store, storeTransfers, customers, payments, users, userPermissions, expenses] = await Promise.all([
         supabase.from("tb_salesmain").select("*"),
         supabase.from("tb_salesdetails").select("*"),
         supabase.from("tb_purchasemain").select("*"),
@@ -200,6 +250,7 @@ export default function DatabaseSettingsPage() {
         supabase.from("payments").select("*"),
         supabase.from("users").select("*"),
         supabase.from("user_permissions").select("*"),
+        supabase.from("expenses").select("*"),
       ])
 
       const backup = {
@@ -217,6 +268,7 @@ export default function DatabaseSettingsPage() {
           payments: payments.data || [],
           users: users.data || [],
           user_permissions: userPermissions.data || [],
+          expenses: expenses.data || [],
         },
       }
 
