@@ -503,7 +503,7 @@ export async function getCustomerProfileDetails(customerId: string): Promise<Cus
       .eq('customername', customer.customer_name)
       .order('datetime', { ascending: false })
 
-    let purchases: any[] = []
+    let purchases: CustomerProfileDetails["purchases"] = []
     if (customer.type === 'مجهز') {
       const { data: purchasesData } = await supabase
         .from('tb_purchasemain')

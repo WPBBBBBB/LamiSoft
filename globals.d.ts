@@ -14,7 +14,9 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 declare module "next-pwa" {
-  const withPWAInit: any
+  type WithPWA = (nextConfig?: import("next").NextConfig) => import("next").NextConfig
+  type PwaConfig = Record<string, unknown>
+  const withPWAInit: (pwaConfig: PwaConfig) => WithPWA
   export default withPWAInit
 }
 

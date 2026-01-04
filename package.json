@@ -6,7 +6,8 @@
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "health": "node scripts/health-check.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
