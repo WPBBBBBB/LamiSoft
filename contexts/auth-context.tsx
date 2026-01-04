@@ -53,10 +53,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCurrentUser(user)
   }
 
-  const logout = () => {
-    setCurrentUser(null)
-    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
-    router.push('/login')
+  const logout = async () => {
+    try {
+      // Clear user state first
+      setCurrentUser(null)
+      
+      // Wait for server to clear the session cookie
+      await fetch('/api/auth/logout', { method: 'POST' })
+      
+      // Clear any client-side storage
+      if (typeof window !== 'undefined') {
+        // Clear localStorage if any auth data is stored
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('auth') || key.includes('user') || key.includes('session')) {
+            localStorage.removeItem(key)
+          }
+        })
+      }
+      
+      // Redirect to login page
+      router.push('/login')
+      
+      // Force a hard reload to clear any cached state
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login'
+        }
+      }, 100)
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Even if logout API fails, still redirect to login
+      router.push('/login')
+    }
   }
 
   const hasPermission = (permission: string): boolean => {
