@@ -50,7 +50,6 @@ export async function getAllNotifications(includeRead: boolean = false): Promise
     const { data, error } = await query
 
     if (error) {
-      console.error("Error fetching notifications:", error)
       return {
         success: false,
         error: error.message,
@@ -62,7 +61,6 @@ export async function getAllNotifications(includeRead: boolean = false): Promise
       data: data || [],
     }
   } catch (error) {
-    console.error("Exception in getAllNotifications:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -85,7 +83,6 @@ export async function getUnreadNotificationsCount(): Promise<{
       .eq("is_read", false)
 
     if (error) {
-      console.error("Error fetching unread count:", error)
       return {
         success: false,
         error: error.message,
@@ -97,7 +94,6 @@ export async function getUnreadNotificationsCount(): Promise<{
       count: count || 0,
     }
   } catch (error) {
-    console.error("Exception in getUnreadNotificationsCount:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -119,7 +115,6 @@ export async function markNotificationAsRead(notificationId: string): Promise<{
       .eq("id", notificationId)
 
     if (error) {
-      console.error("Error marking notification as read:", error)
       return {
         success: false,
         error: error.message,
@@ -128,7 +123,6 @@ export async function markNotificationAsRead(notificationId: string): Promise<{
 
     return { success: true }
   } catch (error) {
-    console.error("Exception in markNotificationAsRead:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -150,7 +144,6 @@ export async function markAllNotificationsAsRead(): Promise<{
       .eq("is_read", false)
 
     if (error) {
-      console.error("Error marking all notifications as read:", error)
       return {
         success: false,
         error: error.message,
@@ -159,7 +152,6 @@ export async function markAllNotificationsAsRead(): Promise<{
 
     return { success: true }
   } catch (error) {
-    console.error("Exception in markAllNotificationsAsRead:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -181,7 +173,6 @@ export async function deleteNotification(notificationId: string): Promise<{
       .eq("id", notificationId)
 
     if (error) {
-      console.error("Error deleting notification:", error)
       return {
         success: false,
         error: error.message,
@@ -190,7 +181,6 @@ export async function deleteNotification(notificationId: string): Promise<{
 
     return { success: true }
   } catch (error) {
-    console.error("Exception in deleteNotification:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -214,7 +204,6 @@ export async function getNotificationSettings(): Promise<{
       .single()
 
     if (error) {
-      console.error("Error fetching notification settings:", error)
       return {
         success: false,
         error: error.message,
@@ -226,7 +215,6 @@ export async function getNotificationSettings(): Promise<{
       data: data,
     }
   } catch (error) {
-    console.error("Exception in getNotificationSettings:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -247,7 +235,6 @@ export async function toggleDebtNotifications(enabled: boolean): Promise<{
     })
 
     if (error) {
-      console.error("Error toggling debt notifications:", error)
       return {
         success: false,
         error: error.message,
@@ -256,7 +243,6 @@ export async function toggleDebtNotifications(enabled: boolean): Promise<{
 
     return { success: true }
   } catch (error) {
-    console.error("Exception in toggleDebtNotifications:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -276,7 +262,6 @@ export async function runNotificationsCheck(): Promise<{
     const { data, error } = await supabase.rpc("run_all_notification_checks")
 
     if (error) {
-      console.error("Error running notifications check:", error)
       return {
         success: false,
         error: error.message || "فشل تشغيل فحص الإشعارات. تأكد من تنفيذ ملفات SQL في قاعدة البيانات.",
@@ -288,7 +273,6 @@ export async function runNotificationsCheck(): Promise<{
       count: data?.total || 0,
     }
   } catch (error) {
-    console.error("Exception in runNotificationsCheck:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -312,7 +296,6 @@ export async function getCustomerNotifications(customerId: string): Promise<{
       .order("created_at", { ascending: false })
 
     if (error) {
-      console.error("Error fetching customer notifications:", error)
       return {
         success: false,
         error: error.message,
@@ -324,7 +307,6 @@ export async function getCustomerNotifications(customerId: string): Promise<{
       data: data || [],
     }
   } catch (error) {
-    console.error("Exception in getCustomerNotifications:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",

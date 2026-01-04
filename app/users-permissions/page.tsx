@@ -61,7 +61,6 @@ export default function UsersPermissionsPage() {
       const data = await getUsersWithPermissions()
       setUsers(data)
     } catch (error) {
-      console.error(error)
       toast.error("حدث خطأ أثناء تحميل البيانات")
     } finally {
       setIsLoading(false)
@@ -115,7 +114,6 @@ export default function UsersPermissionsPage() {
       setUserToDelete(null)
       loadUsers()
     } catch (error) {
-      console.error(error)
       toast.error("حدث خطأ أثناء الحذف")
     }
   }
@@ -132,7 +130,6 @@ export default function UsersPermissionsPage() {
       setSelectedUsers([])
       loadUsers()
     } catch (error) {
-      console.error(error)
       toast.error("حدث خطأ أثناء الحذف")
     }
   }

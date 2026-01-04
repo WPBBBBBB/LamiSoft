@@ -192,7 +192,6 @@ export default function DailyStatsPage() {
         totalLogins,
       })
     } catch (error) {
-      console.error(error)
       toast.error("حدث خطأ أثناء تحميل الإحصائيات")
     } finally {
       setIsLoading(false)

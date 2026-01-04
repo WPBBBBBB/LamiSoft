@@ -70,7 +70,6 @@ export default function SystemLogPage() {
       setLogs(data)
       setTotalCount(count)
     } catch (error: unknown) {
-      console.error("Error fetching logs:", error)
       const err = error as { message?: string; code?: string }
       
       if (err?.message?.includes('relation "tb_systemlog" does not exist')) {
@@ -133,7 +132,6 @@ export default function SystemLogPage() {
       setSelectedIds([])
       fetchLogs()
     } catch (error: unknown) {
-      console.error("Error deleting logs:", error)
       const err = error as { message?: string }
       toast.error(err?.message || "فشل في حذف السجلات")
     }
@@ -165,7 +163,6 @@ export default function SystemLogPage() {
       setPasswordInput("")
       fetchLogs()
     } catch (error: unknown) {
-      console.error("Error deleting all logs:", error)
       const err = error as { message?: string }
       toast.error(err?.message || "فشل في حذف جميع السجلات")
     }

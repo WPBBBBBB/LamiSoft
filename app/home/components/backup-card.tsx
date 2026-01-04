@@ -73,8 +73,7 @@ export function BackupCard() {
         }
       }
     } catch (error) {
-      console.error("Error loading backup info:", error)
-    }
+      }
   }
 
   async function handleBackup() {
@@ -104,7 +103,6 @@ export function BackupCard() {
           .select("*")
 
         if (error) {
-          console.error(`Error fetching ${tableName}:`, error)
           backupData[tableName] = []
         } else {
           backupData[tableName] = data || []
@@ -142,7 +140,6 @@ export function BackupCard() {
       setNextAllowedTime(nextAllowed.getTime())
 
     } catch (error) {
-      console.error("Backup error:", error)
       toast.error(t('backupCreationFailed', currentLanguage.code))
     } finally {
       setIsBackingUp(false)

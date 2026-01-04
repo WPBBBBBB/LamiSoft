@@ -66,22 +66,16 @@ export default function WhatsappManagementPage() {
 
   async function loadCustomers() {
     try {
-      console.log('loadCustomers: Starting fetch...')
       setIsLoading(true)
       const response = await fetch("/api/whatsapp-customers")
-      console.log('loadCustomers: Response status:', response.status)
       if (response.ok) {
         const data = await response.json()
-        console.log('loadCustomers: Received data:', data.length, 'customers')
         setCustomers(data)
         toast.success(`تم تحميل ${data.length} زبون`)
       } else {
-        const errorText = await response.text()
-        console.error('loadCustomers: Error response:', errorText)
         toast.error("فشل تحميل بيانات الزبائن")
       }
-    } catch (error) {
-      console.error("Error loading customers:", error)
+    } catch {
       toast.error("خطأ في تحميل بيانات الزبائن")
     } finally {
       setIsLoading(false)
@@ -98,9 +92,8 @@ export default function WhatsappManagementPage() {
           body: data.normal_message_body || ""
         })
       }
-    } catch (error) {
-      console.error("Error loading message preview:", error)
-    }
+    } catch {
+      }
   }
 
   function handleSelectAll() {
@@ -168,7 +161,6 @@ export default function WhatsappManagementPage() {
         }
         
         if (result.errors && result.errors.length > 0) {
-          console.log("Send errors details:", result.errors)
           setSendErrors(result.errors)
           setShowErrorDialog(true)
         }
@@ -177,8 +169,7 @@ export default function WhatsappManagementPage() {
       } else {
         toast.error("فشل إرسال الرسائل")
       }
-    } catch (error) {
-      console.error("Error sending messages:", error)
+    } catch {
       toast.error("خطأ في إرسال الرسائل")
     } finally {
       setIsSending(false)
@@ -269,13 +260,9 @@ export default function WhatsappManagementPage() {
           
           try {
             const responseText = await response.text()
-            console.log('📝 رد الخادم (نص):', responseText)
-            console.log('📊 حالة الرد:', response.status, response.statusText)
-            
             if (responseText && responseText.trim()) {
               try {
                 const errorData = JSON.parse(responseText)
-                console.log('📦 بيانات الخطأ (JSON):', errorData)
                 
                 errorMessage = errorData.error || 
                                errorData.message || 
@@ -286,24 +273,19 @@ export default function WhatsappManagementPage() {
                                errorMessage
                 
                 errorDetails = JSON.stringify(errorData, null, 2)
-                console.log('💬 رسالة الخطأ المستخرجة:', errorMessage)
-              } catch {
-                console.log('⚠️ فشل parse JSON، استخدام النص الخام')
+                } catch {
                 errorMessage = responseText.substring(0, 200)
                 errorDetails = responseText
               }
             } else {
-              console.log('⚠️ رد فارغ من الخادم')
               errorMessage = `خطأ HTTP ${response.status}: ${response.statusText}`
               errorDetails = `HTTP ${response.status} - ${response.statusText}\nلم يتم إرجاع محتوى من الخادم`
             }
           } catch (e) {
-            console.error('❌ فشل قراءة رد الخادم:', e)
             errorMessage = `خطأ ${response.status}: ${response.statusText}`
             errorDetails = `HTTP ${response.status} - ${response.statusText}\nخطأ في القراءة: ${e}`
           }
           
-          console.log('📋 رسالة الخطأ:', errorMessage)
           toast.error(errorMessage)
           
           setSendErrors([{
@@ -314,7 +296,6 @@ export default function WhatsappManagementPage() {
         }
       }
     } catch (error) {
-      console.error("Error sending media:", error)
       const errorMsg = error instanceof Error ? error.message : "خطأ غير متوقع"
       
       toast.error(`خطأ في إرسال الصورة: ${errorMsg}`)

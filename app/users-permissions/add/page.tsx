@@ -118,7 +118,6 @@ export default function AddUserPage() {
       toast.success("تم إضافة المستخدم بنجاح")
       router.push("/users-permissions")
     } catch (error: unknown) {
-      console.error(error)
       toast.error("حدث خطأ أثناء الإضافة: " + ((error as { message?: string })?.message || "خطأ غير معروف"))
     } finally {
       setIsLoading(false)

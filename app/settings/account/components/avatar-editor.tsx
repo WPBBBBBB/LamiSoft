@@ -171,7 +171,6 @@ export default function AvatarEditor({ currentAvatar, userId, onClose, onUpdate 
       onUpdate(newAvatarUrl)
       onClose()
     } catch (error) {
-      console.error('Error uploading avatar:', error)
       toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء رفع الصورة')
     } finally {
       setIsUploading(false)

@@ -246,7 +246,8 @@ export function NotificationPanel() {
         (n) => n.metadata?.show_confetti && !n.is_read
       )
       if (hasConfettiNotification) {
-        setShowConfetti(true)
+        const timer = setTimeout(() => setShowConfetti(true), 0)
+        return () => clearTimeout(timer)
       }
     }
   }, [isPanelOpen, notifications])

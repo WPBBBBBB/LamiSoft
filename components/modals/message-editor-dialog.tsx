@@ -83,7 +83,6 @@ export function MessageEditorDialog({
       toast.success("تم حفظ هيكل الرسالة بنجاح")
       onOpenChange(false)
     } catch (error) {
-      console.error("Error saving template:", error)
       toast.error("فشل حفظ هيكل الرسالة")
     }
   }

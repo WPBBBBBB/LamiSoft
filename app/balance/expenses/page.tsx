@@ -88,7 +88,6 @@ export default function ExpensesPage() {
       setExpenses(data || [])
       setFilteredExpenses(data || [])
     } catch (error) {
-      console.error("Error fetching expenses:", error)
       toast.error(t('loadingExpensesFailed', currentLanguage.code))
     } finally {
       setIsLoading(false)
@@ -181,7 +180,6 @@ export default function ExpensesPage() {
       resetForm()
       fetchExpenses()
     } catch (error) {
-      console.error("Error adding expense:", error)
       toast.error(t('expenseAddFailed', currentLanguage.code))
     }
   }
@@ -233,7 +231,6 @@ export default function ExpensesPage() {
       resetForm()
       fetchExpenses()
     } catch (error) {
-      console.error("Error updating expense:", error)
       toast.error(t('expenseUpdateFailed', currentLanguage.code))
     }
   }
@@ -279,7 +276,6 @@ export default function ExpensesPage() {
       setSelectedExpenses([])
       fetchExpenses()
     } catch (error) {
-      console.error("Error deleting expenses:", error)
       toast.error(t('expensesDeleteFailed', currentLanguage.code))
     }
   }
@@ -316,7 +312,6 @@ export default function ExpensesPage() {
       toast.success(t('expenseDeletedSuccess', currentLanguage.code))
       fetchExpenses()
     } catch (error) {
-      console.error("Error deleting expense:", error)
       toast.error(t('expenseDeleteFailed', currentLanguage.code))
     }
   }

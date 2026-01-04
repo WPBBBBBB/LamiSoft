@@ -11,7 +11,6 @@ export async function GET() {
       apiKey: apiKey,
     })
   } catch (error) {
-    console.error("Error loading WhatsApp settings:", error)
     return NextResponse.json(
       { error: "Failed to load settings" },
       { status: 500 }
@@ -23,8 +22,6 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { settings, updatedBy, fullName } = body
-    
-    console.log("Received POST request with:", { settings, updatedBy, fullName })
     
     if (!settings) {
       return NextResponse.json(
@@ -39,12 +36,9 @@ export async function POST(request: NextRequest) {
       fullName
     )
     
-    console.log("Successfully updated settings:", updatedSettings)
     return NextResponse.json(updatedSettings)
   } catch (error) {
-    console.error("Error updating WhatsApp settings:", error)
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
-    console.error("Error details:", errorMessage)
     return NextResponse.json(
       { error: `Failed to update settings: ${errorMessage}` },
       { status: 500 }

@@ -104,7 +104,6 @@ MICROSOFT_CLIENT_SECRET=your_client_secret_here</pre>
 
     return NextResponse.redirect(authUrl.toString())
   } catch (error) {
-    console.error("Error initiating Microsoft OAuth:", error)
     return NextResponse.json(
       { error: "Failed to initiate Microsoft OAuth" },
       { status: 500 }

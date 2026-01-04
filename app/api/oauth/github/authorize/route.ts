@@ -103,7 +103,6 @@ GITHUB_CLIENT_SECRET=your_client_secret_here</pre>
 
     return NextResponse.redirect(authUrl.toString())
   } catch (error) {
-    console.error("Error initiating GitHub OAuth:", error)
     return NextResponse.json(
       { error: "Failed to initiate GitHub OAuth" },
       { status: 500 }

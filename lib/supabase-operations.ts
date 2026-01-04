@@ -1,4 +1,4 @@
-﻿import { supabase } from './supabase'
+import { supabase } from './supabase'
 
 export interface Customer {
   id: string
@@ -20,7 +20,7 @@ export interface Payment {
   amount_iqd: number
   amount_usd: number
   currency_type: 'IQD' | 'USD'
-  transaction_type: 'قبض' | 'ايداع' | 'سحب' | 'صرف' | 'قرض'
+  transaction_type: '???' | '?????' | '???' | '???' | '???'
   notes?: string
   pay_date: string
   created_at: string
@@ -76,21 +76,21 @@ export async function updateCustomer(id: string, customer: Partial<Customer>): P
 }
 
 export async function deleteCustomer(id: string): Promise<void> {
-  // 1️⃣ التحقق من وجود قوائم بيع آجلة مرتبطة بالزبون
+  // 1?? ?????? ?? ???? ????? ??? ???? ?????? ???????
   const { data: deferredSales, error: salesError } = await supabase
     .from('tb_salesmain')
     .select('id, numberofsale, paytype')
     .eq('customerid', id)
-    .eq('paytype', 'آجل')
+    .eq('paytype', '???')
   
   if (salesError) throw salesError
   
   if (deferredSales && deferredSales.length > 0) {
     const saleNumbers = deferredSales.map(s => s.numberofsale).join(', ')
-    throw new Error(`لا يمكن حذف هذا الزبون لأنه مرتبط بـ ${deferredSales.length} قائمة بيع آجلة: (${saleNumbers}). الرجاء تسديد الديون أو حذف القوائم أولاً.`)
+    throw new Error(`?? ???? ??? ??? ?????? ???? ????? ?? ${deferredSales.length} ????? ??? ????: (${saleNumbers}). ?????? ????? ?????? ?? ??? ??????? ?????.`)
   }
   
-  // 2️⃣ التحقق من وجود دفعات مرتبطة بالزبون
+  // 2?? ?????? ?? ???? ????? ?????? ???????
   const { data: payments, error: paymentsError } = await supabase
     .from('payments')
     .select('id')
@@ -99,11 +99,11 @@ export async function deleteCustomer(id: string): Promise<void> {
   if (paymentsError) throw paymentsError
   
   if (payments && payments.length > 0) {
-    throw new Error(`لا يمكن حذف هذا الزبون لأنه مرتبط بـ ${payments.length} دفعة مالية. الرجاء حذف الدفعات أولاً.`)
+    throw new Error(`?? ???? ??? ??? ?????? ???? ????? ?? ${payments.length} ???? ?????. ?????? ??? ??????? ?????.`)
   }
   
-  // 3️⃣ إذا لم يكن هناك قوائم آجلة أو دفعات، يمكن الحذف
-  // ملاحظة: القوائم النقدية ستحتفظ باسم الزبون في customername
+  // 3?? ??? ?? ??? ???? ????? ???? ?? ?????? ???? ?????
+  // ??????: ??????? ??????? ?????? ???? ?????? ?? customername
   const { error } = await supabase
     .from('customers')
     .delete()
@@ -113,26 +113,26 @@ export async function deleteCustomer(id: string): Promise<void> {
 }
 
 export async function deleteCustomers(ids: string[]): Promise<void> {
-  // التحقق من كل زبون على حدة
+  // ?????? ?? ?? ???? ??? ???
   const errors: string[] = []
   const deletedIds: string[] = []
   
   for (const id of ids) {
     try {
-      // التحقق من القوائم الآجلة
+      // ?????? ?? ??????? ??????
       const { data: deferredSales } = await supabase
         .from('tb_salesmain')
         .select('id, numberofsale, paytype, customername')
         .eq('customerid', id)
-        .eq('paytype', 'آجل')
+        .eq('paytype', '???')
       
       if (deferredSales && deferredSales.length > 0) {
-        const customerName = deferredSales[0].customername || 'غير معروف'
-        errors.push(`${customerName}: مرتبط بـ ${deferredSales.length} قائمة آجلة`)
+        const customerName = deferredSales[0].customername || '??? ?????'
+        errors.push(`${customerName}: ????? ?? ${deferredSales.length} ????? ????`)
         continue
       }
       
-      // التحقق من الدفعات
+      // ?????? ?? ???????
       const { data: payments } = await supabase
         .from('payments')
         .select('id')
@@ -145,17 +145,16 @@ export async function deleteCustomers(ids: string[]): Promise<void> {
           .eq('id', id)
           .single()
         
-        errors.push(`${customer?.customer_name || 'غير معروف'}: مرتبط بـ ${payments.length} دفعة مالية`)
+        errors.push(`${customer?.customer_name || '??? ?????'}: ????? ?? ${payments.length} ???? ?????`)
         continue
       }
       
       deletedIds.push(id)
     } catch (error) {
-      console.error('Error checking customer:', error)
-    }
+      }
   }
   
-  // حذف الزبائن الذين يمكن حذفهم
+  // ??? ??????? ????? ???? ?????
   if (deletedIds.length > 0) {
     const { error } = await supabase
       .from('customers')
@@ -165,12 +164,12 @@ export async function deleteCustomers(ids: string[]): Promise<void> {
     if (error) throw error
   }
   
-  // إذا كانت هناك أخطاء، اطرح استثناء
+  // ??? ???? ???? ?????? ???? ???????
   if (errors.length > 0) {
     if (deletedIds.length > 0) {
-      throw new Error(`تم حذف ${deletedIds.length} زبون. لا يمكن حذف البقية:\n${errors.join('\n')}`)
+      throw new Error(`?? ??? ${deletedIds.length} ????. ?? ???? ??? ??????:\n${errors.join('\n')}`)
     } else {
-      throw new Error(`لا يمكن حذف أي زبون:\n${errors.join('\n')}`)
+      throw new Error(`?? ???? ??? ?? ????:\n${errors.join('\n')}`)
     }
   }
 }
@@ -232,7 +231,7 @@ async function updateCustomerBalanceAfterPayment(
   const currentBalanceIQD = customer?.balanceiqd || 0
   const currentBalanceUSD = customer?.balanceusd || 0
   
-  const multiplier = ['قبض', 'ايداع'].includes(transactionType) ? 1 : -1
+  const multiplier = ['???', '?????'].includes(transactionType) ? 1 : -1
   
   const newBalanceIQD = currentBalanceIQD + (amountIQD * multiplier)
   const newBalanceUSD = currentBalanceUSD + (amountUSD * multiplier)
@@ -272,7 +271,7 @@ export async function getCustomerBalance(customerId: string): Promise<CustomerBa
     let balance_usd = 0
     
     payments.forEach(payment => {
-      const multiplier = ['قبض', 'ايداع'].includes(payment.transaction_type) ? 1 : -1
+      const multiplier = ['???', '?????'].includes(payment.transaction_type) ? 1 : -1
       
       if (payment.currency_type === 'IQD') {
         balance_iqd += payment.amount_iqd * multiplier

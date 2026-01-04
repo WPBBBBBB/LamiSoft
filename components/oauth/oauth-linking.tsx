@@ -79,7 +79,6 @@ export function OAuthLinking({ user, onUpdate }: OAuthLinkingProps) {
             
             if (authWindow) authWindow.close()
           } catch (error) {
-            console.error(error)
             toast.error(`فشل ربط حساب ${getProviderName(provider)}`)
           }
         } else if (event.data.type === 'oauth_error') {
@@ -99,7 +98,6 @@ export function OAuthLinking({ user, onUpdate }: OAuthLinkingProps) {
       }, 500)
 
     } catch (error) {
-      console.error(error)
       toast.error(`فشل فتح نافذة المصادقة`)
       setIsLinking(null)
     }
@@ -120,7 +118,6 @@ export function OAuthLinking({ user, onUpdate }: OAuthLinkingProps) {
       setProviderToUnlink(null)
       onUpdate()
     } catch (error) {
-      console.error(error)
       toast.error(`فشل إلغاء الربط`)
     }
   }

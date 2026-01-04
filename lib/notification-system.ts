@@ -61,7 +61,6 @@ export async function getAllNotifications(options?: {
     const { data, error } = await query
 
     if (error) {
-      console.error("Error fetching notifications:", error)
       return {
         success: false,
         error: error.message,
@@ -73,7 +72,6 @@ export async function getAllNotifications(options?: {
       data: data || [],
     }
   } catch (error) {
-    console.error("Exception in getAllNotifications:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -97,7 +95,6 @@ export async function getUnreadNotificationsCount(): Promise<{
       .eq("is_archived", false)
 
     if (error) {
-      console.error("Error fetching unread count:", error)
       return {
         success: false,
         error: error.message,
@@ -109,7 +106,6 @@ export async function getUnreadNotificationsCount(): Promise<{
       count: count || 0,
     }
   } catch (error) {
-    console.error("Exception in getUnreadNotificationsCount:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -134,7 +130,6 @@ export async function markNotificationAsRead(notificationId: string): Promise<{
       .eq("id", notificationId)
 
     if (error) {
-      console.error("Error marking notification as read:", error)
       return {
         success: false,
         error: error.message,
@@ -143,7 +138,6 @@ export async function markNotificationAsRead(notificationId: string): Promise<{
 
     return { success: true }
   } catch (error) {
-    console.error("Exception in markNotificationAsRead:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -169,7 +163,6 @@ export async function markAllNotificationsAsRead(): Promise<{
       .eq("is_archived", false)
 
     if (error) {
-      console.error("Error marking all notifications as read:", error)
       return {
         success: false,
         error: error.message,
@@ -178,7 +171,6 @@ export async function markAllNotificationsAsRead(): Promise<{
 
     return { success: true }
   } catch (error) {
-    console.error("Exception in markAllNotificationsAsRead:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -203,7 +195,6 @@ export async function archiveNotification(notificationId: string): Promise<{
       .eq("id", notificationId)
 
     if (error) {
-      console.error("Error archiving notification:", error)
       return {
         success: false,
         error: error.message,
@@ -212,7 +203,6 @@ export async function archiveNotification(notificationId: string): Promise<{
 
     return { success: true }
   } catch (error) {
-    console.error("Exception in archiveNotification:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -238,7 +228,6 @@ export async function archiveAllReadNotifications(): Promise<{
       .eq("is_archived", false)
 
     if (error) {
-      console.error("Error archiving notifications:", error)
       return {
         success: false,
         error: error.message,
@@ -247,7 +236,6 @@ export async function archiveAllReadNotifications(): Promise<{
 
     return { success: true }
   } catch (error) {
-    console.error("Exception in archiveAllReadNotifications:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -269,7 +257,6 @@ export async function deleteNotification(notificationId: string): Promise<{
       .eq("id", notificationId)
 
     if (error) {
-      console.error("Error deleting notification:", error)
       return {
         success: false,
         error: error.message,
@@ -278,7 +265,6 @@ export async function deleteNotification(notificationId: string): Promise<{
 
     return { success: true }
   } catch (error) {
-    console.error("Exception in deleteNotification:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -302,7 +288,6 @@ export async function getNotificationSettings(): Promise<{
       .single()
 
     if (error) {
-      console.error("Error fetching notification settings:", error)
       return {
         success: false,
         error: error.message,
@@ -314,7 +299,6 @@ export async function getNotificationSettings(): Promise<{
       data: data,
     }
   } catch (error) {
-    console.error("Exception in getNotificationSettings:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -336,7 +320,6 @@ export async function updateNotificationSettings(settings: Partial<NotificationS
       .eq("id", settings.id!)
 
     if (error) {
-      console.error("Error updating notification settings:", error)
       return {
         success: false,
         error: error.message,
@@ -345,7 +328,6 @@ export async function updateNotificationSettings(settings: Partial<NotificationS
 
     return { success: true }
   } catch (error) {
-    console.error("Exception in updateNotificationSettings:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -370,7 +352,6 @@ export async function runNotificationsChecks(): Promise<{
     const { data, error } = await supabase.rpc("run_all_notification_checks")
 
     if (error) {
-      console.error("Error running notifications checks:", error)
       return {
         success: false,
         error: error.message,
@@ -382,7 +363,6 @@ export async function runNotificationsChecks(): Promise<{
       data: data,
     }
   } catch (error) {
-    console.error("Exception in runNotificationsChecks:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
@@ -420,7 +400,6 @@ export async function createNotification(notification: {
     })
 
     if (error) {
-      console.error("Error creating notification:", error)
       return {
         success: false,
         error: error.message,
@@ -432,7 +411,6 @@ export async function createNotification(notification: {
       id: data,
     }
   } catch (error) {
-    console.error("Exception in createNotification:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "حدث خطأ غير متوقع",

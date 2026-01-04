@@ -45,8 +45,7 @@ export function CustomerProfileModal({ open, onOpenChange, customer }: CustomerP
       const profileDetails = await getCustomerProfileDetails(customer.id)
       setDetails(profileDetails)
     } catch (error) {
-      console.error('Error loading customer profile:', error)
-    } finally {
+      } finally {
       setLoading(false)
     }
   }

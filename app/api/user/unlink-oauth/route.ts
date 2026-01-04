@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const updateData: any = {}
+    const updateData: Record<string, null> = {}
     
     switch (provider.toLowerCase()) {
       case 'google':
@@ -40,8 +40,7 @@ export async function POST(request: NextRequest) {
     if (error) throw error
 
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error unlinking OAuth:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Failed to unlink OAuth account' },
       { status: 500 }

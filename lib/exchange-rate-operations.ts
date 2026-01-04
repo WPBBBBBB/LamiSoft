@@ -1,4 +1,4 @@
-﻿import { supabase } from './supabase'
+import { supabase } from './supabase'
 
 export interface ExchangeRate {
   id: string
@@ -17,12 +17,10 @@ export async function getCurrentExchangeRate(): Promise<number> {
     .maybeSingle()
   
   if (error) {
-    console.error('Error fetching exchange rate:', error)
     return 1350
   }
   
   if (!data) {
-    console.warn('No exchange rate found in database, using default value')
     return 1350
   }
   

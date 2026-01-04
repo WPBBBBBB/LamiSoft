@@ -33,7 +33,6 @@ export function BarcodeScannerModal({ open, onOpenChange, onBarcodeScanned }: Ba
         setError('لم يتم العثور على كاميرا')
       }
     } catch (err) {
-      console.error('Error loading cameras:', err)
       setError('خطأ في الوصول إلى الكاميرا')
     }
   }
@@ -70,7 +69,6 @@ export function BarcodeScannerModal({ open, onOpenChange, onBarcodeScanned }: Ba
         },
         (decodedText: string) => {
           // تم مسح QR Code بنجاح
-          console.log('QR Code scanned:', decodedText)
           toast.success('تم مسح QR Code بنجاح!')
           
           // إيقاف المسح
@@ -84,11 +82,9 @@ export function BarcodeScannerModal({ open, onOpenChange, onBarcodeScanned }: Ba
         },
         (_errorMessage: string) => {
           // خطأ في القراءة (عادي، يحدث باستمرار حتى يجد باركود)
-          // console.log('Scan error:', errorMessage)
         }
       )
     } catch (err: unknown) {
-      console.error('Error starting scanner:', err)
       setError('خطأ في بدء المسح: ' + ((err as { message?: string })?.message || 'خطأ غير معروف'))
       setIsScanning(false)
     }
@@ -100,8 +96,8 @@ export function BarcodeScannerModal({ open, onOpenChange, onBarcodeScanned }: Ba
         await scannerRef.current.stop()
         scannerRef.current.clear()
         scannerRef.current = null
-      } catch (err) {
-        console.error('Error stopping scanner:', err)
+      } catch {
+        // Silent fail
       }
     }
     setIsScanning(false)

@@ -39,8 +39,7 @@ export function InvoicePreviewModal({ open, onOpenChange, invoice }: InvoicePrev
         setPurchaseDetails(null)
       }
     } catch (error) {
-      console.error('Error loading invoice details:', error)
-    } finally {
+      } finally {
       setLoading(false)
     }
   }

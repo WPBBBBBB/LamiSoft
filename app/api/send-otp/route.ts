@@ -57,14 +57,11 @@ export async function POST(request: NextRequest) {
     }
 
     const errorText = await response.text()
-    console.error('Wasender Error:', errorText)
-    
     return NextResponse.json({
       success: false,
       error: 'فشل إرسال رسالة الواتساب'
     }, { status: 500 })
   } catch (error: unknown) {
-    console.error('Error in send-otp API:', error)
     const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء إرسال رمز التحقق'
     return NextResponse.json(
       { success: false, error: errorMessage },

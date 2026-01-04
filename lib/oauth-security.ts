@@ -104,7 +104,6 @@ export async function checkOAuthBlock(deviceFingerprint: string): Promise<BlockI
       totalAttempts: data.total_failed_attempts
     }
   } catch (error) {
-    console.error('Error checking OAuth block:', error)
     return {
       isBlocked: false,
       blockedUntil: null,
@@ -217,7 +216,6 @@ export async function recordFailedOAuthAttempt(
       totalAttempts
     }
   } catch (error) {
-    console.error('Error recording failed OAuth attempt:', error)
     return {
       isBlocked: false,
       blockedUntil: null,
@@ -238,8 +236,7 @@ export async function resetOAuthBlock(deviceFingerprint: string): Promise<void> 
       .delete()
       .eq('device_fingerprint', deviceFingerprint)
   } catch (error) {
-    console.error('Error resetting OAuth block:', error)
-  }
+    }
 }
 
 /**

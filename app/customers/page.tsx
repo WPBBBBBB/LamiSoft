@@ -41,7 +41,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { getCustomersWithBalances, deleteCustomer, deleteCustomers, type Customer, getCustomer } from "@/lib/supabase-operations"
 import { logAction } from "@/lib/system-log-operations"
-import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { t } from "@/lib/translations"
 import { useSettings } from "@/components/providers/settings-provider"
@@ -77,8 +76,7 @@ export default function CustomersPage() {
       setIsLoading(true)
       const data = await getCustomersWithBalances()
       setCustomers(data)
-    } catch (error) {
-      console.error(error)
+    } catch {
       toast.error(t('errorOccurred', currentLanguage.code))
     } finally {
       setIsLoading(false)
@@ -152,16 +150,14 @@ export default function CustomersPage() {
           },
           undefined
         )
-      } catch (logError) {
-        console.error("Error logging action:", logError)
-      }
+      } catch {
+        }
       
       toast.success(t('customerDeletedSuccess', currentLanguage.code))
       setDeleteConfirmOpen(false)
       setCustomerToDelete(null)
       loadCustomers()
     } catch (error: unknown) {
-      console.error(error)
       const errorMessage = (error as { message?: string })?.message || t('errorDeletingData', currentLanguage.code)
       
       // رسالة مخصصة للأخطاء
@@ -197,15 +193,13 @@ export default function CustomersPage() {
           { count: selectedCustomers.length, names: customerNames },
           undefined
         )
-      } catch (logError) {
-        console.error("Error logging action:", logError)
-      }
+      } catch {
+        }
       
       toast.success(`${selectedCustomers.length} ${t('customersDeletedSuccess', currentLanguage.code).replace('{count}', '')}`.trim())
       setSelectedCustomers([])
       loadCustomers()
     } catch (error: unknown) {
-      console.error(error)
       const errorMessage = (error as { message?: string })?.message || t('errorDeletingData', currentLanguage.code)
       
       // رسالة مخصصة للأخطاء

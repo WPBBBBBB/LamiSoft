@@ -58,8 +58,7 @@ export default function AccountPage() {
       const data = await response.json()
       setUserData(data)
     } catch (error) {
-      console.error("Error fetching user data:", error)
-    } finally {
+      } finally {
       setIsLoading(false)
     }
   }

@@ -86,7 +86,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       setStore(storeData)
       setInventory(inventoryData)
     } catch (error) {
-      console.error(error)
       toast.error("حدث خطأ أثناء تحميل البيانات")
     } finally {
       setIsLoading(false)
@@ -144,7 +143,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
         setNewRow(null)
         loadStoreData()
       } catch (error) {
-        console.error(error)
         toast.error("حدث خطأ أثناء التحديث")
       }
       return
@@ -178,7 +176,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       setNewRow(null)
       loadStoreData()
     } catch (error) {
-      console.error(error)
       toast.error("حدث خطأ أثناء الإضافة")
     }
   }
@@ -246,7 +243,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       
       loadStoreData()
     } catch (error) {
-      console.error(error)
       toast.error("حدث خطأ أثناء التحديث")
     }
   }
@@ -305,7 +301,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       setSelectedItems([])
       loadStoreData()
     } catch (error) {
-      console.error(error)
       toast.error("حدث خطأ أثناء الحذف")
     }
   }
@@ -342,7 +337,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       setSelectedItems([])
       loadStoreData()
     } catch (error) {
-      console.error(error)
       toast.error("حدث خطأ أثناء الحذف")
     }
   }

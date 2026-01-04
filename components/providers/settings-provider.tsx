@@ -168,7 +168,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
       
       const handleChange = (e: MediaQueryListEvent) => {
-        console.log("System theme changed, dark:", e.matches)
         if (e.matches) {
           document.documentElement.classList.add("dark")
         } else {
@@ -193,28 +192,23 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }
 
   const setMode = (newMode: "light" | "dark" | "system") => {
-    console.log("Setting mode to:", newMode)
     setModeState(newMode)
     writePersistedValue("theme-mode", COOKIE_THEME_MODE, newMode, { cookieMaxAgeDays: 365, requireConsent: true })
     
     const root = document.documentElement
     if (newMode === "system") {
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-      console.log("System prefers dark:", prefersDark)
       if (prefersDark) {
         root.classList.add("dark")
       } else {
         root.classList.remove("dark")
       }
     } else if (newMode === "dark") {
-      console.log("Applying dark mode")
       root.classList.add("dark")
     } else {
-      console.log("Applying light mode")
       root.classList.remove("dark")
     }
-    console.log("HTML classes:", root.className)
-  }
+    }
 
   const setLanguage = (langCode: string) => {
     const lang = languages.find((l) => l.code === langCode)

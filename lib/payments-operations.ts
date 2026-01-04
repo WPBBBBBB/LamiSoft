@@ -1,4 +1,4 @@
-﻿import { supabase } from "./supabase"
+import { supabase } from "./supabase"
 
 export interface Payment {
   id?: string
@@ -7,13 +7,13 @@ export interface Payment {
   amount_iqd: number
   amount_usd: number
   currency_type: "IQD" | "USD"
-  transaction_type: "قبض" | "صرف"
+  transaction_type: string
   notes?: string | null
   pay_date: string
   created_at?: string
   purchasemainid?: string | null
   salesmainid?: string | null
-  paymenttype?: "قبض" | "صرف" | null
+  paymenttype?: string | null
   customer_name?: string
   supplier_name?: string
   invoice_number?: string
@@ -40,7 +40,6 @@ export async function getAllPayments(): Promise<{
       .order("pay_date", { ascending: false })
 
     if (error) {
-      console.error("Error fetching payments:", error)
       return {
         success: false,
         error: error.message,
@@ -58,10 +57,9 @@ export async function getAllPayments(): Promise<{
       data: transformedData || [],
     }
   } catch (error: unknown) {
-    console.error("Exception in getAllPayments:", error)
     return {
       success: false,
-      error: (error as { message?: string })?.message || "حدث خطأ غير متوقع",
+      error: (error as { message?: string })?.message || "??? ??? ??? ?????",
     }
   }
 }
@@ -87,7 +85,6 @@ export async function getPaymentById(paymentId: string): Promise<{
       .single()
 
     if (error) {
-      console.error("Error fetching payment:", error)
       return {
         success: false,
         error: error.message,
@@ -105,10 +102,9 @@ export async function getPaymentById(paymentId: string): Promise<{
       data: transformedData,
     }
   } catch (error: unknown) {
-    console.error("Exception in getPaymentById:", error)
     return {
       success: false,
-      error: (error as { message?: string })?.message || "حدث خطأ غير متوقع",
+      error: (error as { message?: string })?.message || "??? ??? ??? ?????",
     }
   }
 }
@@ -124,7 +120,6 @@ export async function deletePayment(paymentId: string): Promise<{
       .eq("id", paymentId)
 
     if (error) {
-      console.error("Error deleting payment:", error)
       return {
         success: false,
         error: error.message,
@@ -135,10 +130,9 @@ export async function deletePayment(paymentId: string): Promise<{
       success: true,
     }
   } catch (error: unknown) {
-    console.error("Exception in deletePayment:", error)
     return {
       success: false,
-      error: (error as { message?: string })?.message || "حدث خطأ غير متوقع",
+      error: (error as { message?: string })?.message || "??? ??? ??? ?????",
     }
   }
 }
@@ -154,7 +148,6 @@ export async function deleteMultiplePayments(paymentIds: string[]): Promise<{
       .in("id", paymentIds)
 
     if (error) {
-      console.error("Error deleting payments:", error)
       return {
         success: false,
         error: error.message,
@@ -165,10 +158,9 @@ export async function deleteMultiplePayments(paymentIds: string[]): Promise<{
       success: true,
     }
   } catch (error: unknown) {
-    console.error("Exception in deleteMultiplePayments:", error)
     return {
       success: false,
-      error: (error as { message?: string })?.message || "حدث خطأ غير متوقع",
+      error: (error as { message?: string })?.message || "??? ??? ??? ?????",
     }
   }
 }
@@ -179,7 +171,7 @@ export async function createPayment(payment: Omit<Payment, 'id' | 'created_at'>)
   error?: string
 }> {
   try {
-    // إضافة الدفعة
+    // ????? ??????
     const { data, error } = await supabase
       .from("payments")
       .insert(payment)
@@ -187,18 +179,17 @@ export async function createPayment(payment: Omit<Payment, 'id' | 'created_at'>)
       .single()
 
     if (error) {
-      console.error("Error creating payment:", error)
       return {
         success: false,
         error: error.message,
       }
     }
 
-    // تحديث رصيد الزبون إذا كان موجود
+    // ????? ???? ?????? ??? ??? ?????
     if (payment.customer_id) {
-      // قبض: ننقص من رصيد الزبون (سدد لنا)
-      // صرف: نزيد على رصيد الزبون (صرفنا له)
-      const multiplier = payment.transaction_type === "قبض" ? -1 : 1
+      // ???: ???? ?? ???? ?????? (??? ???)
+      // ???: ???? ??? ???? ?????? (????? ??)
+      const multiplier = payment.transaction_type === "???" ? -1 : 1
 
       if (payment.currency_type === "IQD") {
         const { error: updateError } = await supabase.rpc('update_customer_balance_iqd', {
@@ -207,7 +198,7 @@ export async function createPayment(payment: Omit<Payment, 'id' | 'created_at'>)
         })
 
         if (updateError) {
-          // إذا فشل التحديث بالـ RPC، نستخدم طريقة مباشرة
+          // ??? ??? ??????? ???? RPC? ?????? ????? ??????
           const { data: customerData } = await supabase
             .from("customers")
             .select("balanceiqd")
@@ -244,9 +235,9 @@ export async function createPayment(payment: Omit<Payment, 'id' | 'created_at'>)
       }
     }
 
-    // تحديث رصيد المجهز إذا كان موجود
+    // ????? ???? ?????? ??? ??? ?????
     if (payment.supplierid) {
-      const multiplier = payment.transaction_type === "قبض" ? -1 : 1
+      const multiplier = payment.transaction_type === "???" ? -1 : 1
 
       if (payment.currency_type === "IQD") {
         const { data: supplierData } = await supabase
@@ -282,10 +273,9 @@ export async function createPayment(payment: Omit<Payment, 'id' | 'created_at'>)
       data: data as Payment,
     }
   } catch (error: unknown) {
-    console.error("Exception in createPayment:", error)
     return {
       success: false,
-      error: (error as { message?: string })?.message || "حدث خطأ غير متوقع",
+      error: (error as { message?: string })?.message || "??? ??? ??? ?????",
     }
   }
 }

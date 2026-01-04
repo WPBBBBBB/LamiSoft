@@ -83,7 +83,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         })
       }
     } catch (error) {
-      console.error(error)
       toast.error("حدث خطأ أثناء تحميل البيانات")
     } finally {
       setIsLoading(false)
@@ -171,7 +170,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       toast.success("تم تحديث المستخدم بنجاح")
       router.push("/users-permissions")
     } catch (error) {
-      console.error(error)
       const errorMessage = error instanceof Error ? error.message : "خطأ غير معروف"
       toast.error("حدث خطأ أثناء التحديث: " + errorMessage)
     } finally {

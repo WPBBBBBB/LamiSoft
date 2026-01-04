@@ -27,8 +27,7 @@ function ThemePreview({ theme, onMaximize, isFullscreen }: { theme: Theme; onMax
     if (link && link.href) {
       e.preventDefault()
       e.stopPropagation()
-      console.log('Preview mode: Navigation blocked to', link.href)
-    }
+      }
     
     if (button && !button.closest('[data-preview-control]')) {
       e.stopPropagation()

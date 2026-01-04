@@ -124,7 +124,6 @@ export default function PersonalInfoTab({ userData, onUpdate }: PersonalInfoTabP
       setPasswordConfirm('')
       onUpdate()
     } catch (error) {
-      console.error('Error updating profile:', error)
       toast.error('حدث خطأ أثناء التحديث')
     } finally {
       setIsUpdating(false)

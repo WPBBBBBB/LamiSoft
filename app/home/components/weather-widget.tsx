@@ -48,8 +48,7 @@ export function WeatherWidget({ data, onRemove }: WeatherWidgetProps) {
       setWeather(result.current)
     } catch (error) {
       toast.error("فشل تحميل بيانات الطقس")
-      console.error(error)
-    } finally {
+      } finally {
       setLoading(false)
     }
   }

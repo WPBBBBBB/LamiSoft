@@ -30,8 +30,7 @@ export async function saveSearchHistory(
 
     if (error) throw error
   } catch (error) {
-    console.error('Error saving search history:', error)
-  }
+    }
 }
 
 /**
@@ -49,7 +48,6 @@ export async function getSearchHistory(userId: string, limit: number = 10): Prom
     if (error) throw error
     return data || []
   } catch (error) {
-    console.error('Error fetching search history:', error)
     return []
   }
 }
@@ -67,7 +65,6 @@ export async function deleteSearchHistoryItem(id: string): Promise<boolean> {
     if (error) throw error
     return true
   } catch (error) {
-    console.error('Error deleting search history item:', error)
     return false
   }
 }
@@ -85,7 +82,6 @@ export async function clearSearchHistory(userId: string): Promise<boolean> {
     if (error) throw error
     return true
   } catch (error) {
-    console.error('Error clearing search history:', error)
     return false
   }
 }

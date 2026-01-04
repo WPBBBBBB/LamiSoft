@@ -40,8 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data: unknown = await response.json()
         if (isUserWithPermissions(data)) setCurrentUser(data)
       } catch (error) {
-        console.error('Error loading user:', error)
-      } finally {
+        } finally {
         setIsLoading(false)
       }
     }
@@ -81,7 +80,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }, 100)
     } catch (error) {
-      console.error('Logout error:', error)
       // Even if logout API fails, still redirect to login
       router.push('/login')
     }

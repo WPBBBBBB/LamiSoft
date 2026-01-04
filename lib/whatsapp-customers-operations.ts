@@ -12,27 +12,17 @@ export interface WhatsAppCustomer {
 }
 
 export async function getCustomersWithPayments(): Promise<WhatsAppCustomer[]> {
-  console.log('getCustomersWithPayments: Starting...')
-  
   const { data: allCustomers, error: customersError } = await supabase
     .from('customers')
     .select('id, customer_name, phone_number, balanceiqd, balanceusd')
     .eq('type', 'زبون')
     .order('customer_name', { ascending: true })
   
-  console.log('All customers query result:', { 
-    count: allCustomers?.length, 
-    error: customersError,
-    sample: allCustomers?.[0]
-  })
-  
   if (customersError) {
-    console.error('Error fetching customers:', customersError)
     throw customersError
   }
 
   if (!allCustomers || allCustomers.length === 0) {
-    console.log('No customers found at all')
     return []
   }
   
@@ -40,8 +30,6 @@ export async function getCustomersWithPayments(): Promise<WhatsAppCustomer[]> {
     (c.balanceiqd !== null && c.balanceiqd > 0) || 
     (c.balanceusd !== null && c.balanceusd > 0)
   )
-  
-  console.log('Filtered customers with positive balance (debtors):', customers.length)
 
   const customerIds = customers.map(c => c.id)
   
@@ -52,17 +40,12 @@ export async function getCustomersWithPayments(): Promise<WhatsAppCustomer[]> {
     .eq('transaction_type', 'قبض')
     .order('pay_date', { ascending: false })
 
-  console.log('Payments query result:', { count: payments?.length, error: paymentsError, sample: payments?.[0] })
-  
   if (paymentsError) {
-    console.error('Error fetching payments:', paymentsError)
     throw paymentsError
   }
 
   const result: WhatsAppCustomer[] = customers.map(customer => {
     const lastPayment = payments?.find(p => p.customer_id === customer.id)
-    
-    console.log(`Customer ${customer.customer_name}: lastPayment =`, lastPayment)
     
     return {
       id: customer.id,

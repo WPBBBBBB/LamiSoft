@@ -46,13 +46,11 @@ export async function POST(request: NextRequest) {
       .eq('id', userId)
 
     if (error) {
-      console.error('Database error:', error)
       throw error
     }
 
     return NextResponse.json({ avatar_url: avatarUrl })
   } catch (error) {
-    console.error('Error uploading avatar:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to upload avatar' },
       { status: 500 }

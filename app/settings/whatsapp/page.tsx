@@ -76,7 +76,6 @@ export default function WhatsAppSettingsPage() {
         toast.error("فشل تحميل الإعدادات")
       }
     } catch (error) {
-      console.error('Error loading settings:', error)
       toast.error("خطأ في تحميل الإعدادات")
     } finally {
       setIsLoading(false)
@@ -142,7 +141,6 @@ export default function WhatsAppSettingsPage() {
         toast.error("فشل حفظ الإعدادات")
       }
     } catch (error) {
-      console.error('Error saving settings:', error)
       toast.error("خطأ في حفظ الإعدادات")
     }
   }

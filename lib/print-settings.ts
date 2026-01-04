@@ -25,8 +25,7 @@ export function getPrintSettings(): PrintSettings {
       return { ...defaultPrintSettings, ...JSON.parse(savedSettings) }
     }
   } catch (error) {
-    console.error("Error loading print settings:", error)
-  }
+    }
 
   return defaultPrintSettings
 }
@@ -41,7 +40,6 @@ export function savePrintSettings(settings: PrintSettings): boolean {
     localStorage.setItem("printSettings", JSON.stringify(settings))
     return true
   } catch (error) {
-    console.error("Error saving print settings:", error)
     return false
   }
 }

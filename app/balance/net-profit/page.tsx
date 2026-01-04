@@ -181,7 +181,6 @@ export default function NetProfitPage() {
 
       toast.success(t('netProfitCalculatedSuccess', currentLanguage.code))
     } catch (error) {
-      console.error("Error calculating profit:", error)
       toast.error(t('netProfitCalculatedError', currentLanguage.code))
     } finally {
       setIsLoading(false)
@@ -270,11 +269,7 @@ export default function NetProfitPage() {
         totalCost,
         profit: totalRevenue - totalCost
       }
-    } catch (error) {
-      console.error(
-        "Error calculating sales profit:",
-        error instanceof Error ? error.message : String(error)
-      )
+    } catch {
       return { totalRevenue: 0, totalCost: 0, profit: 0 }
     }
   }
@@ -413,7 +408,6 @@ export default function NetProfitPage() {
         total
       }
     } catch (error) {
-      console.error("Error calculating expenses:", error)
       return {
         daily: 0,
         weekly: 0,

@@ -107,8 +107,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       const inventoryData = await getStoreInventory(storeId)
       setStore(storeData)
       setInventory(inventoryData)
-    } catch (error) {
-      console.error(error)
+    } catch {
       toast.error("حدث خطأ أثناء تحميل البيانات")
     } finally {
       setIsLoading(false)
@@ -119,8 +118,8 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     try {
       const rate = await getCurrentExchangeRate()
       setExchangeRate(rate)
-    } catch (error) {
-      console.error("خطأ في تحميل سعر الصرف:", error)
+    } catch {
+      // Silent fail
     }
   }
 
@@ -212,8 +211,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       toast.success("تم تحديث المادة بنجاح")
       handleCancelEdit(id)
       loadStoreData()
-    } catch (error) {
-      console.error(error)
+    } catch {
       toast.error("حدث خطأ أثناء الحفظ")
     }
   }
@@ -243,8 +241,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       toast.success("تم إضافة المادة بنجاح")
       resetNewRowData()
       loadStoreData()
-    } catch (error) {
-      console.error(error)
+    } catch {
       toast.error("حدث خطأ أثناء الإضافة")
     }
   }
@@ -308,14 +305,17 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       setDeleteConfirmOpen(false)
       setSelectedItems([])
       loadStoreData()
-    } catch (error: any) {
-      console.error("Delete error:", error)
-      
+    } catch (error: unknown) {
       // معالجة أخطاء قيود المفاتيح الأجنبية
-      if (error?.message?.includes('foreign key') || error?.code === '23503') {
-        toast.error("لا يمكن حذف هذه المادة لأنها مرتبطة بعمليات بيع أو شراء سابقة")
-      } else if (error?.message) {
-        toast.error("حدث خطأ أثناء الحذف: " + error.message)
+      if (error && typeof error === 'object' && 'message' in error) {
+        const err = error as { message?: string; code?: string }
+        if (err.message?.includes('foreign key') || err.code === '23503') {
+          toast.error("لا يمكن حذف هذه المادة لأنها مرتبطة بعمليات بيع أو شراء سابقة")
+        } else if (err.message) {
+          toast.error("حدث خطأ أثناـ الحذف: " + err.message)
+        } else {
+          toast.error("حدث خطأ أثناء الحذف")
+        }
       } else {
         toast.error("حدث خطأ أثناء الحذف")
       }

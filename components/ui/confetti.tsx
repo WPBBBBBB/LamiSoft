@@ -31,15 +31,19 @@ export function Confetti({ active, onComplete }: ConfettiProps) {
           ][Math.floor(Math.random() * 8)],
         },
       }))
-      setPieces(newPieces)
+      
+      const initialTimer = setTimeout(() => setPieces(newPieces), 0)
 
       // إزالة الأوراق بعد 3 ثواني
-      const timer = setTimeout(() => {
+      const cleanupTimer = setTimeout(() => {
         setPieces([])
         onComplete?.()
       }, 3000)
 
-      return () => clearTimeout(timer)
+      return () => {
+        clearTimeout(initialTimer)
+        clearTimeout(cleanupTimer)
+      }
     }
   }, [active, onComplete])
 

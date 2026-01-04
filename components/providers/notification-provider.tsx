@@ -147,8 +147,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         setUnreadCount(countResult.count || 0)
       }
     } catch (error) {
-      console.error('Error refreshing notifications:', error)
-    } finally {
+      } finally {
       setIsLoading(false)
     }
   }, [])

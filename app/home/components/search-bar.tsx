@@ -90,7 +90,6 @@ export function SearchBar() {
       const data = await response.json()
       return data
     } catch (error) {
-      console.error('Full-text search error:', error)
       return null
     }
   }
@@ -154,7 +153,6 @@ export function SearchBar() {
         
         setSearchPerformed(true)
       } catch (err) {
-        console.error('Search error:', err)
         setCustomerResults([])
         setInvoiceResults([])
         setProductResults([])
@@ -202,7 +200,6 @@ export function SearchBar() {
   }
 
   const handleBarcodeScanned = async (code: string) => {
-    console.log('Code scanned:', code)
     toast.loading('جاري البحث عن القائمة...')
     
     try {
@@ -213,8 +210,7 @@ export function SearchBar() {
         const parts = code.split('-')
         // الباركود هو آخر جزء
         barcodeToSearch = parts[parts.length - 1]
-        console.log('Extracted barcode from QR:', barcodeToSearch)
-      }
+        }
       
       const result = await searchSaleByBarcode(barcodeToSearch)
       toast.dismiss()
@@ -229,8 +225,7 @@ export function SearchBar() {
     } catch (error) {
       toast.dismiss()
       toast.error('حدث خطأ في البحث')
-      console.error('Error searching by code:', error)
-    }
+      }
   }
 
   return (

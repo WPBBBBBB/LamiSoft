@@ -212,8 +212,7 @@ export async function GET(req: Request) {
         country = address.country
       }
     } catch (e) {
-      console.error("Reverse geocoding failed:", e)
-    }
+      }
 
     const payload: WeatherResponse = {
       location: { lat, lon, city, country },

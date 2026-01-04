@@ -386,7 +386,6 @@ export async function GET(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error("Error in Google OAuth callback:", error)
     return new NextResponse(
       `
       <!DOCTYPE html>

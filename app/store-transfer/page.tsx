@@ -92,7 +92,6 @@ export default function StoreTransferPage() {
       const data = await getActiveStores()
       setStores(data)
     } catch (error) {
-      console.error(error)
       toast.error(t('loadingStoresError', currentLanguage.code))
     }
   }, [currentLanguage.code])
@@ -106,7 +105,6 @@ export default function StoreTransferPage() {
       setAllInventory(data)
       setSearchResults(data)
     } catch (error) {
-      console.error(error)
       toast.error(t('loadingMaterialsError', currentLanguage.code))
     }
   }, [fromStoreId, currentLanguage.code])
@@ -297,7 +295,6 @@ export default function StoreTransferPage() {
       setNote("")
       loadInventoryFromStore()
     } catch (error) {
-      console.error(error)
       toast.error(t('transferError', currentLanguage.code))
     } finally {
       setIsTransferring(false)

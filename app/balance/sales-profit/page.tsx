@@ -276,7 +276,6 @@ export default function SalesProfitPage() {
       setSlowMovingProducts(slowMoving)
 
     } catch (error) {
-      console.error(error)
       toast.error("حدث خطأ أثناء تحميل البيانات")
     } finally {
       setIsLoading(false)

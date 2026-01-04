@@ -34,8 +34,7 @@ export default function PrintSettingsPage() {
         setSettings(JSON.parse(savedSettings))
       }
     } catch (error) {
-      console.error("Error loading print settings:", error)
-    }
+      }
   }, [])
 
   const handleSave = () => {
@@ -44,7 +43,6 @@ export default function PrintSettingsPage() {
       localStorage.setItem("printSettings", JSON.stringify(settings))
       toast.success("تم حفظ إعدادات الطباعة بنجاح")
     } catch (error) {
-      console.error("Error saving print settings:", error)
       toast.error("فشل حفظ الإعدادات")
     } finally {
       setIsSaving(false)

@@ -19,7 +19,6 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.rpc('generate_debt_notifications')
 
     if (error) {
-      console.error('Error generating notifications:', error)
       return NextResponse.json(
         { 
           success: false, 
@@ -37,7 +36,6 @@ export async function GET(request: Request) {
     })
     
   } catch (error) {
-    console.error('Exception in notifications cron:', error)
     return NextResponse.json(
       { 
         success: false, 

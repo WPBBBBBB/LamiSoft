@@ -59,7 +59,6 @@ export default function StoreTransfersManagementPage() {
       setTransfers(data)
       setFilteredTransfers(data)
     } catch (error) {
-      console.error("Error loading transfers:", error)
       toast.error("فشل في تحميل عمليات النقل")
     } finally {
       setLoading(false)
@@ -123,7 +122,6 @@ export default function StoreTransfersManagementPage() {
         toast.error(result.error || "فشل في حذف عملية النقل")
       }
     } catch (error) {
-      console.error("Error deleting transfer:", error)
       toast.error("فشل في حذف عملية النقل")
     } finally {
       setDeleteDialogOpen(false)
@@ -164,7 +162,6 @@ export default function StoreTransfersManagementPage() {
       setSelectedTransfers([])
       loadTransfers()
     } catch (error) {
-      console.error("Error deleting transfers:", error)
       toast.error("فشل في حذف بعض عمليات النقل")
     } finally {
       setDeleteMultipleDialogOpen(false)

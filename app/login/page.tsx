@@ -192,7 +192,6 @@ export default function LoginPage() {
         toast.error(result.error || t('loginFailed', currentLanguage.code))
       }
     } catch (error) {
-      console.error(error)
       toast.error(t('unexpectedError', currentLanguage.code))
     } finally {
       setIsLoading(false)

@@ -93,7 +93,6 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
       const data = await getCustomers()
       setCustomers(data)
     } catch (error) {
-      console.error(error)
       toast.error("حدث خطأ أثناء تحميل العملاء")
     }
   }
@@ -149,7 +148,6 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
       onOpenChange(false)
       if (onSuccess) onSuccess()
     } catch (error) {
-      console.error(error)
       toast.error("حدث خطأ أثناء تسجيل الدفعة")
     } finally {
       setIsLoading(false)

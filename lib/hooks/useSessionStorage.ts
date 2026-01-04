@@ -15,7 +15,6 @@ export function useSessionStorage<T>(key: string, initialValue: T) {
       const item = window.sessionStorage.getItem(key)
       return item ? JSON.parse(item) : initialValue
     } catch (error) {
-      console.warn(`Error reading sessionStorage key "${key}":`, error)
       return initialValue
     }
   })
@@ -31,8 +30,7 @@ export function useSessionStorage<T>(key: string, initialValue: T) {
         window.dispatchEvent(new Event('session-storage'))
       }
     } catch (error) {
-      console.warn(`Error setting sessionStorage key "${key}":`, error)
-    }
+      }
   }
 
   // دالة لحذف القيمة من sessionStorage
@@ -44,8 +42,7 @@ export function useSessionStorage<T>(key: string, initialValue: T) {
         window.dispatchEvent(new Event('session-storage'))
       }
     } catch (error) {
-      console.warn(`Error removing sessionStorage key "${key}":`, error)
-    }
+      }
   }
 
   // مزامنة البيانات داخل نفس التبويب
@@ -57,8 +54,7 @@ export function useSessionStorage<T>(key: string, initialValue: T) {
           setStoredValue(JSON.parse(item))
         }
       } catch (error) {
-        console.warn(`Error syncing sessionStorage key "${key}":`, error)
-      }
+        }
     }
 
     window.addEventListener('session-storage', handleStorageChange)

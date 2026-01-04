@@ -45,8 +45,7 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
           setCurrentUsername(user.full_name || user.fullName || user.name || user.username || "user")
         }
       } catch (error) {
-        console.error('Error loading username:', error)
-      }
+        }
     }
   }, [open])
 
@@ -57,7 +56,6 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
       setCurrentRate(currentRate)
       setRate(currentRate.toString())
     } catch (error) {
-      console.error(error)
       toast.error("فشل تحميل سعر الصرف")
     } finally {
       setIsLoading(false)
@@ -76,7 +74,6 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
         throw new Error(data.error || 'Failed to fetch rate')
       }
     } catch (error) {
-      console.error(error)
       toast.error("فشل تحميل سعر الصرف اليومي")
     } finally {
       setLoadingTodayRate(false)
@@ -89,7 +86,6 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
       setHistory(data)
       setShowHistory(true)
     } catch (error) {
-      console.error(error)
       toast.error("فشل تحميل السجل")
     }
   }
@@ -107,7 +103,6 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
       toast.success("تم تحديث سعر الصرف من السعر اليومي")
       await loadHistory()
     } catch (error) {
-      console.error(error)
       toast.error("فشل تحديث سعر الصرف")
     } finally {
       setIsSaving(false)
@@ -129,7 +124,6 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
       toast.success("تم تحديث سعر الصرف بنجاح")
       onOpenChange(false)
     } catch (error) {
-      console.error(error)
       toast.error("فشل تحديث سعر الصرف")
     } finally {
       setIsSaving(false)
@@ -151,7 +145,6 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
         setCurrentRate(numRate)
         toast.success("تم تحديث سعر الصرف")
       } catch (error) {
-        console.error(error)
         toast.error("فشل التحديث")
         setRate(currentRate.toString())
       } finally {

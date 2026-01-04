@@ -93,10 +93,10 @@ export default function ComprehensiveStatsPage() {
   })
   const [isLoading, setIsLoading] = useState(true)
   
-  const [loginsByMonth, setLoginsByMonth] = useState<{ day: string; عدد_الدخول: number }[]>([])
-  const [loginsByYear, setLoginsByYear] = useState<{ month: string; عدد_الدخول: number }[]>([])
-  const [salesPurchasesChart, setSalesPurchasesChart] = useState<{ month: string; المبيعات: number; المشتريات: number; الربح: number }[]>([])
-  const [allTimeSalesPurchases, setAllTimeSalesPurchases] = useState<{ year: string; المبيعات: number; المشتريات: number; الربح: number }[]>([])
+  const [loginsByMonth, setLoginsByMonth] = useState<{ day: string; loginCount: number }[]>([])
+  const [loginsByYear, setLoginsByYear] = useState<{ month: string; loginCount: number }[]>([])
+  const [salesPurchasesChart, setSalesPurchasesChart] = useState<{ month: string; sales: number; purchases: number; profit: number }[]>([])
+  const [allTimeSalesPurchases, setAllTimeSalesPurchases] = useState<{ year: string; sales: number; purchases: number; profit: number }[]>([])
 
   useEffect(() => {
     loadStats()
@@ -169,7 +169,7 @@ export default function ComprehensiveStatsPage() {
       const totalCreditIQD = customers?.reduce((sum, c) => sum + Math.min(0, c.balanceiqd || 0), 0) || 0
       const totalCreditUSD = customers?.reduce((sum, c) => sum + Math.min(0, c.balanceusd || 0), 0) || 0
       
-      const monthLoginData: { day: string; عدد_الدخول: number }[] = []
+      const monthLoginData: { day: string; loginCount: number }[] = []
       const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
       for (let day = 1; day <= daysInMonth; day++) {
         const dayStart = new Date(now.getFullYear(), now.getMonth(), day)
@@ -179,12 +179,12 @@ export default function ComprehensiveStatsPage() {
           new Date(l.created_at) >= dayStart && 
           new Date(l.created_at) < dayEnd
         ).length || 0
-        monthLoginData.push({ day: day.toString(), عدد_الدخول: count })
+        monthLoginData.push({ day: day.toString(), loginCount: count })
       }
       setLoginsByMonth(monthLoginData)
 
-      const yearLoginData: { month: string; عدد_الدخول: number }[] = []
-      const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
+      const yearLoginData: { month: string; loginCount: number }[] = []
+      const monthNames = ['كانون', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرينأ', 'تشرينب', 'كانون']
       for (let month = 0; month < 12; month++) {
         const monthStart = new Date(now.getFullYear(), month, 1)
         const monthEnd = new Date(now.getFullYear(), month + 1, 1)
@@ -193,11 +193,11 @@ export default function ComprehensiveStatsPage() {
           new Date(l.created_at) >= monthStart && 
           new Date(l.created_at) < monthEnd
         ).length || 0
-        yearLoginData.push({ month: monthNames[month], عدد_الدخول: count })
+        yearLoginData.push({ month: monthNames[month], loginCount: count })
       }
       setLoginsByYear(yearLoginData)
 
-      const salesPurchasesData: { month: string; المبيعات: number; المشتريات: number; الربح: number }[] = []
+      const salesPurchasesData: { month: string; sales: number; purchases: number; profit: number }[] = []
       for (let month = 0; month < 12; month++) {
         const monthStart = new Date(now.getFullYear(), month, 1)
         const monthEnd = new Date(now.getFullYear(), month + 1, 1)
@@ -214,14 +214,14 @@ export default function ComprehensiveStatsPage() {
         
         salesPurchasesData.push({ 
           month: monthNames[month], 
-          المبيعات: monthlySales,
-          المشتريات: monthlyPurchases,
-          الربح: monthlySales - monthlyPurchases
+          sales: monthlySales,
+          purchases: monthlyPurchases,
+          profit: monthlySales - monthlyPurchases
         })
       }
       setSalesPurchasesChart(salesPurchasesData)
 
-      const allTimeData: { year: string; المبيعات: number; المشتريات: number; الربح: number }[] = []
+      const allTimeData: { year: string; sales: number; purchases: number; profit: number }[] = []
       
       const salesByYear: { [key: number]: number } = {}
       const purchasesByYear: { [key: number]: number } = {}
@@ -245,9 +245,9 @@ export default function ComprehensiveStatsPage() {
         const yearPurchases = purchasesByYear[year] || 0
         allTimeData.push({
           year: year.toString(),
-          المبيعات: yearSales,
-          المشتريات: yearPurchases,
-          الربح: yearSales - yearPurchases
+          sales: yearSales,
+          purchases: yearPurchases,
+          profit: yearSales - yearPurchases
         })
       })
       setAllTimeSalesPurchases(allTimeData)
@@ -276,8 +276,7 @@ export default function ComprehensiveStatsPage() {
         totalCreditIQD,
         totalCreditUSD,
       })
-    } catch (error) {
-      console.error(error)
+    } catch {
       toast.error(t('statsLoadError', currentLanguage.code))
     } finally {
       setIsLoading(false)
@@ -502,9 +501,9 @@ export default function ComprehensiveStatsPage() {
                   <YAxis />
                   <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                   <Legend />
-                  <Bar dataKey="المبيعات" fill="#10b981" />
-                  <Bar dataKey="المشتريات" fill="#ef4444" />
-                  <Bar dataKey="الربح" fill="#3b82f6" />
+                  <Bar dataKey="sales" fill="#10b981" />
+                  <Bar dataKey="purchases" fill="#ef4444" />
+                  <Bar dataKey="profit" fill="#3b82f6" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -542,21 +541,21 @@ export default function ComprehensiveStatsPage() {
                   <Legend />
                   <Area 
                     type="monotone" 
-                    dataKey="المبيعات" 
+                    dataKey="sales" 
                     stroke="#10b981" 
                     fillOpacity={1} 
                     fill="url(#colorSales)" 
                   />
                   <Area 
                     type="monotone" 
-                    dataKey="المشتريات" 
+                    dataKey="purchases" 
                     stroke="#ef4444" 
                     fillOpacity={1} 
                     fill="url(#colorPurchases)" 
                   />
                   <Area 
                     type="monotone" 
-                    dataKey="الربح" 
+                    dataKey="profit" 
                     stroke="#3b82f6" 
                     fillOpacity={1} 
                     fill="url(#colorProfit)" 
@@ -680,7 +679,7 @@ export default function ComprehensiveStatsPage() {
                   <XAxis dataKey="day" />
                   <YAxis />
                   <Tooltip />
-                  <Area type="monotone" dataKey="عدد_الدخول" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} />
+                  <Area type="monotone" dataKey="loginCount" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
@@ -700,7 +699,7 @@ export default function ComprehensiveStatsPage() {
                   <XAxis dataKey="month" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="عدد_الدخول" fill="#6366f1" />
+                  <Bar dataKey="loginCount" fill="#6366f1" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -810,3 +809,4 @@ export default function ComprehensiveStatsPage() {
     </PermissionGuard>
   )
 }
+

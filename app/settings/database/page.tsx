@@ -67,17 +67,14 @@ export default function DatabaseSettingsPage() {
         })
         setDbInfo(prev => ({ ...prev, lastAutoBackup }))
       }
-    } catch (error) {
-      console.error("Error updating last auto backup date:", error)
-    }
+    } catch {
+      }
   }
 
   useEffect(() => {
     const loadSettings = async () => {
       try {
         const { supabase } = await import("@/lib/supabase")
-        
-        console.log("📥 Loading backup settings...")
         
         const { data: settings, error: settingsError } = await supabase
           .from("backup_settings")
@@ -86,17 +83,10 @@ export default function DatabaseSettingsPage() {
           .single()
 
         if (!settingsError && settings) {
-          console.log("✅ Settings loaded successfully:")
-          console.log("   - Auto Backup Enabled:", settings.auto_backup_enabled)
-          console.log("   - Backup Time:", settings.backup_time)
-          console.log("   - Timezone Offset:", settings.timezone_offset)
-          console.log("   - Last Updated:", settings.updated_at)
-          
           setAutoBackupEnabled(settings.auto_backup_enabled)
           setBackupTime(settings.backup_time.substring(0, 5))
         } else if (settingsError) {
-          console.error("❌ Error loading settings:", settingsError)
-        }
+          }
 
         await updateLastAutoBackupDate()
 
@@ -109,9 +99,8 @@ export default function DatabaseSettingsPage() {
             lastRestore: parsed.lastRestore || prev.lastRestore
           }))
         }
-      } catch (error) {
-        console.error("❌ Error loading settings:", error)
-      }
+      } catch {
+        }
     }
 
     loadSettings()
@@ -123,8 +112,6 @@ export default function DatabaseSettingsPage() {
     try {
       const { supabase } = await import("@/lib/supabase")
       
-      console.log("🕐 Updating backup time to:", time + ":00")
-      
       // Update the backup_settings table directly
       const { error: updateError } = await supabase
         .from("backup_settings")
@@ -135,13 +122,10 @@ export default function DatabaseSettingsPage() {
         .eq("id", 1)
 
       if (updateError) {
-        console.error("❌ Error updating backup time in settings:", updateError)
         toast.error("فشل في تحديث وقت النسخ الاحتياطي: " + updateError.message)
         return
       }
 
-      console.log("✅ Backup time saved to database successfully!")
-      
       // Verify the saved value
       const { data: verifyData } = await supabase
         .from("backup_settings")
@@ -150,31 +134,18 @@ export default function DatabaseSettingsPage() {
         .single()
       
       if (verifyData) {
-        console.log("📋 Verified saved time:", verifyData.backup_time)
-        console.log("📅 Last updated at:", verifyData.updated_at)
-      }
+        }
 
       // Also update the cron job if the RPC exists
       try {
-        const { data, error: rpcError } = await supabase.rpc("update_backup_time", {
+        await supabase.rpc("update_backup_time", {
           new_time: time + ":00"
         })
-
-        if (rpcError) {
-          console.warn("⚠️ RPC update_backup_time not available or failed:", rpcError)
-        } else if (data && data.length > 0) {
-          const result = data[0]
-          console.log("✅ Backup time update result:", result)
-          console.log("⏰ Cron Schedule:", result.cron_schedule)
-          console.log("🌍 UTC Time:", result.utc_time)
+      } catch {
         }
-      } catch (rpcError) {
-        console.warn("⚠️ Could not update cron job:", rpcError)
-      }
 
       toast.success(`تم تحديث وقت النسخ الاحتياطي إلى ${time}`)
-    } catch (error) {
-      console.error("❌ Error updating backup time:", error)
+    } catch {
       toast.error("فشل في تحديث وقت النسخ الاحتياطي")
     }
   }
@@ -184,8 +155,6 @@ export default function DatabaseSettingsPage() {
     
     try {
       const { supabase } = await import("@/lib/supabase")
-      
-      console.log("Toggling auto backup to:", enabled)
       
       // Update the backup_settings table directly
       const { error: updateError } = await supabase
@@ -197,35 +166,27 @@ export default function DatabaseSettingsPage() {
         .eq("id", 1)
 
       if (updateError) {
-        console.error("Error updating auto backup setting:", updateError)
         throw updateError
       }
 
       // Also try to update cron job if RPC exists
       try {
-        const { error: rpcError } = await supabase.rpc("toggle_auto_backup", {
+        await supabase.rpc("toggle_auto_backup", {
           enabled
         })
-        if (rpcError) {
-          console.warn("RPC toggle_auto_backup not available or failed:", rpcError)
+      } catch {
         }
-      } catch (rpcError) {
-        console.warn("Could not update cron job:", rpcError)
-      }
 
       setAutoBackupEnabled(enabled)
       
       await updateLastAutoBackupDate()
-      
-      console.log("Auto backup toggled successfully")
       
       if (enabled) {
         toast.success("تم تفعيل النسخ الاحتياطي التلقائي")
       } else {
         toast.success("تم إيقاف النسخ الاحتياطي التلقائي")
       }
-    } catch (error) {
-      console.error("Error toggling auto backup:", error)
+    } catch {
       toast.error("فشل في تحديث حالة النسخ الاحتياطي")
     } finally {
       setIsLoading(false)
@@ -253,9 +214,28 @@ export default function DatabaseSettingsPage() {
         supabase.from("expenses").select("*"),
       ])
 
+      // تسجيل عدد السجلات
+      const recordCounts = {
+        tb_salesmain: salesMain.data?.length || 0,
+        tb_salesdetails: salesDetails.data?.length || 0,
+        tb_purchasemain: purchasesMain.data?.length || 0,
+        tb_purchaseproductsdetails: purchaseProductsDetails.data?.length || 0,
+        tb_inventory: inventory.data?.length || 0,
+        tb_store: store.data?.length || 0,
+        tb_storetransfers: storeTransfers.data?.length || 0,
+        customers: customers.data?.length || 0,
+        payments: payments.data?.length || 0,
+        users: users.data?.length || 0,
+        user_permissions: userPermissions.data?.length || 0,
+        expenses: expenses.data?.length || 0,
+      }
+
+      const totalRecords = Object.values(recordCounts).reduce((sum, count) => sum + count, 0)
       const backup = {
         version: "1.0",
         timestamp: new Date().toISOString(),
+        totalRecords,
+        recordCounts,
         data: {
           tb_salesmain: salesMain.data || [],
           tb_salesdetails: salesDetails.data || [],
@@ -274,6 +254,7 @@ export default function DatabaseSettingsPage() {
 
       const json = JSON.stringify(backup, null, 2)
       const blob = new Blob([json], { type: "application/json" })
+      
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
@@ -296,9 +277,8 @@ export default function DatabaseSettingsPage() {
       setDbInfo(updatedInfo)
       localStorage.setItem("dbInfo", JSON.stringify(updatedInfo))
 
-      toast.success("تم إنشاء وتنزيل النسخة الاحتياطية بنجاح")
-    } catch (error) {
-      console.error("Backup error:", error)
+      toast.success(`تم إنشاء النسخة الاحتياطية بنجاح (${totalRecords} سجل)`)
+    } catch {
       toast.error("فشل في إنشاء النسخة الاحتياطية")
     } finally {
       setIsLoading(false)
@@ -356,8 +336,7 @@ export default function DatabaseSettingsPage() {
       await updateLastAutoBackupDate()
 
       toast.success("تم استعادة النسخة الاحتياطية بنجاح")
-    } catch (error) {
-        console.error("Restore error:", error)
+    } catch {
         toast.error("فشل في استعادة النسخة الاحتياطية")
       } finally {
         setIsLoading(false)
@@ -385,8 +364,7 @@ export default function DatabaseSettingsPage() {
 
       setAutoBackups(data || [])
       setShowAutoBackupsList(true)
-    } catch (error) {
-      console.error("Error loading auto backups:", error)
+    } catch {
       toast.error("فشل في تحميل قائمة النسخ الاحتياطية التلقائية")
     } finally {
       setIsLoading(false)
@@ -445,8 +423,7 @@ export default function DatabaseSettingsPage() {
       setSelectedBackupIds(new Set())
       
       toast.success(t('backupsDeletedSuccessfully', currentLanguage.code))
-    } catch (error) {
-      console.error("Error deleting backups:", error)
+    } catch {
       toast.error(t('failedToDeleteBackups', currentLanguage.code))
     } finally {
       setIsLoading(false)
@@ -475,8 +452,6 @@ export default function DatabaseSettingsPage() {
       const restorePromises = Object.entries(tables).map(async ([tableName, tableData]) => {
         if (Array.isArray(tableData) && tableData.length > 0) {
           try {
-            console.log(`Restoring ${tableName} with ${tableData.length} records...`)
-            
             const { data: schemaData } = await supabase
               .from(tableName)
               .select('*')
@@ -485,8 +460,7 @@ export default function DatabaseSettingsPage() {
             let validFields: string[] = []
             if (schemaData && schemaData.length > 0) {
               validFields = Object.keys(schemaData[0])
-              console.log(`Valid fields for ${tableName}:`, validFields)
-            }
+              }
             
             const cleanedData = tableData.map((record: Record<string, unknown>) => {
               const cleaned: Record<string, unknown> = {}
@@ -508,8 +482,6 @@ export default function DatabaseSettingsPage() {
               return cleaned
             })
             
-            console.log(`Sample cleaned record for ${tableName}:`, JSON.stringify(cleanedData[0], null, 2))
-            
             const { error } = await supabase
               .from(tableName)
               .upsert(cleanedData, { 
@@ -518,21 +490,16 @@ export default function DatabaseSettingsPage() {
               })
             
             if (error) {
-              console.error(`Error restoring ${tableName}:`, JSON.stringify(error, null, 2))
-              
-              console.log(`Attempting alternative restore method for ${tableName}...`)
-              
               const { error: deleteError } = await supabase
                 .from(tableName)
                 .delete()
                 .gte('id', '00000000-0000-0000-0000-000000000000')
               
               if (deleteError) {
-                console.warn(`Could not clear table ${tableName}:`, JSON.stringify(deleteError, null, 2))
+                // تجاهل خطأ الحذف
               }
               
               const batchSize = 50
-              let successCount = 0
               
               for (let i = 0; i < cleanedData.length; i += batchSize) {
                 const batch = cleanedData.slice(i, i + batchSize)
@@ -541,35 +508,21 @@ export default function DatabaseSettingsPage() {
                   .insert(batch)
                 
                 if (insertError) {
-                  console.error(`Error inserting batch ${i}-${i + batch.length} into ${tableName}:`, 
-                    JSON.stringify(insertError, null, 2))
                   for (const record of batch) {
                     const { error: singleError } = await supabase
                       .from(tableName)
                       .insert([record])
                     
-                    if (!singleError) {
-                      successCount++
-                    } else {
-                      console.error(`Failed to insert single record:`, JSON.stringify(singleError, null, 2))
+                    if (singleError) {
+                      // تجاهل الخطأ
                     }
                   }
-                } else {
-                  successCount += batch.length
                 }
               }
-              
-              console.log(`✓ Restored ${successCount}/${cleanedData.length} records in ${tableName}`)
-            } else {
-              console.log(`✓ Successfully restored ${tableName}`)
             }
-          } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : JSON.stringify(err)
-            console.error(`Failed to restore table ${tableName}:`, errorMsg)
-            console.warn(`Skipping ${tableName} due to errors`)
+          } catch {
+            // تجاهل الخطأ
           }
-        } else {
-          console.log(`Skipping ${tableName} - no data to restore`)
         }
       })
 
@@ -584,10 +537,6 @@ export default function DatabaseSettingsPage() {
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'خطأ غير معروف'
-      console.error("Restore error:", {
-        message: errorMessage,
-        error: error
-      })
       toast.error("فشل في استعادة النسخة الاحتياطية: " + errorMessage)
     } finally {
       setIsLoading(false)

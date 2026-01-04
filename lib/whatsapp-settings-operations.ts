@@ -26,7 +26,6 @@ export async function getWhatsAppSettings(): Promise<WhatsAppSettings> {
     .single()
   
   if (error) {
-    console.error('Error fetching WhatsApp settings:', error)
     throw error
   }
   
@@ -46,7 +45,6 @@ export async function updateWhatsAppSettings(
     .single()
 
   if (!currentSettings) {
-    console.log('No existing settings found, creating new record...')
     const { data: newData, error: insertError } = await supabase
       .from('whatsapp_settings')
       .insert({
@@ -67,16 +65,12 @@ export async function updateWhatsAppSettings(
       .single()
 
     if (insertError) {
-      console.error('Error inserting WhatsApp settings:', insertError)
-      console.error('Insert error details:', JSON.stringify(insertError, null, 2))
       throw new Error(`Failed to insert settings: ${insertError.message || insertError.code || 'Unknown error'}`)
     }
 
-    console.log('Successfully created new settings:', newData)
     return newData
   }
 
-  console.log('Updating existing settings with ID:', currentSettings.id)
   const { data, error } = await supabase
     .from('whatsapp_settings')
     .update({
@@ -89,11 +83,8 @@ export async function updateWhatsAppSettings(
     .single()
   
   if (error) {
-    console.error('Error updating WhatsApp settings:', error)
-    console.error('Update error details:', JSON.stringify(error, null, 2))
     throw new Error(`Failed to update settings: ${error.message || error.code || 'Unknown error'}`)
   }
   
-  console.log('Successfully updated settings:', data)
   return data
 }

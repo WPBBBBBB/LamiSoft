@@ -96,7 +96,6 @@ export default function EditCustomerPage() {
         }
       }
     } catch (error) {
-      console.error(error)
       toast.error("حدث خطأ أثناء تحميل البيانات")
       router.push("/customers")
     } finally {
@@ -121,7 +120,7 @@ export default function EditCustomerPage() {
       try {
         await deleteCustomerImage(existingImageUrl)
       } catch (error) {
-        console.error("Error deleting image:", error)
+        // Silent fail
       }
     }
     setImageFile(null)
@@ -170,14 +169,13 @@ export default function EditCustomerPage() {
           }
         )
       } catch (logError) {
-        console.error("Error logging action:", logError)
+        // Silent fail
       }
 
       toast.success("تم تحديث الزبون بنجاح")
       router.push("/customers")
       router.refresh()
     } catch (error) {
-      console.error(error)
       toast.error("حدث خطأ أثناء تحديث الزبون")
     } finally {
       setIsLoading(false)

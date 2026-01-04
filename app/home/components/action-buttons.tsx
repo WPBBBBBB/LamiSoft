@@ -9,7 +9,6 @@ import {
   Wallet,
   PackageOpen,
   Warehouse,
-  Users,
   FileText,
 } from "lucide-react"
 import { PaymentModal } from "@/components/modals/payment-modal"
@@ -92,8 +91,6 @@ export function ActionButtons() {
 
                 if (button.labelKey === "addPurchase") {
                   // عرض زر إضافة شراء للمدير والمحاسب والموظف العادي الذي لديه الصلاحية
-                  console.log('🔵 addPurchase button check:', canAddPurchase)
-                  
                   if (canAddPurchase) {
                     return (
                       <Link key={btnIdx} href="/purchases/add">
@@ -174,17 +171,8 @@ export function ActionButtons() {
                   )
                 }
                 
-                return (
-                  <Button
-                    key={btnIdx}
-                    variant={button.variant}
-                    className="w-full justify-start gap-3 h-11"
-                    onClick={() => console.log(`${t(button.labelKey, currentLanguage.code)} clicked`)}
-                  >
-                    <button.icon className="h-5 w-5 theme-icon" />
-                    <span className="font-medium">{t(button.labelKey, currentLanguage.code)}</span>
-                  </Button>
-                )
+                // Default - shouldn't reach here
+                return null
               })}
             </div>
           </div>

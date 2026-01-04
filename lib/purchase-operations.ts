@@ -1,4 +1,4 @@
-﻿import { supabase } from "./supabase"
+import { supabase } from "./supabase"
 
 export interface Supplier {
   id: string
@@ -11,11 +11,11 @@ export interface Supplier {
 export interface PurchaseMain {
   id?: string
   purchasestoreid: string
-  typeofbuy: "إعادة" | "محلي" | "استيراد"
-  typeofpayment: "نقدي" | "آجل"
+  typeofbuy: "?????" | "????" | "???????"
+  typeofpayment: "????" | "???"
   nameofsupplier: string
   supplierid: string
-  currency?: "دينار" | "دولار"
+  currency?: "?????" | "?????"
   numberofpurchase: string
   details?: string
   datetime: string
@@ -31,7 +31,7 @@ export interface PurchaseProductDetail {
   productcode1: string
   nameofproduct: string
   quantity: number
-  unit: "كارتون" | "قطعة" | "لتر" | "كغم"
+  unit: "??????" | "????" | "???" | "???"
   purchasesinglepriceiqd: number
   purchasesinglepriceusd: number
   sellsinglepriceiqd: number
@@ -43,7 +43,7 @@ export interface Payment {
   id?: string
   paymentamountiqd: number
   paymentamountusd: number
-  paymenttype: "قبض" | "صرف"
+  paymenttype: "???" | "???"
   supplierid: string
   customerid?: string
   purchasemainid?: string
@@ -56,12 +56,10 @@ export async function getSuppliers(): Promise<Supplier[]> {
     const { data, error } = await supabase
       .from("customers")
       .select("id, customer_name, type, balanceiqd, balanceusd")
-      .eq("type", "مجهز")
+      .eq("type", "????")
       .order("customer_name")
 
     if (error) throw error
-    
-    console.log('Raw suppliers data from DB:', data)
     
     return (data || []).map(item => ({
       id: item.id,
@@ -71,7 +69,6 @@ export async function getSuppliers(): Promise<Supplier[]> {
       balanceusd: item.balanceusd || 0
     }))
   } catch (error) {
-    console.error("Error fetching suppliers:", error)
     throw error
   }
 }
@@ -88,8 +85,6 @@ export async function getSupplierById(
 
     if (error) throw error
     
-    console.log('Raw supplier data from DB:', data)
-    
     if (!data) return null
     
     return {
@@ -99,8 +94,7 @@ export async function getSupplierById(
       balanceiqd: data.balanceiqd || 0,
       balanceusd: data.balanceusd || 0
     }
-  } catch (error) {
-    console.error("Error fetching supplier:", error)
+  } catch {
     return null
   }
 }
@@ -109,8 +103,8 @@ export async function createPurchase(
   purchaseMain: PurchaseMain,
   products: PurchaseProductDetail[],
   storeId: string,
-  typeOfPayment: "نقدي" | "آجل",
-  currencyType: "دينار" | "دولار",
+  typeOfPayment: "????" | "???",
+  currencyType: "?????" | "?????",
   priceUpdateDecisions?: Map<string, boolean>
 ): Promise<{ success: boolean; purchaseId?: string; error?: string }> {
   try {
@@ -143,8 +137,6 @@ export async function createPurchase(
       }
     })
 
-    console.log('Products to insert:', JSON.stringify(productsWithMainId, null, 2))
-
     const { error: detailsError } = await supabase
       .from("tb_purchaseproductsdetails")
       .insert(productsWithMainId)
@@ -166,12 +158,12 @@ export async function createPurchase(
       )
     }
 
-    if (typeOfPayment === "آجل") {
+    if (typeOfPayment === "???") {
       const remainingIQD = purchaseMain.totalpurchaseiqd - purchaseMain.amountreceivediqd
       const remainingUSD = purchaseMain.totalpurchaseusd - purchaseMain.amountreceivedusd
       
-      const balanceIQD = currencyType === "دينار" ? -remainingIQD : 0
-      const balanceUSD = currencyType === "دولار" ? -remainingUSD : 0
+      const balanceIQD = currencyType === "?????" ? -remainingIQD : 0
+      const balanceUSD = currencyType === "?????" ? -remainingUSD : 0
       
       await updateSupplierBalance(
         purchaseMain.supplierid,
@@ -180,21 +172,21 @@ export async function createPurchase(
       )
       
       if (purchaseMain.amountreceivediqd > 0 || purchaseMain.amountreceivedusd > 0) {
-        const paymentNote = `دفعة واصلة لقائمة شراء ${purchaseMain.numberofpurchase} - ${purchaseMain.nameofsupplier}`
+        const paymentNote = `???? ????? ?????? ???? ${purchaseMain.numberofpurchase} - ${purchaseMain.nameofsupplier}`
         
         const { error: paymentError } = await supabase.from("payments").insert([{
           customer_id: purchaseMain.supplierid,
           amount_iqd: purchaseMain.amountreceivediqd,
           amount_usd: purchaseMain.amountreceivedusd,
           currency_type: purchaseMain.amountreceivediqd > 0 ? 'IQD' : 'USD',
-          transaction_type: "صرف",
+          transaction_type: "???",
           notes: paymentNote,
           pay_date: new Date().toISOString(),
           supplierid: purchaseMain.supplierid,
           purchasemainid: purchaseMainId,
           paymentamountiqd: purchaseMain.amountreceivediqd,
           paymentamountusd: purchaseMain.amountreceivedusd,
-          paymenttype: "صرف",
+          paymenttype: "???",
         }])
         
         if (paymentError) throw paymentError
@@ -203,7 +195,6 @@ export async function createPurchase(
 
     return { success: true, purchaseId: purchaseMainId }
   } catch (error) {
-    console.error("Error creating purchase:", error)
     return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
   }
 }
@@ -218,7 +209,7 @@ export async function updatePurchase(
 
   try {
     if (!purchaseId) {
-      return { success: false, error: "معرّف القائمة غير صالح" }
+      return { success: false, error: "????? ??????? ??? ????" }
     }
 
     step = "fetch-old"
@@ -228,7 +219,7 @@ export async function updatePurchase(
     ])
 
     if (!oldMain) {
-      return { success: false, error: "لم يتم العثور على القائمة المطلوبة" }
+      return { success: false, error: "?? ??? ?????? ??? ??????? ????????" }
     }
 
     const oldStoreId = oldMain.purchasestoreid
@@ -290,7 +281,7 @@ export async function updatePurchase(
 
     if (insertDetailsError) throw insertDetailsError
 
-    // معالجة المخزون
+    // ?????? ???????
     const buildQtyMap = (details: PurchaseProductDetail[]) => {
       const map = new Map<string, number>()
       for (const d of details) {
@@ -304,13 +295,13 @@ export async function updatePurchase(
 
     if (oldStoreId !== storeId) {
       step = "inventory-store-changed-remove"
-      // إزالة من المخزن القديم
+      // ????? ?? ?????? ??????
       for (const detail of oldDetails) {
         await reduceInventoryFromPurchase(oldStoreId, detail.productcode1, Number(detail.quantity || 0))
       }
 
       step = "inventory-store-changed-add"
-      // إضافة للمخزن الجديد (بدون تحديث الأسعار)
+      // ????? ?????? ?????? (???? ????? ???????)
       for (const product of products) {
         await addOrUpdateInventory(
           storeId,
@@ -320,7 +311,7 @@ export async function updatePurchase(
           product.unit,
           product.sellsinglepriceiqd,
           product.sellsinglepriceusd,
-          false // عدم تحديث الأسعار عند التعديل
+          false // ??? ????? ??????? ??? ???????
         )
       }
     } else {
@@ -335,7 +326,7 @@ export async function updatePurchase(
         const delta = newQty - oldQty
 
         if (delta > 0) {
-          // زيادة الكمية (بدون تحديث الأسعار)
+          // ????? ?????? (???? ????? ???????)
           const product = products.find(p => p.productcode1 === code)
           if (product) {
             await addOrUpdateInventory(
@@ -346,25 +337,25 @@ export async function updatePurchase(
               product.unit,
               product.sellsinglepriceiqd,
               product.sellsinglepriceusd,
-              false // عدم تحديث الأسعار عند التعديل
+              false // ??? ????? ??????? ??? ???????
             )
           }
         } else if (delta < 0) {
-          // تقليل الكمية
+          // ????? ??????
           await reduceInventoryFromPurchase(storeId, code, Math.abs(delta))
         }
       }
     }
 
-    // معالجة رصيد المجهز
+    // ?????? ???? ??????
     step = "supplier-balance"
     const computeBalanceDelta = (main: PurchaseMain) => {
-      if (main.typeofpayment !== "آجل") return { iqd: 0, usd: 0 }
+      if (main.typeofpayment !== "???") return { iqd: 0, usd: 0 }
       const remainingIQD = (main.totalpurchaseiqd || 0) - (main.amountreceivediqd || 0)
       const remainingUSD = (main.totalpurchaseusd || 0) - (main.amountreceivedusd || 0)
       return {
-        iqd: (main.currency === "دينار" ? -remainingIQD : 0),
-        usd: (main.currency === "دولار" ? -remainingUSD : 0),
+        iqd: (main.currency === "?????" ? -remainingIQD : 0),
+        usd: (main.currency === "?????" ? -remainingUSD : 0),
       }
     }
 
@@ -376,11 +367,11 @@ export async function updatePurchase(
 
     if (hasAnyBalanceEffect) {
       if (oldMain.supplierid !== purchaseMain.supplierid) {
-        // تغير المجهز
+        // ???? ??????
         await updateSupplierBalance(oldMain.supplierid, -oldDelta.iqd, -oldDelta.usd)
         await updateSupplierBalance(purchaseMain.supplierid, newDelta.iqd, newDelta.usd)
       } else {
-        // نفس المجهز
+        // ??? ??????
         await updateSupplierBalance(
           purchaseMain.supplierid,
           newDelta.iqd - oldDelta.iqd,
@@ -389,29 +380,29 @@ export async function updatePurchase(
       }
     }
 
-    // حذف الدفعات القديمة وإضافة الجديدة إذا لزم الأمر
+    // ??? ??????? ??????? ?????? ??????? ??? ??? ?????
     step = "update-payments"
     await supabase
       .from("payments")
       .delete()
       .eq("purchasemainid", purchaseId)
 
-    if (purchaseMain.typeofpayment === "آجل" && (purchaseMain.amountreceivediqd > 0 || purchaseMain.amountreceivedusd > 0)) {
-      const paymentNote = `دفعة واصلة لقائمة شراء ${purchaseMain.numberofpurchase} - ${purchaseMain.nameofsupplier}`
+    if (purchaseMain.typeofpayment === "???" && (purchaseMain.amountreceivediqd > 0 || purchaseMain.amountreceivedusd > 0)) {
+      const paymentNote = `???? ????? ?????? ???? ${purchaseMain.numberofpurchase} - ${purchaseMain.nameofsupplier}`
       
       await supabase.from("payments").insert([{
         customer_id: purchaseMain.supplierid,
         amount_iqd: purchaseMain.amountreceivediqd,
         amount_usd: purchaseMain.amountreceivedusd,
         currency_type: purchaseMain.amountreceivediqd > 0 ? 'IQD' : 'USD',
-        transaction_type: "صرف",
+        transaction_type: "???",
         notes: paymentNote,
         pay_date: new Date().toISOString(),
         supplierid: purchaseMain.supplierid,
         purchasemainid: purchaseId,
         paymentamountiqd: purchaseMain.amountreceivediqd,
         paymentamountusd: purchaseMain.amountreceivedusd,
-        paymenttype: "صرف",
+        paymenttype: "???",
       }])
     }
 
@@ -432,9 +423,7 @@ export async function updatePurchase(
     }
 
     const info = getErrorInfo(error)
-    console.error("Error updating purchase:", { step, info })
-
-    return { success: false, error: `فشل تعديل قائمة الشراء (${step}): ${info.message}` }
+    return { success: false, error: `??? ????? ????? ?????? (${step}): ${info.message}` }
   }
 }
 
@@ -491,12 +480,11 @@ export async function checkProductsPriceConflicts(
     }
 
     return { success: true, conflicts }
-  } catch (error) {
-    console.error("Error checking price conflicts:", error)
+  } catch {
     return {
       success: false,
       conflicts: [],
-      error: "فشل التحقق من الأسعار",
+      error: "??? ?????? ?? ???????",
     }
   }
 }
@@ -522,7 +510,7 @@ async function addOrUpdateInventory(
     if (fetchError && fetchError.code !== "PGRST116") throw fetchError
 
     if (existing) {
-      // تحديث المنتج الموجود
+      // ????? ?????? ???????
       const updateData: Partial<{
         quantity: number
         sellpriceiqd: number
@@ -531,7 +519,7 @@ async function addOrUpdateInventory(
         quantity: existing.quantity + quantity,
       }
       
-      // تحديث الأسعار فقط إذا تم الطلب
+      // ????? ??????? ??? ??? ?? ?????
       if (updatePrices) {
         updateData.sellpriceiqd = sellPriceIQD
         updateData.sellpriceusd = sellPriceUSD
@@ -544,7 +532,7 @@ async function addOrUpdateInventory(
 
       if (updateError) throw updateError
     } else {
-      // إضافة منتج جديد
+      // ????? ???? ????
       const { error: insertError } = await supabase
         .from("tb_inventory")
         .insert([
@@ -562,7 +550,6 @@ async function addOrUpdateInventory(
       if (insertError) throw insertError
     }
   } catch (error) {
-    console.error("Error updating inventory:", error)
     throw error
   }
 }
@@ -592,7 +579,6 @@ async function updateSupplierBalance(
 
     if (updateError) throw updateError
   } catch (error) {
-    console.error("Error updating supplier balance:", error)
     throw error
   }
 }
@@ -616,8 +602,7 @@ export async function getAllPurchases(): Promise<PurchaseMain[]> {
 
     if (error) throw error
     return data || []
-  } catch (error) {
-    console.error("Error fetching purchases:", error)
+  } catch {
     return []
   }
 }
@@ -634,8 +619,7 @@ export async function getPurchaseDetails(
 
     if (error) throw error
     return data || []
-  } catch (error) {
-    console.error("Error fetching purchase details:", error)
+  } catch {
     return []
   }
 }
@@ -650,8 +634,7 @@ export async function getPurchaseById(purchaseId: string): Promise<PurchaseMain 
 
     if (error) throw error
     return data
-  } catch (error) {
-    console.error("Error fetching purchase:", error)
+  } catch {
     return null
   }
 }
@@ -664,16 +647,15 @@ export async function deletePurchase(purchaseId: string): Promise<{
   purchaseNumber?: string;
 }> {
   try {
-    // 1️⃣ قراءة بيانات القائمة قبل الحذف
+    // 1?? ????? ?????? ??????? ??? ?????
     const purchaseMain = await getPurchaseById(purchaseId)
     if (!purchaseMain) {
-      return { success: false, error: "لم يتم العثور على القائمة" }
+      return { success: false, error: "?? ??? ?????? ??? ???????" }
     }
 
     const purchaseDetails = await getPurchaseDetails(purchaseId)
 
-    // 2️⃣ خصم الكميات من المخزون (عكس الإضافة)
-    console.log("🔄 Removing quantities from inventory...")
+    // 2?? ??? ??????? ?? ??????? (??? ???????)
     for (const detail of purchaseDetails) {
       try {
         await reduceInventoryFromPurchase(
@@ -681,49 +663,43 @@ export async function deletePurchase(purchaseId: string): Promise<{
           detail.productcode1,
           Number(detail.quantity || 0)
         )
-        console.log(`✅ Removed ${detail.quantity} of ${detail.productcode1}`)
-      } catch (error) {
-        console.warn(`⚠️ Could not remove inventory for ${detail.productcode1}:`, error)
-        // نستمر في الحذف حتى لو فشل خصم بعض المواد
+        } catch {
+        // تجاهل الأخطاء في حذف المخزون
       }
     }
 
-    // 3️⃣ حساب المبلغ المسترجع من رصيد المجهز (للقوائم الآجلة فقط)
+    // 3?? ???? ?????? ???????? ?? ???? ?????? (??????? ?????? ???)
     let restoredIQD = 0
     let restoredUSD = 0
 
-    if (purchaseMain.typeofpayment === "آجل") {
+    if (purchaseMain.typeofpayment === "???") {
       const remainingIQD = (purchaseMain.totalpurchaseiqd || 0) - (purchaseMain.amountreceivediqd || 0)
       const remainingUSD = (purchaseMain.totalpurchaseusd || 0) - (purchaseMain.amountreceivedusd || 0)
 
-      restoredIQD = purchaseMain.currency === "دينار" ? remainingIQD : 0
-      restoredUSD = purchaseMain.currency === "دولار" ? remainingUSD : 0
+      restoredIQD = purchaseMain.currency === "?????" ? remainingIQD : 0
+      restoredUSD = purchaseMain.currency === "?????" ? remainingUSD : 0
 
-      // 4️⃣ استرجاع المبلغ من رصيد المجهز (إضافة لأن الرصيد كان سالب)
+      // 4?? ??????? ?????? ?? ???? ?????? (????? ??? ?????? ??? ????)
       if (restoredIQD !== 0 || restoredUSD !== 0) {
-        console.log(`💰 Restoring balance from supplier: IQD=${restoredIQD}, USD=${restoredUSD}`)
         await updateSupplierBalance(
           purchaseMain.supplierid,
-          restoredIQD,   // نضيف لأن الرصيد كان سالب (دين علينا)
+          restoredIQD,   // ???? ??? ?????? ??? ???? (??? ?????)
           restoredUSD
         )
       }
     }
 
-    // 5️⃣ حذف الدفعات المرتبطة بالقائمة
-    console.log("🗑️ Deleting related payments...")
+    // 5?? ??? ??????? ???????? ????????
     const { error: paymentDeleteError } = await supabase
       .from("payments")
       .delete()
       .eq("purchasemainid", purchaseId)
 
     if (paymentDeleteError) {
-      console.warn("⚠️ Could not delete payments:", paymentDeleteError)
-      // نستمر في الحذف
+      // ????? ?? ?????
     }
 
-    // 6️⃣ حذف تفاصيل القائمة
-    console.log("🗑️ Deleting purchase details...")
+    // 6?? ??? ?????? ???????
     const { error: detailsDeleteError } = await supabase
       .from("tb_purchaseproductsdetails")
       .delete()
@@ -731,16 +707,13 @@ export async function deletePurchase(purchaseId: string): Promise<{
 
     if (detailsDeleteError) throw detailsDeleteError
 
-    // 7️⃣ حذف القائمة الرئيسية
-    console.log("🗑️ Deleting purchase main record...")
+    // 7?? ??? ??????? ????????
     const { error: mainDeleteError } = await supabase
       .from("tb_purchasemain")
       .delete()
       .eq("id", purchaseId)
 
     if (mainDeleteError) throw mainDeleteError
-
-    console.log("✅ Purchase deleted successfully!")
 
     return { 
       success: true,
@@ -749,13 +722,12 @@ export async function deletePurchase(purchaseId: string): Promise<{
       purchaseNumber: purchaseMain.numberofpurchase
     }
   } catch (error: unknown) {
-    console.error("❌ Error deleting purchase:", error)
-    const errorMessage = error instanceof Error ? error.message : "حدث خطأ أثناء حذف القائمة"
+    const errorMessage = error instanceof Error ? error.message : "??? ??? ????? ??? ???????"
     return { success: false, error: errorMessage }
   }
 }
 
-// دالة مساعدة لخصم الكميات من المخزون
+// ???? ?????? ???? ??????? ?? ???????
 async function reduceInventoryFromPurchase(
   storeId: string,
   productCode: string,
@@ -770,11 +742,10 @@ async function reduceInventoryFromPurchase(
       .maybeSingle()
 
     if (fetchError && fetchError.code !== "PGRST116") {
-      throw new Error(`خطأ في جلب المادة: ${fetchError.message}`)
+      throw new Error(`??? ?? ??? ??????: ${fetchError.message}`)
     }
 
     if (!item) {
-      console.warn(`⚠️ المادة ${productCode} غير موجودة في المخزن - تم تخطيها`)
       return
     }
 
@@ -786,10 +757,9 @@ async function reduceInventoryFromPurchase(
       .eq("id", item.id)
 
     if (updateError) {
-      throw new Error(`خطأ في تحديث الكمية: ${updateError.message}`)
+      throw new Error(`??? ?? ????? ??????: ${updateError.message}`)
     }
   } catch (error) {
-    console.error("Error reducing inventory from purchase:", error)
     throw error
   }
 }
@@ -806,8 +776,6 @@ export async function deleteMultiplePurchases(purchaseIds: string[]): Promise<{
     let totalUSD = 0
     const errors: string[] = []
 
-    console.log(`🗑️ Deleting ${purchaseIds.length} purchases...`)
-
     for (const purchaseId of purchaseIds) {
       const result = await deletePurchase(purchaseId)
       
@@ -818,14 +786,14 @@ export async function deleteMultiplePurchases(purchaseIds: string[]): Promise<{
           totalUSD += result.restoredAmount.usd
         }
       } else {
-        errors.push(result.error || "خطأ غير معروف")
+        errors.push(result.error || "??? ??? ?????")
       }
     }
 
     if (errors.length > 0 && deletedCount === 0) {
       return { 
         success: false, 
-        error: `فشل حذف جميع القوائم: ${errors.join(", ")}` 
+        error: `??? ??? ???? ???????: ${errors.join(", ")}` 
       }
     }
 
@@ -835,8 +803,7 @@ export async function deleteMultiplePurchases(purchaseIds: string[]): Promise<{
       totalRestored: { iqd: totalIQD, usd: totalUSD }
     }
   } catch (error: unknown) {
-    console.error("❌ Error deleting multiple purchases:", error)
-    const errorMessage = error instanceof Error ? error.message : "حدث خطأ أثناء حذف القوائم"
+    const errorMessage = error instanceof Error ? error.message : "??? ??? ????? ??? ???????"
     return { success: false, error: errorMessage }
   }
 }

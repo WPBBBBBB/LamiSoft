@@ -34,8 +34,7 @@ export function NotificationsCard() {
 
   useEffect(() => {
     loadDebtUnreadCount().catch((error) => {
-      console.error("Error loading debt notifications count:", error)
-    })
+      })
   }, [])
 
   // التحقق من صلاحية عرض الإشعارات
@@ -51,7 +50,6 @@ export function NotificationsCard() {
       }
       await loadDebtUnreadCount()
     } catch (error) {
-      console.error("Error refreshing notifications:", error)
       toast.error("حدث خطأ أثناء التحديث")
     } finally {
       setIsRefreshing(false)
@@ -67,7 +65,6 @@ export function NotificationsCard() {
       }
       setDebtUnreadCount(0)
     } catch (error) {
-      console.error("Error marking notifications as read:", error)
       toast.error("حدث خطأ أثناء التعيين")
     } finally {
       setIsMarkingRead(false)

@@ -112,7 +112,6 @@ export default function MaterialsBalancePage() {
       setMaterials(materialsArray)
       toast.success(t('dataLoadedSuccess', currentLanguage.code))
     } catch (error) {
-      console.error("Error loading materials:", error)
       toast.error(t('errorLoadingData', currentLanguage.code))
     } finally {
       setIsLoading(false)

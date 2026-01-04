@@ -34,7 +34,6 @@ export async function GET() {
       date: data.time_last_update_utc
     })
   } catch (error) {
-    console.error("Error fetching exchange rate:", error)
     return NextResponse.json(
       { error: "Failed to fetch exchange rate" },
       { status: 500 }

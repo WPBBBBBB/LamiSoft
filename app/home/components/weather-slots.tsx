@@ -50,7 +50,6 @@ export function WeatherSlots() {
             temps[i] = null
           }
         } catch (error) {
-          console.error(`Failed to load temperature for slot ${i}:`, error)
           temps[i] = null
         }
       }
@@ -123,8 +122,7 @@ export function WeatherSlots() {
       setWeather(result.current)
     } catch (error) {
       toast.error(t('failedToLoadWeather', currentLanguage.code))
-      console.error(error)
-    } finally {
+      } finally {
       setLoading(false)
     }
   }

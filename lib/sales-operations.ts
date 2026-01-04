@@ -1,4 +1,4 @@
-﻿import { supabase } from "./supabase"
+import { supabase } from "./supabase"
 
 export interface Customer {
   id: string
@@ -26,13 +26,13 @@ export interface SaleMain {
   salestoreid: string
   customerid: string
   customername: string
-  pricetype: "جملة" | "مفرد"
-  paytype: "نقدي" | "آجل"
-  currencytype: "دينار" | "دولار"
+  pricetype: "????" | "????"
+  paytype: "????" | "???"
+  currencytype: "?????" | "?????"
   details?: string
   datetime: string
   discountenabled: boolean
-  discountcurrency?: "دينار" | "دولار"
+  discountcurrency?: "?????" | "?????"
   discountiqd: number
   discountusd: number
   totalsaleiqd: number
@@ -66,13 +66,12 @@ export async function getAllCustomers(): Promise<Customer[]> {
     const { data, error } = await supabase
       .from("customers")
       .select("id, customer_name, type, balanceiqd, balanceusd")
-      .eq("type", "زبون")
+      .eq("type", "????")
       .order("customer_name")
 
     if (error) throw error
     return data || []
-  } catch (error) {
-    console.error("Error fetching customers:", error)
+  } catch {
     return []
   }
 }
@@ -87,8 +86,7 @@ export async function getCustomerById(customerId: string): Promise<Customer | nu
 
     if (error) throw error
     return data
-  } catch (error) {
-    console.error("Error fetching customer:", error)
+  } catch {
     return null
   }
 }
@@ -115,8 +113,7 @@ export async function generateNextSaleNumber(): Promise<string> {
     const formattedNumber = nextNumber.toString().padStart(5, "0")
 
     return `S-${formattedNumber}`
-  } catch (error) {
-    console.error("Error generating sale number:", error)
+  } catch {
     return `S-${Date.now().toString().slice(-5)}`
   }
 }
@@ -132,8 +129,7 @@ export async function getInventoryByStore(storeId: string): Promise<InventoryIte
 
     if (error) throw error
     return data || []
-  } catch (error) {
-    console.error("Error fetching inventory:", error)
+  } catch {
     return []
   }
 }
@@ -142,12 +138,10 @@ export async function createSale(
   saleMain: SaleMain,
   saleDetails: SaleDetail[],
   storeId: string,
-  payType: "نقدي" | "آجل",
-  currencyType: "دينار" | "دولار"
+  payType: "????" | "???",
+  currencyType: "?????" | "?????"
 ): Promise<{ success: boolean; saleId?: string; error?: string }> {
   try {
-    console.log("Creating sale with data:", { saleMain, saleDetails, storeId, payType, currencyType })
-
     const isDuplicateSaleNumberError = (err: unknown) => {
       if (!err || typeof err !== "object") return false
       const anyErr = err as Record<string, unknown>
@@ -165,7 +159,7 @@ export async function createSale(
     let lastInsertError: Error | null = null
     let saleMainToInsert: SaleMain = { 
       ...saleMain,
-      // استخدام الباركود المُرسل أو رقم القائمة إذا لم يتم إرساله
+      // ??????? ???????? ??????? ?? ??? ??????? ??? ?? ??? ??????
       barcode: saleMain.barcode || saleMain.numberofsale
     }
 
@@ -176,8 +170,6 @@ export async function createSale(
         .insert([saleMainToInsert])
         .select()
         .single()
-
-      console.log("Insert result:", { attempt, data, error })
 
       if (!error) {
         mainData = data
@@ -195,7 +187,7 @@ export async function createSale(
     }
 
     if (!mainData) {
-      throw lastInsertError || new Error("فشل إدخال قائمة البيع")
+      throw lastInsertError || new Error("??? ????? ????? ?????")
     }
 
     const saleMainId = mainData.id
@@ -213,59 +205,49 @@ export async function createSale(
       .from("tb_salesdetails")
       .insert(detailsWithMainId)
 
-    console.log("Details insert result:", { detailsError })
     if (detailsError) throw detailsError
 
-    console.log("Starting inventory reduction...")
     for (const detail of saleDetails) {
       try {
-        console.log("Reducing inventory for:", detail.productcode, "qty:", detail.quantity)
         await reduceInventoryQuantity(
           storeId,
           detail.productcode,
           detail.quantity
         )
       } catch (invError) {
-        console.error("Error reducing inventory for product:", detail.productcode, invError)
-        throw new Error(`خطأ في تحديث المخزون للمادة ${detail.productname}: ${invError instanceof Error ? invError.message : String(invError)}`)
+        throw new Error(`??? ?? ????? ??????? ?????? ${detail.productname}: ${invError instanceof Error ? invError.message : String(invError)}`)
       }
     }
-    console.log("Inventory reduction completed")
-
-    console.log("Checking payment type:", payType)
-    if (payType === "آجل") {
+    if (payType === "???") {
       const remainingIQD = saleMain.finaltotaliqd - saleMain.amountreceivediqd
       const remainingUSD = saleMain.finaltotalusd - saleMain.amountreceivedusd
 
-      const balanceIQD = currencyType === "دينار" ? remainingIQD : 0
-      const balanceUSD = currencyType === "دولار" ? remainingUSD : 0
+      const balanceIQD = currencyType === "?????" ? remainingIQD : 0
+      const balanceUSD = currencyType === "?????" ? remainingUSD : 0
 
-      console.log("Updating customer balance:", { balanceIQD, balanceUSD })
       await updateCustomerBalance(
         saleMain.customerid,
         balanceIQD,
         balanceUSD
       )
-      console.log("Customer balance updated")
       if (saleMain.amountreceivediqd > 0 || saleMain.amountreceivedusd > 0) {
-        const paymentNote = `دفعة واصلة لقائمة بيع ${saleMain.numberofsale} - ${saleMain.customername}`
+        const paymentNote = `???? ????? ?????? ??? ${saleMain.numberofsale} - ${saleMain.customername}`
 
         const { error: paymentError } = await supabase.from("payments").insert([{
           customer_id: saleMain.customerid,
           amount_iqd: saleMain.amountreceivediqd,
           amount_usd: saleMain.amountreceivedusd,
           currency_type: saleMain.amountreceivediqd > 0 ? 'IQD' : 'USD',
-          transaction_type: "قبض",
+          transaction_type: "???",
           notes: paymentNote,
           pay_date: new Date().toISOString(),
           salesmainid: saleMainId,
           paymentamountiqd: saleMain.amountreceivediqd,
           paymentamountusd: saleMain.amountreceivedusd,
-          paymenttype: "قبض",
+          paymenttype: "???",
         }])
 
         if (paymentError) {
-          console.error("Payment insert error:", paymentError)
           throw paymentError
         }
       }
@@ -273,29 +255,7 @@ export async function createSale(
 
     return { success: true, saleId: saleMainId }
   } catch (error: unknown) {
-    console.error("=== ERROR CAUGHT ===")
-    console.error("Error creating sale:", error)
-    console.error("Error type:", typeof error)
-    console.error(
-      "Error constructor:",
-      error && typeof error === "object"
-        ? (error as Record<string, unknown>).constructor
-        : undefined
-    )
-    
-    if (error && typeof error === 'object') {
-      const errRecord = error as Record<string, unknown>
-      console.error("Error keys:", Object.keys(errRecord))
-      console.error("Error message property:", errRecord.message)
-      console.error("Error code property:", errRecord.code)
-      console.error("Error details property:", errRecord.details)
-    }
-    
-    console.error("Error instanceof Error:", error instanceof Error)
-    console.error("Error string:", String(error))
-    console.error("===================")
-    
-    let errorMessage = "حدث خطأ غير متوقع"
+    let errorMessage = "خطأ غير متوقع"
     
     if (error instanceof Error) {
       errorMessage = error.message
@@ -306,12 +266,12 @@ export async function createSale(
       } else if (typeof errRecord.details === 'string' && errRecord.details) {
         errorMessage = errRecord.details
       } else if (typeof errRecord.code === 'string' && errRecord.code) {
-        errorMessage = `خطأ في قاعدة البيانات: ${errRecord.code}`
+        errorMessage = `??? ?? ????? ????????: ${errRecord.code}`
       } else {
         try {
           errorMessage = JSON.stringify(errRecord)
         } catch {
-          errorMessage = "حدث خطأ غير متوقع"
+          errorMessage = "??? ??? ??? ?????"
         }
       }
     } else if (typeof error === 'string') {
@@ -335,7 +295,7 @@ export async function updateSale(
   try {
 
     if (!saleId) {
-      return { success: false, error: "معرّف القائمة غير صالح" }
+      return { success: false, error: "????? ??????? ??? ????" }
     }
 
     step = "fetch-old"
@@ -345,7 +305,7 @@ export async function updateSale(
     ])
 
     if (!oldMain) {
-      return { success: false, error: "لم يتم العثور على القائمة المطلوبة" }
+      return { success: false, error: "?? ??? ?????? ??? ??????? ????????" }
     }
 
     const oldStoreId = oldMain.salestoreid
@@ -419,8 +379,7 @@ export async function updateSale(
         try {
           await increaseInventoryQuantity(oldStoreId, detail.productcode, Number(detail.quantity || 0))
         } catch (invError) {
-          console.error("Error restoring inventory for product:", detail.productcode, invError)
-          throw new Error(`خطأ في استرجاع المخزون للمادة ${detail.productname}: ${invError instanceof Error ? invError.message : String(invError)}`)
+          throw new Error(`??? ?? ??????? ??????? ?????? ${detail.productname}: ${invError instanceof Error ? invError.message : String(invError)}`)
         }
       }
 
@@ -429,8 +388,7 @@ export async function updateSale(
         try {
           await reduceInventoryQuantity(storeId, detail.productcode, Number(detail.quantity || 0))
         } catch (invError) {
-          console.error("Error reducing inventory for product:", detail.productcode, invError)
-          throw new Error(`خطأ في تقليل المخزون للمادة ${detail.productname || detail.productcode}: ${invError instanceof Error ? invError.message : String(invError)}`)
+          throw new Error(`??? ?? ????? ??????? ?????? ${detail.productname || detail.productcode}: ${invError instanceof Error ? invError.message : String(invError)}`)
         }
       }
     } else {
@@ -451,22 +409,21 @@ export async function updateSale(
             await increaseInventoryQuantity(storeId, code, Math.abs(delta))
           }
         } catch (invError) {
-          console.error("Error adjusting inventory for product:", code, "delta:", delta, invError)
           const productDetail = saleDetails.find(d => d.productcode === code)
           const productName = productDetail?.productname || code
-          throw new Error(`خطأ في تعديل المخزون للمادة ${productName}: ${invError instanceof Error ? invError.message : String(invError)}`)
+          throw new Error(`??? ?? ????? ??????? ?????? ${productName}: ${invError instanceof Error ? invError.message : String(invError)}`)
         }
       }
     }
 
     step = "customer-balance"
     const computeBalanceDelta = (main: SaleMain) => {
-      if (main.paytype !== "آجل") return { iqd: 0, usd: 0 }
+      if (main.paytype !== "???") return { iqd: 0, usd: 0 }
       const remainingIQD = (main.finaltotaliqd || 0) - (main.amountreceivediqd || 0)
       const remainingUSD = (main.finaltotalusd || 0) - (main.amountreceivedusd || 0)
       return {
-        iqd: main.currencytype === "دينار" ? remainingIQD : 0,
-        usd: main.currencytype === "دولار" ? remainingUSD : 0,
+        iqd: main.currencytype === "?????" ? remainingIQD : 0,
+        usd: main.currencytype === "?????" ? remainingUSD : 0,
       }
     }
 
@@ -489,8 +446,7 @@ export async function updateSale(
           )
         }
       } catch (balanceError) {
-        console.error("Error updating customer balance:", balanceError)
-        throw new Error(`خطأ في تحديث رصيد الزبون: ${balanceError instanceof Error ? balanceError.message : String(balanceError)}`)
+        throw new Error(`??? ?? ????? ???? ??????: ${balanceError instanceof Error ? balanceError.message : String(balanceError)}`)
       }
     }
 
@@ -535,9 +491,7 @@ export async function updateSale(
     }
 
     const info = getErrorInfo(error)
-    console.error("Error updating sale:", { info })
-
-    return { success: false, error: `فشل تعديل قائمة البيع (${step}): ${info.message}` }
+    return { success: false, error: `??? ????? ????? ????? (${step}): ${info.message}` }
   }
 }
 
@@ -547,8 +501,6 @@ async function reduceInventoryQuantity(
   quantitySold: number
 ): Promise<void> {
   try {
-    console.log(`Attempting to reduce inventory: store=${storeId}, product=${productCode}, qty=${quantitySold}`)
-    
     const { data: item, error: fetchError } = await supabase
       .from("tb_inventory")
       .select("*")
@@ -556,35 +508,27 @@ async function reduceInventoryQuantity(
       .eq("productcode", productCode)
       .single()
 
-    console.log("Inventory fetch result:", { item, fetchError })
-
     if (fetchError) {
-      console.error("Fetch error details:", fetchError)
-      throw new Error(`خطأ في جلب المادة: ${fetchError.message || JSON.stringify(fetchError)}`)
+      throw new Error(`??? ?? ??? ??????: ${fetchError.message || JSON.stringify(fetchError)}`)
     }
 
     if (!item) {
-      throw new Error(`المادة ${productCode} غير موجودة في المخزن`)
+      throw new Error(`?????? ${productCode} ??? ?????? ?? ??????`)
     }
 
-    // السماح بالبيع حتى لو كانت الكمية أكبر من المتوفر (يصبح المخزون بالسالب)
+    // ?????? ?????? ??? ?? ???? ?????? ???? ?? ??????? (???? ??????? ???????)
     const newQuantity = item.quantity - quantitySold
     
-    console.log(`Updating inventory: ${item.productname} from ${item.quantity} to ${newQuantity}`)
-
     const { error: updateError } = await supabase
       .from("tb_inventory")
       .update({ quantity: newQuantity })
       .eq("id", item.id)
 
     if (updateError) {
-      console.error("Update error details:", updateError)
-      throw new Error(`خطأ في تحديث الكمية: ${updateError.message || JSON.stringify(updateError)}`)
+      throw new Error(`??? ?? ????? ??????: ${updateError.message || JSON.stringify(updateError)}`)
     }
     
-    console.log(`Successfully reduced inventory for ${productCode}`)
-  } catch (error) {
-    console.error("Error reducing inventory:", error)
+    } catch (error) {
     throw error
   }
 }
@@ -603,11 +547,11 @@ async function increaseInventoryQuantity(
       .single()
 
     if (fetchError) {
-      throw new Error(`خطأ في جلب المادة: ${fetchError.message || JSON.stringify(fetchError)}`)
+      throw new Error(`??? ?? ??? ??????: ${fetchError.message || JSON.stringify(fetchError)}`)
     }
 
     if (!item) {
-      throw new Error(`المادة ${productCode} غير موجودة في المخزن`)
+      throw new Error(`?????? ${productCode} ??? ?????? ?? ??????`)
     }
 
     const newQuantity = (item.quantity || 0) + quantityToAdd
@@ -618,10 +562,9 @@ async function increaseInventoryQuantity(
       .eq("id", item.id)
 
     if (updateError) {
-      throw new Error(`خطأ في تحديث الكمية: ${updateError.message || JSON.stringify(updateError)}`)
+      throw new Error(`??? ?? ????? ??????: ${updateError.message || JSON.stringify(updateError)}`)
     }
   } catch (error) {
-    console.error("Error increasing inventory:", error)
     throw error
   }
 }
@@ -632,19 +575,14 @@ async function updateCustomerBalance(
   additionalUSD: number
 ): Promise<void> {
   try {
-    console.log(`Updating customer balance: id=${customerId}, IQD=${additionalIQD}, USD=${additionalUSD}`)
-    
     const { data: customer, error: fetchError } = await supabase
       .from("customers")
       .select("balanceiqd, balanceusd")
       .eq("id", customerId)
       .single()
 
-    console.log("Customer fetch result:", { customer, fetchError })
-
     if (fetchError) {
-      console.error("Customer fetch error:", fetchError)
-      throw new Error(`خطأ في جلب بيانات الزبون: ${fetchError.message || JSON.stringify(fetchError)}`)
+      throw new Error(`??? ?? ??? ?????? ??????: ${fetchError.message || JSON.stringify(fetchError)}`)
     }
 
     const { error: updateError } = await supabase
@@ -656,16 +594,11 @@ async function updateCustomerBalance(
       })
       .eq("id", customerId)
 
-    console.log("Customer update result:", { updateError })
-
     if (updateError) {
-      console.error("Customer update error:", updateError)
-      throw new Error(`خطأ في تحديث رصيد الزبون: ${updateError.message || JSON.stringify(updateError)}`)
+      throw new Error(`??? ?? ????? ???? ??????: ${updateError.message || JSON.stringify(updateError)}`)
     }
     
-    console.log("Customer balance updated successfully")
-  } catch (error) {
-    console.error("Error updating customer balance:", error)
+    } catch (error) {
     throw error
   }
 }
@@ -687,8 +620,7 @@ export async function getAllSales(): Promise<SaleMain[]> {
 
     if (error) throw error
     return data || []
-  } catch (error) {
-    console.error("Error fetching sales:", error)
+  } catch {
     return []
   }
 }
@@ -703,8 +635,7 @@ export async function getSaleDetails(saleMainId: string): Promise<SaleDetail[]> 
 
     if (error) throw error
     return data || []
-  } catch (error) {
-    console.error("Error fetching sale details:", error)
+  } catch {
     return []
   }
 }
@@ -719,8 +650,7 @@ export async function getSaleById(saleId: string): Promise<SaleMain | null> {
 
     if (error) throw error
     return data
-  } catch (error) {
-    console.error("Error fetching sale:", error)
+  } catch {
     return null
   }
 }
@@ -733,16 +663,15 @@ export async function deleteSale(saleId: string): Promise<{
   saleNumber?: string;
 }> {
   try {
-    // 1️⃣ قراءة بيانات القائمة قبل الحذف
+    // 1?? ????? ?????? ??????? ??? ?????
     const saleMain = await getSaleById(saleId)
     if (!saleMain) {
-      return { success: false, error: "لم يتم العثور على القائمة" }
+      return { success: false, error: "?? ??? ?????? ??? ???????" }
     }
 
     const saleDetails = await getSaleDetails(saleId)
 
-    // 2️⃣ إرجاع الكميات للمخزون
-    console.log("🔄 Restoring inventory quantities...")
+    // 2?? ????? ??????? ???????
     for (const detail of saleDetails) {
       try {
         await increaseInventoryQuantity(
@@ -750,49 +679,43 @@ export async function deleteSale(saleId: string): Promise<{
           detail.productcode,
           Number(detail.quantity || 0)
         )
-        console.log(`✅ Restored ${detail.quantity} of ${detail.productcode}`)
-      } catch (error) {
-        console.warn(`⚠️ Could not restore inventory for ${detail.productcode}:`, error)
-        // نستمر في الحذف حتى لو فشلت استعادة بعض المواد
+        } catch {
+        // ????? ?? ????? ??? ?? ???? ??????? ??? ??????
       }
     }
 
-    // 3️⃣ حساب المبلغ المسترجع من رصيد الزبون (للقوائم الآجلة فقط)
+    // 3?? ???? ?????? ???????? ?? ???? ?????? (??????? ?????? ???)
     let restoredIQD = 0
     let restoredUSD = 0
 
-    if (saleMain.paytype === "آجل") {
+    if (saleMain.paytype === "???") {
       const remainingIQD = (saleMain.finaltotaliqd || 0) - (saleMain.amountreceivediqd || 0)
       const remainingUSD = (saleMain.finaltotalusd || 0) - (saleMain.amountreceivedusd || 0)
 
-      restoredIQD = saleMain.currencytype === "دينار" ? remainingIQD : 0
-      restoredUSD = saleMain.currencytype === "دولار" ? remainingUSD : 0
+      restoredIQD = saleMain.currencytype === "?????" ? remainingIQD : 0
+      restoredUSD = saleMain.currencytype === "?????" ? remainingUSD : 0
 
-      // 4️⃣ استرجاع المبلغ من رصيد الزبون (طرح المبلغ من الرصيد)
+      // 4?? ??????? ?????? ?? ???? ?????? (??? ?????? ?? ??????)
       if (restoredIQD !== 0 || restoredUSD !== 0) {
-        console.log(`💰 Restoring balance from customer: IQD=${restoredIQD}, USD=${restoredUSD}`)
         await updateCustomerBalance(
           saleMain.customerid,
-          -restoredIQD,  // نطرح لأننا نسترجع
-          -restoredUSD   // نطرح لأننا نسترجع
+          -restoredIQD,  // ???? ????? ??????
+          -restoredUSD   // ???? ????? ??????
         )
       }
     }
 
-    // 5️⃣ حذف الدفعات المرتبطة بالقائمة
-    console.log("🗑️ Deleting related payments...")
+    // 5?? ??? ??????? ???????? ????????
     const { error: paymentDeleteError } = await supabase
       .from("payments")
       .delete()
       .eq("salesmainid", saleId)
 
     if (paymentDeleteError) {
-      console.warn("⚠️ Could not delete payments:", paymentDeleteError)
-      // نستمر في الحذف
+      // ????? ?? ?????
     }
 
-    // 6️⃣ حذف تفاصيل القائمة
-    console.log("🗑️ Deleting sale details...")
+    // 6?? ??? ?????? ???????
     const { error: detailsDeleteError } = await supabase
       .from("tb_salesdetails")
       .delete()
@@ -800,16 +723,13 @@ export async function deleteSale(saleId: string): Promise<{
 
     if (detailsDeleteError) throw detailsDeleteError
 
-    // 7️⃣ حذف القائمة الرئيسية
-    console.log("🗑️ Deleting sale main record...")
+    // 7?? ??? ??????? ????????
     const { error: mainDeleteError } = await supabase
       .from("tb_salesmain")
       .delete()
       .eq("id", saleId)
 
     if (mainDeleteError) throw mainDeleteError
-
-    console.log("✅ Sale deleted successfully!")
 
     return { 
       success: true,
@@ -818,8 +738,7 @@ export async function deleteSale(saleId: string): Promise<{
       saleNumber: saleMain.numberofsale
     }
   } catch (error: unknown) {
-    console.error("❌ Error deleting sale:", error)
-    const errorMessage = error instanceof Error ? error.message : "حدث خطأ أثناء حذف القائمة"
+    const errorMessage = error instanceof Error ? error.message : "??? ??? ????? ??? ???????"
     return { success: false, error: errorMessage }
   }
 }
@@ -836,8 +755,6 @@ export async function deleteMultipleSales(saleIds: string[]): Promise<{
     let totalUSD = 0
     const errors: string[] = []
 
-    console.log(`🗑️ Deleting ${saleIds.length} sales...`)
-
     for (const saleId of saleIds) {
       const result = await deleteSale(saleId)
       
@@ -848,14 +765,14 @@ export async function deleteMultipleSales(saleIds: string[]): Promise<{
           totalUSD += result.restoredAmount.usd
         }
       } else {
-        errors.push(result.error || "خطأ غير معروف")
+        errors.push(result.error || "??? ??? ?????")
       }
     }
 
     if (errors.length > 0 && deletedCount === 0) {
       return { 
         success: false, 
-        error: `فشل حذف جميع القوائم: ${errors.join(", ")}` 
+        error: `??? ??? ???? ???????: ${errors.join(", ")}` 
       }
     }
 
@@ -865,8 +782,7 @@ export async function deleteMultipleSales(saleIds: string[]): Promise<{
       totalRestored: { iqd: totalIQD, usd: totalUSD }
     }
   } catch (error: unknown) {
-    console.error("❌ Error deleting multiple sales:", error)
-    const errorMessage = error instanceof Error ? error.message : "حدث خطأ أثناء حذف القوائم"
+    const errorMessage = error instanceof Error ? error.message : "??? ??? ????? ??? ???????"
     return { success: false, error: errorMessage }
   }
 }

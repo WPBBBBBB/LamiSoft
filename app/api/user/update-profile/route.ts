@@ -11,7 +11,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
     }
 
-    const updateData: any = {
+    const updateData: Record<string, string | number | undefined> = {
       full_name,
       age,
       phone_number,
@@ -37,8 +37,7 @@ export async function PUT(request: NextRequest) {
     if (error) throw error
 
     return NextResponse.json({ success: true, data })
-  } catch (error) {
-    console.error('Error updating profile:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Failed to update profile' },
       { status: 500 }

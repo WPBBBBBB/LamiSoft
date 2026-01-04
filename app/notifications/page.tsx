@@ -50,7 +50,6 @@ export default function NotificationsPage() {
         toast.error(result.error || "فشل جلب الإشعارات")
       }
     } catch (error) {
-      console.error("Error fetching notifications:", error)
       toast.error("حدث خطأ أثناء جلب الإشعارات")
     } finally {
       setIsLoading(false)
@@ -71,7 +70,6 @@ export default function NotificationsPage() {
       // تحديث القائمة المحلية
       await fetchNotifications()
     } catch (error) {
-      console.error("Error refreshing notifications:", error)
       toast.error("حدث خطأ أثناء التحديث")
     } finally {
       setIsRefreshing(false)
@@ -91,7 +89,6 @@ export default function NotificationsPage() {
         toast.error(result.error || "فشل تعيين الإشعار")
       }
     } catch (error) {
-      console.error("Error marking notification as read:", error)
       toast.error("حدث خطأ")
     }
   }
@@ -103,7 +100,6 @@ export default function NotificationsPage() {
       // تحديث القائمة المحلية
       await fetchNotifications()
     } catch (error) {
-      console.error("Error marking all as read:", error)
       toast.error("حدث خطأ")
     }
   }
@@ -123,7 +119,6 @@ export default function NotificationsPage() {
         toast.error(result.error || "فشل الحذف")
       }
     } catch (error) {
-      console.error("Error deleting notification:", error)
       toast.error("حدث خطأ")
     }
   }

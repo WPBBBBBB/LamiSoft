@@ -58,7 +58,6 @@ export function generateBarcodeImage(
     
     return canvas.toDataURL('image/png')
   } catch (error) {
-    console.error('Error generating barcode image:', error)
     return ''
   }
 }
@@ -90,8 +89,7 @@ export function drawBarcodeOnCanvas(
       lineColor: '#000000'
     })
   } catch (error) {
-    console.error('Error drawing barcode:', error)
-  }
+    }
 }
 
 /**
@@ -162,7 +160,6 @@ export async function generateQRCodeImage(
       margin: 2
     })
   } catch (error) {
-    console.error('Error generating QR code:', error)
     return ''
   }
 }
@@ -196,8 +193,7 @@ export async function drawQRCodeOnCanvas(
       margin: 2
     })
   } catch (error) {
-    console.error('Error drawing QR code on canvas:', error)
-  }
+    }
 }
 
 /**

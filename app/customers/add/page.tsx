@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import Image from "next/image"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -28,8 +29,6 @@ import {
 import { ArrowRight, Upload, X, Check, ChevronsUpDown } from "lucide-react"
 import { createCustomer, uploadCustomerImage } from "@/lib/supabase-operations"
 import { logAction } from "@/lib/system-log-operations"
-import { PermissionGuard } from "@/components/permission-guard"
-import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { iraqLocations } from "@/lib/iraq-locations"
 import { cn } from "@/lib/utils"
@@ -120,13 +119,11 @@ export default function AddCustomerPage() {
         .eq("address", address)
 
       if (error) {
-        console.error("Error fetching address count:", error)
         setAddressCount(null)
       } else {
         setAddressCount(count || 0)
       }
-    } catch (error) {
-      console.error("Error fetching address count:", error)
+    } catch {
       setAddressCount(null)
     }
   }
@@ -167,7 +164,6 @@ export default function AddCustomerPage() {
       })
 
       try {
-        const { data: { user } } = await supabase.auth.getUser()
         await logAction(
           "إضافة زبون",
           `تمت عملية اضافة زبون جديد: ${values.customer_name} الى النظام`,
@@ -180,8 +176,8 @@ export default function AddCustomerPage() {
             phone_number: values.phone_number || "",
           }
         )
-      } catch (logError) {
-        console.error("Error logging action:", logError)
+      } catch {
+        // Silent fail
       }
 
       toast.success("تم إضافة الزبون بنجاح")
@@ -192,8 +188,7 @@ export default function AddCustomerPage() {
         router.push("/customers")
         router.refresh()
       }
-    } catch (error) {
-      console.error(error)
+    } catch {
       toast.error("حدث خطأ أثناء إضافة الزبون")
     } finally {
       setIsLoading(false)
@@ -232,9 +227,11 @@ export default function AddCustomerPage() {
                 <FormLabel>صورة العميل (اختياري)</FormLabel>
                 {imagePreview ? (
                   <div className="relative inline-block">
-                    <img
+                    <Image
                       src={imagePreview}
                       alt="Preview"
+                      width={128}
+                      height={128}
                       className="w-32 h-32 object-cover rounded-lg border"
                     />
                     <Button

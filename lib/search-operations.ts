@@ -226,7 +226,6 @@ export async function searchInvoices(searchQuery: string): Promise<SearchResult[
 
     return results
   } catch (error) {
-    console.error('Error searching invoices:', error)
     return []
   }
 }
@@ -240,19 +239,14 @@ export async function getPurchaseDetails(purchaseId: string): Promise<PurchaseDe
       .single()
 
     if (mainError || !purchase) {
-      console.error('Error fetching purchase:', mainError)
       return null
     }
 
-    const { data: products, error: detailsError } = await supabase
+    const { data: products } = await supabase
       .from('tb_purchaseproductsdetails')
       .select('*')
       .eq('purchasemainid', purchaseId)
       .order('addeddate', { ascending: true })
-
-    if (detailsError) {
-      console.error('Error fetching purchase products:', detailsError)
-    }
 
     return {
       id: purchase.id,
@@ -268,7 +262,6 @@ export async function getPurchaseDetails(purchaseId: string): Promise<PurchaseDe
       products: products || []
     }
   } catch (error) {
-    console.error('Error in getPurchaseDetails:', error)
     return null
   }
 }
@@ -282,19 +275,14 @@ export async function getSaleDetails(saleId: string): Promise<SaleDetails | null
       .single()
 
     if (mainError || !sale) {
-      console.error('Error fetching sale:', mainError)
       return null
     }
 
-    const { data: products, error: detailsError } = await supabase
+    const { data: products } = await supabase
       .from('tb_salesdetails')
       .select('*')
       .eq('salemainid', saleId)
       .order('addeddate', { ascending: true })
-
-    if (detailsError) {
-      console.error('Error fetching sale products:', detailsError)
-    }
 
     return {
       id: sale.id,
@@ -315,7 +303,6 @@ export async function getSaleDetails(saleId: string): Promise<SaleDetails | null
       products: products || []
     }
   } catch (error) {
-    console.error('Error in getSaleDetails:', error)
     return null
   }
 }
@@ -334,7 +321,6 @@ export async function searchCustomers(searchQuery: string): Promise<CustomerSear
       .limit(15)
 
     if (error) {
-      console.error('Error searching customers:', error)
       return []
     }
 
@@ -353,7 +339,6 @@ export async function searchCustomers(searchQuery: string): Promise<CustomerSear
       displayText: `${c.customer_name} - ${c.type}${c.phone_number ? ' - ' + c.phone_number : ''}`
     }))
   } catch (error) {
-    console.error('Error in searchCustomers:', error)
     return []
   }
 }
@@ -372,7 +357,6 @@ export async function searchProducts(searchQuery: string): Promise<ProductSearch
       .limit(20)
 
     if (error || !products) {
-      console.error('Error searching products:', error)
       return []
     }
 
@@ -401,7 +385,6 @@ export async function searchProducts(searchQuery: string): Promise<ProductSearch
 
     return Array.from(groupedProducts.values())
   } catch (error) {
-    console.error('Error in searchProducts:', error)
     return []
   }
 }
@@ -414,24 +397,18 @@ export async function getProductInventoryDetails(productCode: string): Promise<P
       .eq('productcode', productCode)
 
     if (inventoryError) {
-      console.error('Error fetching product inventory:', inventoryError)
       return null
     }
 
     if (!inventoryItems || inventoryItems.length === 0) {
-      console.error('No inventory items found for product:', productCode)
       return null
     }
 
     const storeIds = [...new Set(inventoryItems.map(item => item.storeid))]
-    const { data: stores, error: storesError } = await supabase
+    const { data: stores } = await supabase
       .from('tb_store')
       .select('id, storename')
       .in('id', storeIds)
-
-    if (storesError) {
-      console.error('Error fetching stores:', storesError)
-    }
 
     const storesMap = new Map()
     if (stores) {
@@ -466,7 +443,6 @@ export async function getProductInventoryDetails(productCode: string): Promise<P
       stores: storesList
     }
   } catch (error) {
-    console.error('Error in getProductInventoryDetails:', error)
     return null
   }
 }
@@ -480,7 +456,6 @@ export async function searchSaleByBarcode(barcode: string): Promise<SearchResult
   }
 
   try {
-    console.log('Searching for barcode:', barcode.trim())
     const { data: sale, error } = await supabase
       .from('tb_salesmain')
       .select('id, numberofsale, customername, datetime, totalsaleiqd, totalsaleusd')
@@ -488,12 +463,10 @@ export async function searchSaleByBarcode(barcode: string): Promise<SearchResult
       .maybeSingle()
 
     if (error) {
-      console.error('Error searching sale by barcode:', error)
       return null
     }
 
     if (!sale) {
-      console.log('No sale found with barcode:', barcode.trim())
       return null
     }
 
@@ -508,7 +481,6 @@ export async function searchSaleByBarcode(barcode: string): Promise<SearchResult
       totalUSD: sale.totalsaleusd
     }
   } catch (error) {
-    console.error('Error in searchSaleByBarcode:', error)
     return null
   }
 }
@@ -522,44 +494,31 @@ export async function getCustomerProfileDetails(customerId: string): Promise<Cus
       .single()
 
     if (customerError || !customer) {
-      console.error('Error fetching customer:', customerError)
       return null
     }
 
-    const { data: sales, error: salesError } = await supabase
+    const { data: sales } = await supabase
       .from('tb_salesmain')
       .select('id, numberofsale, datetime, totalsaleiqd, totalsaleusd, paytype, details')
       .eq('customername', customer.customer_name)
       .order('datetime', { ascending: false })
 
-    if (salesError) {
-      console.error('Error fetching sales:', salesError)
-    }
-
     let purchases: any[] = []
     if (customer.type === 'مجهز') {
-      const { data: purchasesData, error: purchasesError } = await supabase
+      const { data: purchasesData } = await supabase
         .from('tb_purchasemain')
         .select('id, numberofpurchase, datetime, totalpurchaseiqd, totalpurchaseusd, typeofpayment, details')
         .eq('nameofsupplier', customer.customer_name)
         .order('datetime', { ascending: false })
 
-      if (purchasesError) {
-        console.error('Error fetching purchases:', purchasesError)
-      } else {
-        purchases = purchasesData || []
-      }
+      purchases = purchasesData || []
     }
 
-    const { data: payments, error: paymentsError } = await supabase
+    const { data: payments } = await supabase
       .from('payments')
       .select('*')
       .or(`customer_id.eq.${customerId},supplierid.eq.${customerId}`)
       .order('pay_date', { ascending: false })
-
-    if (paymentsError) {
-      console.error('Error fetching payments:', paymentsError)
-    }
 
     const totalSalesIQD = (sales || []).reduce((sum, s) => sum + (s.totalsaleiqd || 0), 0)
     const totalSalesUSD = (sales || []).reduce((sum, s) => sum + (s.totalsaleusd || 0), 0)
@@ -591,7 +550,6 @@ export async function getCustomerProfileDetails(customerId: string): Promise<Cus
       totalPaymentsUSD
     }
   } catch (error) {
-    console.error('Error in getCustomerProfileDetails:', error)
     return null
   }
 }

@@ -166,8 +166,7 @@ export async function logAction(
         fullName = userData.full_name || 'غير معروف'
         userId = userData.id
       } catch (e) {
-        console.error('Error parsing saved user:', e)
-      }
+        }
     }
     
     await addSystemLog({
@@ -183,9 +182,7 @@ export async function logAction(
   } catch (error: unknown) {
     const err = error as { message?: string; code?: string; details?: string }
     if (err?.message?.includes('relation "tb_systemlog" does not exist') || err?.code === 'PGRST116') {
-      console.warn('⚠️ جدول tb_systemlog غير موجود. الرجاء إنشاء الجدول في Supabase. راجع ملف SYSTEM_LOG_SQL.sql')
-    } else {
-      console.error('Error logging action:', err?.message || err?.details || error)
-    }
+      } else {
+      }
   }
 }

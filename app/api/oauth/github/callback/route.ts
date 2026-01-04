@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
       })
       if (emailResponse.ok) {
         const emails = await emailResponse.json()
-        const primaryEmail = emails.find((e: any) => e.primary)
+        const primaryEmail = emails.find((e: { primary: boolean; email: string }) => e.primary)
         email = primaryEmail?.email || emails[0]?.email
       }
     }
@@ -283,7 +283,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const { password: _password, ...safeUser } = user as Record<string, unknown>
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...safeUser } = user as Record<string, unknown> & { password?: string }
 
     // Success - close popup and notify parent
     const response = new NextResponse(
@@ -424,8 +425,7 @@ export async function GET(request: NextRequest) {
     }
 
     return response
-  } catch (error) {
-    console.error("Error in GitHub OAuth callback:", error)
+  } catch {
     return new NextResponse(
       `
       <!DOCTYPE html>

@@ -48,7 +48,6 @@ export default function EditMessagePage() {
         }
       }
     } catch (error) {
-      console.error("Error loading template:", error)
       toast.error("فشل تحميل البيانات")
     } finally {
       setIsLoading(false)
@@ -129,11 +128,9 @@ export default function EditMessagePage() {
         router.push("/settings/whatsapp")
       } else {
         const errorData = await response.json()
-        console.error("Server error:", errorData)
         toast.error(`فشل حفظ هيكل الرسالة: ${errorData.error || 'خطأ غير معروف'}`)
       }
     } catch (error) {
-      console.error("Error saving template:", error)
       toast.error(`فشل حفظ هيكل الرسالة: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`)
     }
   }

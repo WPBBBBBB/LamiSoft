@@ -53,7 +53,6 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("Auth me error:", error)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 }

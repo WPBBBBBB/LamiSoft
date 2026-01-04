@@ -65,7 +65,6 @@ export default function ForgotPasswordPage() {
         toast.error(result.error || t('otpSendFailed', currentLanguage.code))
       }
     } catch (error) {
-      console.error(error)
       toast.error(t('errorSendingOtp', currentLanguage.code))
     } finally {
       setIsLoading(false)
@@ -93,7 +92,6 @@ export default function ForgotPasswordPage() {
         setOtpCode(["", "", "", "", "", ""])
       }
     } catch (error) {
-      console.error(error)
       toast.error(t('errorVerifyingOtp', currentLanguage.code))
     } finally {
       setIsLoading(false)
@@ -135,7 +133,6 @@ export default function ForgotPasswordPage() {
         toast.error(result.error || t('accountUpdateFailed', currentLanguage.code))
       }
     } catch (error) {
-      console.error(error)
       toast.error(t('errorUpdatingAccount', currentLanguage.code))
     } finally {
       setIsLoading(false)

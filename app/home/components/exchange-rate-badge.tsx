@@ -24,8 +24,7 @@ export function ExchangeRateBadge() {
       const rate = await getCurrentExchangeRate()
       setExchangeRate(rate.toString())
     } catch (error) {
-      console.error("Error loading exchange rate:", error)
-    } finally {
+      } finally {
       setIsLoading(false)
     }
   }

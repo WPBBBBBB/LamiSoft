@@ -12,7 +12,6 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       const item = window.localStorage.getItem(key)
       return item ? JSON.parse(item) : initialValue
     } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error)
       return initialValue
     }
   })
@@ -29,8 +28,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
         window.dispatchEvent(new Event('local-storage'))
       }
     } catch (error) {
-      console.warn(`Error setting localStorage key "${key}":`, error)
-    }
+      }
   }
 
   // دالة لحذف القيمة من localStorage
@@ -42,8 +40,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
         window.dispatchEvent(new Event('local-storage'))
       }
     } catch (error) {
-      console.warn(`Error removing localStorage key "${key}":`, error)
-    }
+      }
   }
 
   // مزامنة البيانات بين التبويبات
@@ -55,8 +52,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
           setStoredValue(JSON.parse(item))
         }
       } catch (error) {
-        console.warn(`Error syncing localStorage key "${key}":`, error)
-      }
+        }
     }
 
     // الاستماع لحدث storage (تغييرات من تبويبات أخرى)

@@ -31,8 +31,7 @@ export function ProductInventoryModal({ open, onOpenChange, product }: ProductIn
       const productDetails = await getProductInventoryDetails(product.productcode)
       setDetails(productDetails)
     } catch (error) {
-      console.error('Error loading product details:', error)
-    } finally {
+      } finally {
       setLoading(false)
     }
   }

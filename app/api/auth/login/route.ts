@@ -51,7 +51,6 @@ export async function POST(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error("Auth login error:", error)
     return NextResponse.json({ success: false, error: "حدث خطأ أثناء تسجيل الدخول" }, { status: 500 })
   }
 }

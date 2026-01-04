@@ -74,7 +74,6 @@ export default function SystemResetPage() {
       for (const table of tables) {
         const { data, error } = await supabase.from(table).select("*")
         if (error) {
-          console.error(`Error fetching ${table}:`, error)
           backupData[table] = []
           recordsCount[table] = 0
         } else {
@@ -112,12 +111,10 @@ export default function SystemResetPage() {
       })
 
       if (insertError) {
-        console.error("Error saving to database:", insertError)
-      }
+        }
 
       toast.success("تم تنزيل النسخة الاحتياطية بنجاح")
     } catch (error) {
-      console.error("Error creating backup:", error)
       toast.error("فشل في إنشاء النسخة الاحتياطية")
     } finally {
       setIsBackingUp(false)
@@ -150,11 +147,9 @@ export default function SystemResetPage() {
         try {
           const { error } = await supabase.from(table).delete().neq("id", 0)
           if (error && error.message) {
-            console.warn(`Warning resetting ${table}:`, error.message)
-          }
+            }
         } catch (err) {
-          console.warn(`Warning resetting ${table}:`, err)
-        }
+          }
 
         completedTables++
         setResetProgress((completedTables / totalTables) * 100)
@@ -164,7 +159,6 @@ export default function SystemResetPage() {
 
       setShowSuccessDialog(true)
     } catch (error) {
-      console.error("Error during reset:", error)
       toast.error(t('systemResetError', currentLanguage.code))
       setIsResetting(false)
     }

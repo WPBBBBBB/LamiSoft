@@ -51,8 +51,7 @@ export async function GET(request: NextRequest) {
           }))
         }
       } catch (error) {
-        console.error('Products search error:', error)
-      }
+        }
     }
 
     // البحث في الزبائن
@@ -78,8 +77,7 @@ export async function GET(request: NextRequest) {
           }))
         }
       } catch (error) {
-        console.error('Customers search error:', error)
-      }
+        }
     }
 
     // البحث في القوائم
@@ -140,13 +138,11 @@ export async function GET(request: NextRequest) {
           new Date(b.date).getTime() - new Date(a.date).getTime()
         )
       } catch (error) {
-        console.error('Invoices search error:', error)
-      }
+        }
     }
 
     return NextResponse.json(results)
   } catch (error) {
-    console.error('Full-text search error:', error)
     return NextResponse.json(
       { error: 'Failed to perform search' },
       { status: 500 }

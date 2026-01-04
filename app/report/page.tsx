@@ -133,7 +133,6 @@ export default function ReportPage() {
         
         setReportData(parsedData)
       } catch (err) {
-        console.error("Error parsing report data:", err)
         setError("خطأ في تحميل بيانات التقرير")
       }
     }
@@ -152,8 +151,7 @@ export default function ReportPage() {
           errorCorrectionLevel: 'M'
         })
       } catch (error) {
-        console.error('Error drawing QR code:', error)
-      }
+        }
     }
   }, [reportData])
 

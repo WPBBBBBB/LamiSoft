@@ -85,7 +85,6 @@ export default function OAuthLinksTab({ userData, onUpdate }: OAuthLinksTabProps
       toast.success(`تم إلغاء ربط ${providerName} بنجاح`)
       onUpdate()
     } catch (error) {
-      console.error('Error unlinking OAuth:', error)
       toast.error('حدث خطأ أثناء إلغاء الربط')
     }
   }

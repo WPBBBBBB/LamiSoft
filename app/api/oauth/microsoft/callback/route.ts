@@ -393,7 +393,6 @@ export async function GET(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error("Error in Microsoft OAuth callback:", error)
     return new NextResponse(
       `
       <!DOCTYPE html>

@@ -1,4 +1,4 @@
-﻿
+
 
 export interface SupabaseConfig {
   supabaseUrl: string
@@ -13,8 +13,7 @@ export function getSupabaseConfig(): SupabaseConfig {
       try {
         return JSON.parse(savedConfig)
       } catch (e) {
-        console.error('Failed to parse supabase config:', e)
-      }
+        }
     }
   }
   

@@ -129,8 +129,7 @@ export function WeatherDropZones() {
         
         setIsDragging(false)
       } catch (error) {
-        console.error('Error parsing location data:', error)
-      }
+        }
     }
   }
 
@@ -164,8 +163,7 @@ export function WeatherDropZones() {
       setIsDragging(false)
       window.dispatchEvent(new Event('weather-drag-end'))
     } catch (error) {
-      console.error('Error parsing location data:', error)
-    }
+      }
   }
 
   if (!isDragging) return null

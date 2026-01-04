@@ -142,7 +142,6 @@ export function WeatherDialog() {
           resolve(coords)
         },
         (err) => {
-          console.warn("Geolocation denied or failed:", err)
           setLocationStatus("denied")
           resolve(null)
         },

@@ -113,7 +113,6 @@ GOOGLE_CLIENT_SECRET=your_client_secret_here</pre>
 
     return NextResponse.redirect(authUrl.toString())
   } catch (error) {
-    console.error("Error initiating Google OAuth:", error)
     return NextResponse.json(
       { error: "Failed to initiate Google OAuth" },
       { status: 500 }

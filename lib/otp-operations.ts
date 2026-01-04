@@ -31,7 +31,6 @@ export async function sendOTPViaWhatsApp(
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('API Response Error:', errorText)
       throw new Error(`فشل الاتصال بالخادم: ${response.status}`)
     }
 
@@ -45,7 +44,6 @@ export async function sendOTPViaWhatsApp(
     return { success: true }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء إرسال رمز التحقق'
-    console.error('Error sending OTP via WhatsApp:', errorMessage)
     return {
       success: false,
       error: errorMessage
@@ -91,7 +89,6 @@ export async function createOTP(
     }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء إنشاء رمز التحقق'
-    console.error('Error creating OTP:', errorMessage)
     return {
       success: false,
       error: errorMessage
@@ -137,7 +134,6 @@ export async function verifyOTP(
     return { success: true }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء التحقق من الرمز'
-    console.error('Error verifying OTP:', errorMessage)
     return {
       success: false,
       error: errorMessage
@@ -191,7 +187,6 @@ export async function resetPassword(
     return { success: true }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء تحديث كلمة المرور'
-    console.error('Error resetting password:', errorMessage)
     return {
       success: false,
       error: errorMessage

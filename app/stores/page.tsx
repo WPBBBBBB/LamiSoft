@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -68,15 +68,13 @@ export default function StoresPage() {
       setIsLoading(true)
       const data = await getStores()
       setStores(data)
-      console.log("تم تحميل المخازن:", data.length)
-    } catch (error: unknown) {
-      console.error("خطأ في تحميل المخازن:", error)
+      } catch (error: unknown) {
       if ((error as { message?: string })?.message?.includes('CORS')) {
-        toast.error("خطأ في الاتصال بقاعدة البيانات. تحقق من إعدادات CORS في Supabase")
+        toast.error("??? ?? ??????? ?????? ????????. ???? ?? ??????? CORS ?? Supabase")
       } else if ((error as { message?: string })?.message?.includes('NetworkError')) {
-        toast.error("خطأ في الشبكة. تحقق من الاتصال بالإنترنت")
+        toast.error("??? ?? ??????. ???? ?? ??????? ?????????")
       } else {
-        toast.error("حدث خطأ أثناء تحميل البيانات: " + ((error as { message?: string })?.message || "خطأ غير معروف"))
+        toast.error("??? ??? ????? ????? ????????: " + ((error as { message?: string })?.message || "??? ??? ?????"))
       }
     } finally {
       setIsLoading(false)
@@ -143,9 +141,9 @@ export default function StoresPage() {
         await updateStore(selectedStore.id, formData)
         
         await logAction(
-          "تعديل",
-          `تم تعديل مخزن: ${formData.storename}`,
-          "المخازن",
+          "?????",
+          `?? ????? ????: ${formData.storename}`,
+          "???????",
           undefined,
           {
             storename: selectedStore.storename,
@@ -166,9 +164,9 @@ export default function StoresPage() {
         await createStore(formData)
         
         await logAction(
-          "إضافة",
-          `تمت عملية إضافة مخزن جديد: ${formData.storename}`,
-          "المخازن",
+          "?????",
+          `??? ????? ????? ???? ????: ${formData.storename}`,
+          "???????",
           undefined,
           undefined,
           {
@@ -186,7 +184,6 @@ export default function StoresPage() {
       loadStores()
       setSelectedStore(null)
     } catch (error) {
-      console.error(error)
       toast.error(t('errorSavingData', currentLanguage.code))
     }
   }
@@ -210,9 +207,9 @@ export default function StoresPage() {
       
       if (storeToDeleteData) {
         await logAction(
-          "حذف",
-          `تم حذف مخزن: ${storeToDeleteData.storename}`,
-          "المخازن",
+          "???",
+          `?? ??? ????: ${storeToDeleteData.storename}`,
+          "???????",
           undefined,
           {
             storename: storeToDeleteData.storename,
@@ -231,7 +228,6 @@ export default function StoresPage() {
       setSelectedStore(null)
       loadStores()
     } catch (error) {
-      console.error(error)
       toast.error(t('errorDeletingData', currentLanguage.code))
     }
   }
@@ -267,7 +263,7 @@ export default function StoresPage() {
               </h1>
             </div>
             <p className="text-muted-foreground mt-1">
-              {t('customerManagement', currentLanguage.code).replace('الأشخاص', t('stores', currentLanguage.code))}
+              {t('customerManagement', currentLanguage.code).replace('???????', t('stores', currentLanguage.code))}
             </p>
           </div>
         </div>

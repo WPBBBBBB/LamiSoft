@@ -1,4 +1,4 @@
-﻿import { supabase } from './supabase'
+import { supabase } from './supabase'
 
 export interface Store {
   id: string
@@ -247,7 +247,6 @@ export async function deleteStoreTransfer(transferId: string): Promise<{
       .eq('id', transferId)
 
     if (error) {
-      console.error('Error deleting transfer:', error)
       return {
         success: false,
         error: error.message,
@@ -258,10 +257,9 @@ export async function deleteStoreTransfer(transferId: string): Promise<{
       success: true,
     }
   } catch (error: unknown) {
-    console.error('Exception in deleteStoreTransfer:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
+      error: error instanceof Error ? error.message : '??? ??? ??? ?????',
     }
   }
 }
@@ -277,7 +275,6 @@ export async function deleteMultipleStoreTransfers(transferIds: string[]): Promi
       .in('id', transferIds)
 
     if (error) {
-      console.error('Error deleting transfers:', error)
       return {
         success: false,
         error: error.message,
@@ -288,10 +285,9 @@ export async function deleteMultipleStoreTransfers(transferIds: string[]): Promi
       success: true,
     }
   } catch (error: unknown) {
-    console.error('Exception in deleteMultipleStoreTransfers:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'حدث خطأ غير متوقع',
+      error: error instanceof Error ? error.message : '??? ??? ??? ?????',
     }
   }
 }
@@ -311,7 +307,7 @@ export async function transferInventory(
   const toStore = await getStore(toStoreId)
 
   if (!fromStore || !toStore) {
-    throw new Error('المخزن غير موجود')
+    throw new Error('?????? ??? ?????')
   }
 
   const { data: sourceItems, error: sourceError } = await supabase
@@ -321,13 +317,12 @@ export async function transferInventory(
     .eq('productcode', productCode)
     .single()
 
-  if (sourceError) throw new Error('المادة غير موجودة في المخزن المصدر')
+  if (sourceError) throw new Error('?????? ??? ?????? ?? ?????? ??????')
 
   const newSourceQuantity = sourceItems.quantity - quantity
   
   if (newSourceQuantity < 0) {
-    console.warn('تحذير: الكمية المنقولة أكبر من المتوفر')
-  }
+    }
 
   await supabase
     .from('tb_inventory')
@@ -382,6 +377,6 @@ export async function transferInventory(
     tostoreid: toStoreId,
     tostorename: toStore.storename,
     note: note,
-    description: `نقل ${quantity} من ${productName} من ${fromStore.storename} إلى ${toStore.storename}`
+    description: `??? ${quantity} ?? ${productName} ?? ${fromStore.storename} ??? ${toStore.storename}`
   })
 }

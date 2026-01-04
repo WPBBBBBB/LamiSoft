@@ -137,7 +137,6 @@ export async function loginWithPassword(
       user
     }
   } catch (error: unknown) {
-    console.error('Login error:', error)
     return {
       success: false,
       error: 'حدث خطأ أثناء تسجيل الدخول'
@@ -193,7 +192,6 @@ export async function loginWithOAuth(
       user
     }
   } catch (error: unknown) {
-    console.error('OAuth login error:', error)
     return {
       success: false,
       error: 'حدث خطأ أثناء تسجيل الدخول'
@@ -229,8 +227,7 @@ async function updateLoginInfo(
         .eq('id', userId)
     }
   } catch (error) {
-    console.error('Error updating login info:', error)
-  }
+    }
 }
 
 async function incrementFailedAttempts(userId: string): Promise<void> {
@@ -261,8 +258,7 @@ async function incrementFailedAttempts(userId: string): Promise<void> {
         .eq('id', userId)
     }
   } catch (error) {
-    console.error('Error incrementing failed attempts:', error)
-  }
+    }
 }
 
 async function resetFailedAttempts(userId: string): Promise<void> {
@@ -282,8 +278,7 @@ async function resetFailedAttempts(userId: string): Promise<void> {
         .eq('id', userId)
     }
   } catch (error) {
-    console.error('Error resetting failed attempts:', error)
-  }
+    }
 }
 
 async function logLoginAttempt(data: {
@@ -305,8 +300,7 @@ async function logLoginAttempt(data: {
       created_at: new Date().toISOString()
     }])
   } catch (error) {
-    console.error('Error logging login attempt:', error)
-  }
+    }
 }
 
 export async function getRecentLogins(userId: string, limit: number = 10) {
