@@ -914,7 +914,7 @@ export default function SaleAddPage() {
             <div className="relative" ref={customerDropdownRef}>
               <Input
                 placeholder="ابحث عن زبون..."
-                value={searchCustomer || customername || ""}
+                value={searchCustomer || (customername || "")}
                 onChange={(e) => {
                   setSearchCustomer(e.target.value)
                   setCustomerSelectOpen(true)
@@ -1357,7 +1357,7 @@ export default function SaleAddPage() {
                 </TableCell>
                 <TableCell>
                   <Input
-                    value={newItem.notes}
+                    value={newItem.notes || ""}
                     onChange={(e) => updateNewItem("notes", e.target.value)}
                     onKeyPress={(e) => handleNewItemKeyPress(e)}
                     placeholder="ملاحظة"
@@ -1487,7 +1487,7 @@ export default function SaleAddPage() {
                   <TableCell>
                     <div className="flex gap-1">
                       <Input
-                        value={product.notes}
+                        value={product.notes || ""}
                         onChange={(e) =>
                           updateProduct(product.tempId, "notes", e.target.value)
                         }

@@ -231,11 +231,20 @@ export default function CustomersPage() {
     try {
       toast.loading("جاري تجهيز تقرير الزبائن...")
       
-      const { data: { user } } = await supabase.auth.getUser()
+      // استخدام fetch بدلاً من supabase.auth مباشرة لضمان الحصول على الجلسة الحالية
+      const userRes = await fetch("/api/auth/user").catch(() => null)
+      const userData = userRes ? await userRes.json().catch(() => null) : null
+      const user = userData?.data?.user
       const generatedBy = user?.user_metadata?.full_name || user?.email || "غير معروف"
 
       const customersToReport = customers.filter(c => selectedCustomers.includes(c.id))
       
+      if (customersToReport.length === 0) {
+        toast.dismiss()
+        toast.error("لم يتم العثور على بيانات للزبائن المحددين")
+        return
+      }
+
       const reportItems = customersToReport.map(c => ({
           id: c.id,
           name: c.customer_name || "زبون",
@@ -262,21 +271,23 @@ export default function CustomersPage() {
       localStorage.setItem(storageKey, jsonString)
 
       toast.dismiss()
-      toast.success("تم تجهيز التقرير للمحددين")
+      toast.success(autoPrint ? "جاري فتح نافذة الطباعة..." : "تم تجهيز التقرير")
 
       window.location.href = `/report/customers?token=${token}&back=/customers${autoPrint ? '&print=true' : ''}`
       
-      await logAction(
+      // محاولة تسجيل العملية ولكن عدم منع التصدير في حال الفشل
+      logAction(
         "تصدير",
-        `تصدير تقرير زبائن محددين - عدد الزبائن: ${reportItems.length}${autoPrint ? ' (طباعة تلقائية)' : ''}`,
+        `تصدير تقرير زبائن محددين - عدد الزبائن: ${reportItems.length}${autoPrint ? ' (طباعة)' : ''}`,
         "الزبائن",
         undefined,
         { customersCount: reportItems.length, autoPrint }
-      )
+      ).catch(err => console.error("Log error ignored:", err))
+
     } catch (error) {
       console.error("Error exporting report:", error)
       toast.dismiss()
-      toast.error("حدث خطأ أثناء تصدير التقرير")
+      toast.error("حدث خطأ غير متوقع أثناء تجهيز التقرير")
     }
   }
 
@@ -359,6 +370,7 @@ export default function CustomersPage() {
               variant="outline"
               className="gap-2"
               disabled={selectedCustomers.length !== 1}
+              onClick={() => handleExportReport(false)}
             >
               <FileText className="h-4 w-4" />
               {t('customerAccountStatement', currentLanguage.code)}
@@ -369,6 +381,7 @@ export default function CustomersPage() {
             <Button 
               variant="secondary" 
               className="gap-2"
+              disabled={selectedCustomers.length === 0}
               onClick={() => handleExportReport(false)}
             >
               <FileText className="h-4 w-4" />

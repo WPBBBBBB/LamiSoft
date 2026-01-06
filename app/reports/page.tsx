@@ -55,6 +55,8 @@ import {
   getAllSales,
   deleteSale,
   deleteMultipleSales,
+  getSaleDetails,
+  getCustomerById,
   type SaleMain,
 } from "@/lib/sales-operations"
 import {
@@ -73,6 +75,8 @@ import {
   getAllStoreTransfers,
   deleteStoreTransfer,
   deleteMultipleStoreTransfers,
+  getActiveStores,
+  type Store,
   type StoreTransfer,
 } from "@/lib/stores-operations"
 import { logAction } from "@/lib/system-log-operations"
@@ -93,6 +97,7 @@ export default function ReportsPage() {
   const [sales, setSales] = useState<SaleMain[]>([])
   const [filteredSales, setFilteredSales] = useState<SaleMain[]>([])
   const [loading, setLoading] = useState(true)
+  const [stores, setStores] = useState<Store[]>([])
 
   const [searchTerm, setSearchTerm] = useState("")
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
@@ -150,7 +155,17 @@ export default function ReportsPage() {
     loadPurchases()
     loadPayments()
     loadTransfers()
+    loadStores()
   }, [])
+
+  const loadStores = async () => {
+    try {
+      const data = await getActiveStores()
+      setStores(data)
+    } catch (error) {
+      console.error("Failed to load stores:", error)
+    }
+  }
 
   useEffect(() => {
     if (debouncedSearchTerm.trim() === "") {
@@ -409,6 +424,95 @@ export default function ReportsPage() {
     }
 
     router.push(`/sales/add?edit=${selectedSales[0]}&view=true`)
+  }
+
+  const handlePrintReceipt = async () => {
+    if (selectedSales.length === 0) {
+      toast.error("الرجاء تحديد قائمة واحدة")
+      return
+    }
+    if (selectedSales.length > 1) {
+      toast.error("الرجاء تحديد قائمة واحدة فقط للطباعة")
+      return
+    }
+
+    const saleId = selectedSales[0]
+    setLoading(true)
+
+    try {
+      const { getSaleById } = await import("@/lib/sales-operations")
+      const saleData = await getSaleById(saleId)
+      
+      if (!saleData) {
+        toast.error("لم يتم العثور على القائمة")
+        return
+      }
+
+      const products = await getSaleDetails(saleId)
+      const customer = await getCustomerById(saleData.customerid)
+      
+      const selectedStore = stores.find(s => s.id === saleData.salestoreid)
+      const storeName = selectedStore?.storename || "المخزن الرئيسي"
+
+      const receivedIQD = saleData.amountreceivediqd || 0
+      const receivedUSD = saleData.amountreceivedusd || 0
+      const afterDiscountIQD = saleData.finaltotaliqd
+      const afterDiscountUSD = saleData.finaltotalusd
+
+      const reportData = {
+        type: "sale",
+        storeName: storeName,
+        customerName: saleData.customername,
+        priceType: saleData.pricetype,
+        payType: saleData.paytype,
+        currencyType: saleData.currencytype,
+        items: products.map(p => ({
+          productname: p.productname,
+          quantity: p.quantity,
+          unitpriceiqd: p.unitpriceiqd,
+          unitpriceusd: p.unitpriceusd,
+          totalpriceiqd: p.totalpriceiqd,
+          totalpriceusd: p.totalpriceusd,
+        })),
+        totalIQD: afterDiscountIQD,
+        totalUSD: afterDiscountUSD,
+        discountIQD: saleData.discountenabled ? saleData.discountiqd : 0,
+        discountUSD: saleData.discountenabled ? saleData.discountusd : 0,
+        amountReceivedIQD: receivedIQD,
+        amountReceivedUSD: receivedUSD,
+        datetime: saleData.datetime,
+        saleNumber: saleData.numberofsale,
+        barcode: saleData.barcode || saleData.numberofsale,
+        previousBalanceIQD:
+          saleData.paytype === "آجل"
+            ? (customer?.balanceiqd ?? 0) - Math.max(0, afterDiscountIQD - receivedIQD)
+            : (customer?.balanceiqd ?? 0),
+        nextBalanceIQD:
+          saleData.paytype === "آجل"
+            ? (customer?.balanceiqd ?? 0)
+            : (customer?.balanceiqd ?? 0),
+        previousBalanceUSD:
+          saleData.paytype === "آجل"
+            ? (customer?.balanceusd ?? 0) - Math.max(0, afterDiscountUSD - receivedUSD)
+            : (customer?.balanceusd ?? 0),
+        nextBalanceUSD:
+          saleData.paytype === "آجل"
+            ? (customer?.balanceusd ?? 0)
+            : (customer?.balanceusd ?? 0),
+      }
+
+      const jsonString = JSON.stringify(reportData)
+      const utf8Bytes = new TextEncoder().encode(jsonString)
+      const base64Data = btoa(String.fromCharCode(...utf8Bytes))
+      const encodedData = encodeURIComponent(base64Data)
+
+      window.open(`/report?s=${encodedData}`, '_blank')
+    } catch (error) {
+      console.error("Error generating receipt:", error)
+      toast.error("فشل توليد الوصل")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -1479,10 +1583,7 @@ const handleExportSalesProfitReport = async () => {
                   <Trash2 className="h-4 w-4" />
                   {t('delete', currentLanguage.code)}
                 </Button>
-                <Button variant="outline" className="gap-2" onClick={() => window.print()}>
-                  <Printer className="h-4 w-4" />
-                  {t('print', currentLanguage.code)}
-                </Button>
+
                 <Button
                   onClick={handleView}
                   variant="outline"
@@ -1491,6 +1592,15 @@ const handleExportSalesProfitReport = async () => {
                 >
                   <FileText className="h-4 w-4" />
                   كشف
+                </Button>
+                <Button
+                  onClick={handlePrintReceipt}
+                  variant="outline"
+                  className="gap-2"
+                  disabled={selectedSales.length !== 1}
+                >
+                  <Receipt className="h-4 w-4" />
+                  طباعة وصل
                 </Button>
               </div>
 
@@ -1710,10 +1820,7 @@ const handleExportSalesProfitReport = async () => {
                     </Button>
                   </>
                 )}
-                <Button variant="outline" className="gap-2">
-                  <Printer className="h-4 w-4" />
-                  طباعة
-                </Button>
+
                 <Button
                   onClick={handleViewPurchase}
                   variant="outline"
@@ -1949,14 +2056,7 @@ const handleExportSalesProfitReport = async () => {
                   <Trash2 className="h-4 w-4" />
                   حذف ({selectedPayments.length})
                 </Button>
-                <Button
-                  onClick={() => window.print()}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  <Printer className="h-4 w-4" />
-                  طباعة
-                </Button>
+
                 <Button
                   onClick={handleViewPayment}
                   variant="outline"
@@ -2165,14 +2265,7 @@ const handleExportSalesProfitReport = async () => {
                     </Button>
                   </>
                 )}
-                <Button
-                  onClick={() => window.print()}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  <Printer className="h-4 w-4" />
-                  طباعة
-                </Button>
+
                 <Button
                   onClick={handleViewTransfer}
                   variant="outline"

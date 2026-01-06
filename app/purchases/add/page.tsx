@@ -835,7 +835,7 @@ export default function PurchaseAddPage() {
             <div className="relative" ref={dropdownRef}>
                 <Input
                   placeholder="ابحث عن مجهز..."
-                  value={searchSupplier || (supplierid ? suppliers.find(s => s.id === supplierid)?.name : "")}
+                  value={searchSupplier || (supplierid ? (suppliers.find(s => s.id === supplierid)?.name || "") : "")}
                   onChange={(e) => {
                     setSearchSupplier(e.target.value)
                     setSelectOpen(true)
@@ -906,7 +906,7 @@ export default function PurchaseAddPage() {
             <Label className="font-semibold text-blue-600 dark:text-blue-400">رصيد سابق دينار</Label>
             <div className="flex items-center gap-2">
               <Input
-                value={supplierBalanceIQD.toLocaleString('en-US')}
+                value={(supplierBalanceIQD || 0).toLocaleString('en-US')}
                 readOnly
                 className="ltr-numbers bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 font-bold"
               />
@@ -917,7 +917,7 @@ export default function PurchaseAddPage() {
             <Label className="font-semibold text-green-600 dark:text-green-400">رصيد سابق دولار</Label>
             <div className="flex items-center gap-2">
               <Input
-                value={supplierBalanceUSD.toLocaleString('en-US')}
+                value={(supplierBalanceUSD || 0).toLocaleString('en-US')}
                 readOnly
                 className="ltr-numbers bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 font-bold"
               />
@@ -976,7 +976,7 @@ export default function PurchaseAddPage() {
           <div className="space-y-2 md:col-span-2">
             <Label>سعر الصرف</Label>
             <Input
-              value={exchangeRate.toLocaleString('en-US')}
+              value={(exchangeRate || 0).toLocaleString('en-US')}
               readOnly
               className="ltr-numbers bg-muted"
             />
@@ -1012,7 +1012,7 @@ export default function PurchaseAddPage() {
             <Label htmlFor="details">الملاحظات</Label>
             <Textarea
               id="details"
-              value={details}
+              value={details || ""}
               onChange={(e) => setDetails(e.target.value)}
               placeholder="ملاحظات إضافية..."
               rows={2}
@@ -1372,7 +1372,7 @@ export default function PurchaseAddPage() {
                     <TableCell>
                       <div className="flex gap-1">
                         <Input
-                          value={product.details}
+                          value={product.details || ""}
                           onChange={(e) =>
                             updateProduct(product.tempId, "details", e.target.value)
                           }

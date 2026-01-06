@@ -159,6 +159,63 @@ export default function UsersPermissionsPage() {
     }
   }
 
+  const handleExportReport = async (autoPrint: boolean = false) => {
+    if (selectedUsers.length === 0) {
+      toast.error("يرجى تحديد مستخدمين على الأقل للطباعة")
+      return
+    }
+
+    try {
+      toast.loading("جاري تجهيز التقرير...")
+      
+      const userRes = await fetch("/api/auth/user").catch(() => null)
+      const userData = userRes ? await userRes.json().catch(() => null) : null
+      const user = userData?.data?.user
+      const generatedBy = user?.user_metadata?.full_name || user?.email || "غير معروف"
+
+      const usersToReport = users.filter(u => selectedUsers.includes(u.id))
+      
+      if (usersToReport.length === 0) {
+        toast.dismiss()
+        toast.error("لم يتم العثور على بيانات للمستخدمين المحددين")
+        return
+      }
+
+      const reportItems = usersToReport.map(u => ({
+          id: u.id,
+          full_name: u.full_name,
+          username: u.username,
+          phone_number: u.phone_number || "",
+          address: u.address || "",
+          age: u.age || 0,
+          permission_type: u.permission_type,
+          created_at: u.created_at
+      }))
+
+      const payload = {
+        generatedBy,
+        date: new Date().toISOString(),
+        items: reportItems,
+        count: reportItems.length
+      }
+
+      const jsonString = JSON.stringify(payload)
+      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const storageKey = `usersReportPayload:${token}`
+      localStorage.setItem(storageKey, jsonString)
+
+      toast.dismiss()
+      toast.success(autoPrint ? "جاري فتح نافذة الطباعة..." : "تم تجهيز التقرير")
+
+      window.location.href = `/report/users?token=${token}&back=/users-permissions${autoPrint ? '&print=true' : ''}`
+      
+    } catch (error) {
+      console.error("Error exporting report:", error)
+      toast.dismiss()
+      toast.error("حدث خطأ غير متوقع أثناء تجهيز التقرير")
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex-1 overflow-auto">
@@ -205,7 +262,12 @@ export default function UsersPermissionsPage() {
                 إضافة
               </Button>
             </Link>
-            <Button variant="outline" className="gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              disabled={selectedUsers.length === 0}
+              onClick={() => handleExportReport(true)}
+            >
               <Printer className="h-4 w-4" />
               طباعة
             </Button>
@@ -213,7 +275,12 @@ export default function UsersPermissionsPage() {
 
           {}
           <div className="flex flex-wrap gap-3 mb-4">
-            <Button variant="secondary" className="gap-2">
+            <Button 
+              variant="secondary" 
+              className="gap-2"
+              disabled={selectedUsers.length === 0}
+              onClick={() => handleExportReport(false)}
+            >
               <FileText className="h-4 w-4" />
               الملف
             </Button>
