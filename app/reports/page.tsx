@@ -43,7 +43,13 @@ import {
   Warehouse,
   PackageOpen,
   Wallet,
+  Receipt,
+  Layers,
+  LineChart,
+  Calendar,
+  MessageSquare,
 } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import {
   getAllSales,
@@ -76,8 +82,8 @@ import { useAuth } from "@/contexts/auth-context"
 import { useDebounce, useLocalStorage } from "@/lib/hooks"
 import { getCustomersWithBalances } from "@/lib/supabase-operations"
 
-const CUSTOMERS_REPORT_STORAGE_PREFIX = "customersReportPayload:"
-const CUSTOMERS_REPORT_LATEST_TOKEN_KEY = "customersReportLatestToken"
+// const CUSTOMERS_REPORT_STORAGE_PREFIX = "customersReportPayload:" // Removed
+// const CUSTOMERS_REPORT_LATEST_TOKEN_KEY = "customersReportLatestToken" // Removed
 
 export default function ReportsPage() {
   const router = useRouter()
@@ -745,28 +751,40 @@ export default function ReportsPage() {
         return
       }
 
-      const generatedAt = new Date()
       const generatedBy = currentUser?.full_name || currentUser?.username || "غير معروف"
+      
+      const reportItems = customersData.map(c => ({
+          id: c.id,
+          name: c.customer_name || "زبون",
+          type: c.type || "",
+          phone: c.phone_number || "",
+          address: c.address || "",
+          balanceIQD: c.balance_iqd || 0,
+          balanceUSD: c.balance_usd || 0,
+          notes: c.notes || ""
+      }))
 
       const payload = {
-        generatedAtISO: generatedAt.toISOString(),
         generatedBy,
-        customers: customersData,
+        date: new Date().toISOString(),
+        items: reportItems,
+        totalIQD: reportItems.reduce((sum, i) => sum + i.balanceIQD, 0),
+        totalUSD: reportItems.reduce((sum, i) => sum + i.balanceUSD, 0),
+        count: reportItems.length
       }
 
+      const jsonString = JSON.stringify(payload)
+      
+      // Use LocalStorage for reliability with large datasets
       const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
-      const storageKey = `${CUSTOMERS_REPORT_STORAGE_PREFIX}${token}`
-      localStorage.setItem(storageKey, JSON.stringify(payload))
-      localStorage.setItem(CUSTOMERS_REPORT_LATEST_TOKEN_KEY, token)
+      const storageKey = `customersReportPayload:${token}`
+      localStorage.setItem(storageKey, jsonString)
 
       toast.dismiss()
       toast.success("تم فتح تقرير الزبائن")
 
-      const url = `/reports/customers-report?token=${encodeURIComponent(token)}`
-      const win = window.open(url, "_blank", "noopener,noreferrer")
-      if (!win) {
-        toast.info("المتصفح مانع فتح التبويب. اسمح بالـ popups ثم حاول مرة ثانية.")
-      }
+      // Direct open, matching inventory report behavior
+      window.location.href = `/report/customers?token=${token}&back=/reports`
       
       // تسجيل العملية
       await logAction(
@@ -778,6 +796,604 @@ export default function ReportsPage() {
       )
     } catch (error) {
       console.error("خطأ في تصدير التقرير:", error)
+      toast.dismiss()
+      toast.error("حدث خطأ أثناء تصدير التقرير")
+    }
+  }
+
+  const handleExportStoresReport = async () => {
+    try {
+      toast.loading("جاري تحميل بيانات المخازن...")
+      
+      const { getStores } = await import("@/lib/stores-operations")
+      const storesData = await getStores()
+      
+      if (!storesData || storesData.length === 0) {
+        toast.dismiss()
+        toast.error("لا توجد بيانات للمخازن")
+        return
+      }
+
+      const generatedBy = currentUser?.full_name || currentUser?.username || "غير معروف"
+      
+      const reportItems = storesData.map(s => ({
+          id: s.id,
+          name: s.storename,
+          location: s.location || "-",
+          storekeeper: s.storekeeper || "-",
+          phone: s.phonenumber || "-",
+          status: s.isactive ? "نشط" : "غير نشط",
+          createdAt: s.createdat,
+          details: s.details || "-"
+      }))
+
+      const payload = {
+        generatedBy,
+        date: new Date().toISOString(),
+        items: reportItems,
+        count: reportItems.length
+      }
+
+      const jsonString = JSON.stringify(payload)
+      
+      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const storageKey = `storesReportPayload:${token}`
+      localStorage.setItem(storageKey, jsonString)
+
+      toast.dismiss()
+      toast.success("تم فتح تقرير المخازن")
+
+      window.location.href = `/report/stores?token=${token}&back=/reports`
+      
+      // تسجيل العملية
+      await logAction(
+        "تصدير",
+        `تصدير تقرير المخازن - عدد المخازن: ${storesData.length}`,
+        "التقارير",
+        undefined,
+        { storesCount: storesData.length }
+      )
+    } catch (error) {
+      console.error("خطأ في تصدير التقرير:", error)
+      toast.dismiss()
+      toast.error("حدث خطأ أثناء تصدير التقرير")
+    }
+  }
+
+  const handleExportStoreTransfersReport = async () => {
+    try {
+      toast.loading("جاري تحميل بيانات النقل المخزني...")
+      
+      const { getAllStoreTransfers } = await import("@/lib/stores-operations")
+      const transfersData = await getAllStoreTransfers()
+      
+      if (!transfersData || transfersData.length === 0) {
+        toast.dismiss()
+        toast.error("لا توجد عمليات نقل مخزني")
+        return
+      }
+
+      const generatedBy = currentUser?.full_name || currentUser?.username || "غير معروف"
+      
+      const reportItems = transfersData.map(item => ({
+          id: item.id,
+          productCode: item.productcode,
+          productName: item.productname,
+          quantity: item.quantity,
+          fromStoreName: item.fromstorename,
+          toStoreName: item.tostorename,
+          transferDate: item.transferdate,
+          note: item.note || "-"
+      }))
+
+      const payload = {
+        generatedBy,
+        date: new Date().toISOString(),
+        items: reportItems,
+        count: reportItems.length
+      }
+
+      const jsonString = JSON.stringify(payload)
+      
+      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const storageKey = `storeTransfersReportPayload:${token}`
+      localStorage.setItem(storageKey, jsonString)
+
+      toast.dismiss()
+      toast.success("تم فتح تقرير النقل المخزني")
+
+      window.location.href = `/report/store-transfers?token=${token}&back=/reports`
+      
+      // تسجيل العملية
+      await logAction(
+        "تصدير",
+        `تصدير تقرير النقل المخزني - عدد الحركات: ${transfersData.length}`,
+        "التقارير",
+        undefined,
+        { transfersCount: transfersData.length }
+      )
+    } catch (error) {
+      console.error("خطأ في تصدير التقرير:", error)
+      toast.dismiss()
+      toast.error("حدث خطأ أثناء تصدير التقرير")
+    }
+  }
+
+  const handleExportPaymentsReport = async () => {
+    try {
+      toast.loading("جاري تحميل بيانات الصندوق...")
+      
+      const { getAllPayments } = await import("@/lib/payments-operations")
+      const result = await getAllPayments()
+      
+      if (!result.success || !result.data || result.data.length === 0) {
+        toast.dismiss()
+        toast.error(result.error || "لا توجد بيانات للصندوق")
+        return
+      }
+
+      const generatedBy = currentUser?.full_name || currentUser?.username || "غير معروف"
+      
+      const reportItems = result.data.map(item => ({
+          id: item.id,
+          payDate: item.pay_date,
+          transactionType: item.transaction_type,
+          customerName: item.customer_name || "-",
+          invoiceNumber: item.invoice_number || "-",
+          amountIQD: item.amount_iqd || 0,
+          amountUSD: item.amount_usd || 0,
+          currencyType: item.currency_type,
+          notes: item.notes || "-"
+      }))
+
+      const payload = {
+        generatedBy,
+        date: new Date().toISOString(),
+        items: reportItems,
+        totalIQD: reportItems.reduce((sum, i) => sum + i.amountIQD, 0),
+        totalUSD: reportItems.reduce((sum, i) => sum + i.amountUSD, 0),
+        count: reportItems.length
+      }
+
+      const jsonString = JSON.stringify(payload)
+      
+      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const storageKey = `paymentsReportPayload:${token}`
+      localStorage.setItem(storageKey, jsonString)
+
+      toast.dismiss()
+      toast.success("تم فتح تقرير الصندوق")
+
+      window.location.href = `/report/payments?token=${token}&back=/reports`
+      
+      // تسجيل العملية
+      await logAction(
+        "تصدير",
+        `تصدير تقرير الصندوق - عدد الحركات: ${result.data.length}`,
+        "التقارير",
+        undefined,
+        { paymentsCount: result.data.length }
+      )
+    } catch (error) {
+      console.error("خطأ في تصدير التقرير:", error)
+      toast.dismiss()
+      toast.error("حدث خطأ أثناء تصدير التقرير")
+    }
+  }
+
+  const handleExportPurchasesReport = async () => {
+    try {
+      toast.loading("جاري تحميل بيانات المشتريات...")
+      
+      const { getAllPurchases } = await import("@/lib/purchase-operations")
+      const purchasesData = await getAllPurchases()
+      
+      if (!purchasesData || purchasesData.length === 0) {
+        toast.dismiss()
+        toast.error("لا توجد بيانات للمشتريات")
+        return
+      }
+
+      const generatedBy = currentUser?.full_name || currentUser?.username || "غير معروف"
+      
+      const reportItems = purchasesData.map(item => ({
+          id: item.id,
+          numberofpurchase: item.numberofpurchase,
+          typeofbuy: item.typeofbuy,
+          typeofpayment: item.typeofpayment,
+          nameofsupplier: item.nameofsupplier,
+          datetime: item.datetime,
+          amountreceivediqd: item.amountreceivediqd || 0,
+          amountreceivedusd: item.amountreceivedusd || 0,
+          totalpurchaseiqd: item.totalpurchaseiqd || 0,
+          totalpurchaseusd: item.totalpurchaseusd || 0,
+          details: item.details || "-"
+      }))
+
+      const payload = {
+        generatedBy,
+        date: new Date().toISOString(),
+        items: reportItems,
+        totalIQD: reportItems.reduce((sum, i) => sum + i.totalpurchaseiqd, 0),
+        totalUSD: reportItems.reduce((sum, i) => sum + i.totalpurchaseusd, 0),
+        count: reportItems.length
+      }
+
+      const jsonString = JSON.stringify(payload)
+      
+      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const storageKey = `purchasesReportPayload:${token}`
+      localStorage.setItem(storageKey, jsonString)
+
+      toast.dismiss()
+      toast.success("تم فتح تقرير المشتريات")
+
+      window.location.href = `/report/purchases?token=${token}&back=/reports`
+      
+      // تسجيل العملية
+      await logAction(
+        "تصدير",
+        `تصدير تقرير المشتريات الرئيسية - عدد القوائم: ${purchasesData.length}`,
+        "الارباح والتقارير",
+        undefined,
+        { purchasesCount: purchasesData.length }
+      )
+    } catch (error) {
+      console.error("خطأ في تصدير التقرير:", error)
+      toast.dismiss()
+      toast.error("حدث خطأ أثناء تصدير التقرير")
+    }
+  }
+
+const handleExportSalesProfitReport = async () => {
+    try {
+      toast.loading("جاري تحميل أرباح المبيعات...")
+      
+      const { data: inventoryProducts, error: invError } = await supabase
+        .from("tb_inventory")
+        .select("productcode, productname")
+
+      if (invError) throw invError
+
+      const { data: salesDetails, error: salesError } = await supabase
+        .from("tb_salesdetails")
+        .select("productcode, productname, quantity, salemainid")
+
+      if (salesError) throw salesError
+
+      const { data: purchaseDetails, error: purchaseError } = await supabase
+        .from("tb_purchaseproductsdetails")
+        .select("productcode1, purchasesinglepriceiqd, sellsinglepriceiqd")
+
+      if (purchaseError) throw purchaseError
+
+      const productMap = new Map<string, any>()
+
+      inventoryProducts?.forEach((inv: any) => {
+        const productCode = inv.productcode
+        const productName = inv.productname
+
+        const salesForProduct = salesDetails?.filter((s: any) => s.productcode === productCode) || []
+        const salesCount = salesForProduct.length
+        const totalQuantitySold = salesForProduct.reduce((sum: number, s: any) => sum + (Number(s.quantity) || 0), 0)
+
+        const purchaseInfo = purchaseDetails?.find((p: any) => p.productcode1 === productCode)
+        const purchasePriceIQD = purchaseInfo?.purchasesinglepriceiqd || 0
+        const sellPriceIQD = purchaseInfo?.sellsinglepriceiqd || 0
+
+        const profitPerUnit = sellPriceIQD - purchasePriceIQD
+        const totalProfit = profitPerUnit * totalQuantitySold
+
+        productMap.set(productCode, {
+          productCode,
+          productName,
+          salesCount,
+          totalQuantitySold,
+          purchasePriceIQD,
+          sellPriceIQD,
+          profitPerUnit,
+          totalProfit
+        })
+      })
+
+      const productsArray = Array.from(productMap.values())
+      const generatedBy = currentUser?.full_name || currentUser?.username || "غير معروف"
+
+      const payload = {
+        generatedBy,
+        date: new Date().toISOString(),
+        period: "تقرير شامل",
+        items: productsArray,
+        totalOverallProfit: productsArray.reduce((sum: number, p: any) => sum + p.totalProfit, 0),
+        totalItems: productsArray.length
+      }
+
+      const jsonString = JSON.stringify(payload)
+      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const storageKey = `salesProfitReportPayload:${token}`
+      localStorage.setItem(storageKey, jsonString)
+
+      toast.dismiss()
+      toast.success("تم فتح تقرير أرباح المبيعات")
+
+      window.location.href = `/report/sales-profit?token=${token}&back=/reports`
+    } catch (error) {
+      console.error("Error exporting report:", error)
+      toast.dismiss()
+      toast.error("حدث خطأ أثناء تصدير التقرير")
+    }
+  }
+
+  const handleExportMaterialsBalanceReport = async () => {
+    try {
+      toast.loading("جاري تحميل أرصدة المواد...")
+      
+      const { data: inventoryData, error: inventoryError } = await supabase
+        .from("tb_inventory")
+        .select("productcode, productname, quantity")
+
+      if (inventoryError) throw inventoryError
+
+      const { data: salesData, error: salesError } = await supabase
+        .from("tb_salesdetails")
+        .select("productcode, quantity")
+
+      if (salesError) throw salesError
+
+      const { data: purchaseData, error: purchaseError } = await supabase
+        .from("tb_purchaseproductsdetails")
+        .select("productcode1, purchasesinglepriceiqd, sellsinglepriceiqd")
+        .order("addeddate", { ascending: false })
+
+      if (purchaseError) throw purchaseError
+
+      const materialsMap = new Map<string, any>()
+
+      inventoryData?.forEach((item: any) => {
+        materialsMap.set(item.productcode, {
+          productCode: item.productcode,
+          productName: item.productname,
+          availableQuantity: Number(item.quantity) || 0,
+          soldQuantity: 0,
+          purchasePriceIQD: 0,
+          sellPriceIQD: 0,
+          profitPerUnit: 0,
+        })
+      })
+
+      const salesMap = new Map<string, number>()
+      salesData?.forEach((sale: any) => {
+        const currentQty = salesMap.get(sale.productcode) || 0
+        salesMap.set(sale.productcode, currentQty + Number(sale.quantity))
+      })
+
+      salesMap.forEach((qty, productCode) => {
+        const material = materialsMap.get(productCode)
+        if (material) {
+          material.soldQuantity = qty
+        }
+      })
+
+      const pricesMap = new Map<string, { purchase: number; sell: number }>()
+      purchaseData?.forEach((purchase: any) => {
+        if (!pricesMap.has(purchase.productcode1)) {
+          pricesMap.set(purchase.productcode1, {
+            purchase: Number(purchase.purchasesinglepriceiqd) || 0,
+            sell: Number(purchase.sellsinglepriceiqd) || 0,
+          })
+        }
+      })
+
+      pricesMap.forEach((prices, productCode) => {
+        const material = materialsMap.get(productCode)
+        if (material) {
+          material.purchasePriceIQD = prices.purchase
+          material.sellPriceIQD = prices.sell
+          material.profitPerUnit = prices.sell - prices.purchase
+        }
+      })
+
+      const materialsArray = Array.from(materialsMap.values())
+      const generatedBy = currentUser?.full_name || currentUser?.username || "غير معروف"
+
+      const payload = {
+        generatedBy,
+        date: new Date().toISOString(),
+        items: materialsArray,
+        totalAvailableQuantity: materialsArray.reduce((sum: number, m: any) => sum + m.availableQuantity, 0),
+        totalSoldQuantity: materialsArray.reduce((sum: number, m: any) => sum + m.soldQuantity, 0),
+        count: materialsArray.length
+      }
+
+      const jsonString = JSON.stringify(payload)
+      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const storageKey = `materialBalancesReportPayload:${token}`
+      localStorage.setItem(storageKey, jsonString)
+
+      toast.dismiss()
+      toast.success("تم فتح تقرير أرصدة المواد")
+
+      window.location.href = `/report/material-balances?token=${token}&back=/reports`
+    } catch (error) {
+      console.error("Error exporting report:", error)
+      toast.dismiss()
+      toast.error("حدث خطأ أثناء تصدير التقرير")
+    }
+  }
+
+  const handleExportExpensesReport = async () => {
+    try {
+      toast.loading("جاري تحميل بيانات المصاريف...")
+      
+      const { data, error } = await supabase
+        .from("expenses")
+        .select("*")
+        .order("created_at", { ascending: false })
+        
+      if (error || !data || data.length === 0) {
+        toast.dismiss()
+        toast.error(error?.message || "لا توجد بيانات للمصاريف")
+        return
+      }
+
+      const generatedBy = currentUser?.full_name || currentUser?.username || "غير معروف"
+      
+      const reportItems = data.map((item: any) => ({
+        id: item.id,
+        expenseName: item.expense_name,
+        cost: item.cost,
+        recurrence: item.recurrence,
+        paymentDate: item.payment_date,
+        details: item.details,
+        createdAt: item.created_at
+      }))
+
+      const payload = {
+        generatedBy,
+        date: new Date().toISOString(),
+        items: reportItems,
+        totalCost: reportItems.reduce((sum: number, i: any) => sum + i.cost, 0),
+        count: reportItems.length
+      }
+
+      const jsonString = JSON.stringify(payload)
+      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const storageKey = `expensesReportPayload:${token}`
+      localStorage.setItem(storageKey, jsonString)
+
+      toast.dismiss()
+      toast.success("تم فتح تقرير المصاريف")
+
+      window.location.href = `/report/expenses?token=${token}&back=/reports`
+      
+      await logAction(
+        "تصدير",
+        `تصدير تقرير المصاريف - عدد السجلات: ${data.length}`,
+        "التقارير",
+        undefined,
+        { expensesCount: data.length }
+      )
+    } catch (error) {
+      console.error("Error exporting report:", error)
+      toast.dismiss()
+      toast.error("حدث خطأ أثناء تصدير التقرير")
+    }
+  }
+
+  const handleExportSalesReport = async () => {
+    try {
+      toast.loading("جاري تحميل بيانات المبيعات...")
+      
+      const { getAllSales } = await import("@/lib/sales-operations")
+      const salesData = await getAllSales()
+      
+      if (!salesData || salesData.length === 0) {
+        toast.dismiss()
+        toast.error("لا توجد بيانات للمبيعات")
+        return
+      }
+
+      const generatedBy = currentUser?.full_name || currentUser?.username || "غير معروف"
+      
+      const reportItems = salesData.map(item => {
+        // Ensure we always have numeric values even if DB fields are null or missing
+        const finalIQD = Number(item.finaltotaliqd || item.totalsaleiqd || 0)
+        const finalUSD = Number(item.finaltotalusd || item.totalsaleusd || 0)
+        
+        return {
+          id: item.id,
+          numberofsale: item.numberofsale,
+          pricetype: item.pricetype || "-",
+          paytype: item.paytype || "-",
+          customername: item.customername || "-",
+          datetime: item.datetime,
+          amountreceivediqd: Number(item.amountreceivediqd || 0),
+          amountreceivedusd: Number(item.amountreceivedusd || 0),
+          finaltotaliqd: finalIQD,
+          finaltotalusd: finalUSD,
+          details: item.details || "-"
+        }
+      })
+
+      const payload = {
+        generatedBy,
+        date: new Date().toISOString(),
+        items: reportItems,
+        totalIQD: reportItems.reduce((sum, i) => sum + i.finaltotaliqd, 0),
+        totalUSD: reportItems.reduce((sum, i) => sum + i.finaltotalusd, 0),
+        count: reportItems.length
+      }
+
+      const jsonString = JSON.stringify(payload)
+      
+      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const storageKey = `salesReportPayload:${token}`
+      localStorage.setItem(storageKey, jsonString)
+
+      toast.dismiss()
+      toast.success("تم فتح تقرير المبيعات")
+
+      window.location.href = `/report/sales?token=${token}&back=/reports`
+      
+      // تسجيل العملية
+      await logAction(
+        "تصدير",
+        `تصدير تقرير المبيعات الرئيسية - عدد القوائم: ${salesData.length}`,
+        "الارباح والتقارير",
+        undefined,
+        { salesCount: salesData.length }
+      )
+    } catch (error) {
+      console.error("خطأ في تصدير التقرير:", error)
+      toast.dismiss()
+      toast.error("حدث خطأ أثناء تصدير التقرير")
+    }
+  }
+
+  const handleExportWhatsappReport = async () => {
+    try {
+      toast.loading("جاري تحميل بيانات الواتساب...")
+      
+      const response = await fetch("/api/whatsapp-customers")
+      if (!response.ok) throw new Error("فشل تحميل بيانات الزبائن")
+      const customersData = await response.json()
+      
+      if (!customersData || customersData.length === 0) {
+        toast.dismiss()
+        toast.error("لا توجد بيانات للزبائن")
+        return
+      }
+
+      const generatedBy = currentUser?.full_name || currentUser?.username || "غير معروف"
+      
+      const payload = {
+        generatedBy,
+        date: new Date().toISOString(),
+        items: customersData,
+        totalBalanceIQD: customersData.reduce((sum: number, c: any) => sum + c.balanceiqd, 0),
+        totalBalanceUSD: customersData.reduce((sum: number, c: any) => sum + c.balanceusd, 0),
+        count: customersData.length
+      }
+
+      const jsonString = JSON.stringify(payload)
+      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const storageKey = `whatsappReportPayload:${token}`
+      localStorage.setItem(storageKey, jsonString)
+
+      toast.dismiss()
+      toast.success("تم فتح تقرير الواتساب")
+
+      window.location.href = `/report/whatsapp?token=${token}&back=/reports`
+      
+      await logAction(
+        "تصدير",
+        `تصدير تقرير الواتساب - عدد الزبائن: ${customersData.length}`,
+        "التقارير",
+        undefined,
+        { customersCount: customersData.length }
+      )
+    } catch (error) {
+      console.error("Error exporting report:", error)
       toast.dismiss()
       toast.error("حدث خطأ أثناء تصدير التقرير")
     }
@@ -1740,6 +2356,7 @@ export default function ReportsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* زر تقرير المبيعات */}
                 <Button
+                  onClick={handleExportSalesReport}
                   variant="outline"
                   className="h-28 flex flex-row-reverse items-center justify-between px-6 hover:shadow-lg transition-all group relative overflow-hidden"
                   style={{
@@ -1778,6 +2395,7 @@ export default function ReportsPage() {
 
                 {/* زر تقرير المشتريات */}
                 <Button
+                  onClick={handleExportPurchasesReport}
                   variant="outline"
                   className="h-28 flex flex-row-reverse items-center justify-between px-6 hover:shadow-lg transition-all group relative overflow-hidden"
                   style={{
@@ -1814,8 +2432,10 @@ export default function ReportsPage() {
                   </div>
                 </Button>
 
+
                 {/* زر تقرير النقل المخزني */}
                 <Button
+                  onClick={handleExportStoreTransfersReport}
                   variant="outline"
                   className="h-28 flex flex-row-reverse items-center justify-between px-6 hover:shadow-lg transition-all group relative overflow-hidden"
                   style={{
@@ -1893,6 +2513,7 @@ export default function ReportsPage() {
 
                 {/* زر تقرير المخازن */}
                 <Button
+                  onClick={handleExportStoresReport}
                   variant="outline"
                   className="h-28 flex flex-row-reverse items-center justify-between px-6 hover:shadow-lg transition-all group relative overflow-hidden"
                   style={{
@@ -1931,6 +2552,7 @@ export default function ReportsPage() {
 
                 {/* زر تقرير الصرفيات */}
                 <Button
+                  onClick={handleExportPaymentsReport}
                   variant="outline"
                   className="h-28 flex flex-row-reverse items-center justify-between px-6 hover:shadow-lg transition-all group relative overflow-hidden"
                   style={{
@@ -1963,6 +2585,162 @@ export default function ReportsPage() {
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
                       تقرير شامل للصرفيات
+                    </p>
+                  </div>
+                </Button>
+
+                {/* زر تقرير المصاريف الشامل */}
+                <Button
+                  onClick={handleExportExpensesReport}
+                  variant="outline"
+                  className="h-28 flex flex-row-reverse items-center justify-between px-6 hover:shadow-lg transition-all group relative overflow-hidden"
+                  style={{
+                    borderColor: "var(--theme-primary)",
+                    borderWidth: "2px",
+                  }}
+                >
+                  <div 
+                    className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity"
+                    style={{
+                      backgroundColor: "var(--theme-primary)",
+                    }}
+                  />
+                  <div className="relative flex items-center justify-center">
+                    <div 
+                      className="w-16 h-16 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-xl transition-all"
+                      style={{
+                        backgroundColor: "var(--theme-primary)",
+                      }}
+                    >
+                      <Receipt 
+                        className="w-8 h-8 text-white" 
+                        strokeWidth={2.5}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-right relative flex-1">
+                    <h3 className="font-bold text-lg" style={{ color: "var(--theme-primary)" }}>
+                      {t('expenses', currentLanguage.code)}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      تقرير شامل للمصاريف الإدارية
+                    </p>
+                  </div>
+                </Button>
+
+                {/* زر تقرير أرصدة المواد */}
+                <Button
+                  onClick={handleExportMaterialsBalanceReport}
+                  variant="outline"
+                  className="h-28 flex flex-row-reverse items-center justify-between px-6 hover:shadow-lg transition-all group relative overflow-hidden"
+                  style={{
+                    borderColor: "var(--theme-primary)",
+                    borderWidth: "2px",
+                  }}
+                >
+                  <div 
+                    className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity"
+                    style={{
+                      backgroundColor: "var(--theme-primary)",
+                    }}
+                  />
+                  <div className="relative flex items-center justify-center">
+                    <div 
+                      className="w-16 h-16 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-xl transition-all"
+                      style={{
+                        backgroundColor: "var(--theme-primary)",
+                      }}
+                    >
+                      <Layers 
+                        className="w-8 h-8 text-white" 
+                        strokeWidth={2.5}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-right relative flex-1">
+                    <h3 className="font-bold text-lg" style={{ color: "var(--theme-primary)" }}>
+                      {t('materialsBalance', currentLanguage.code)}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      تقرير شامل لأرصدة المواد والمخزون
+                    </p>
+                  </div>
+                </Button>
+
+                {/* زر تقرير أرباح المبيعات */}
+                <Button
+                  onClick={handleExportSalesProfitReport}
+                  variant="outline"
+                  className="h-28 flex flex-row-reverse items-center justify-between px-6 hover:shadow-lg transition-all group relative overflow-hidden"
+                  style={{
+                    borderColor: "var(--theme-primary)",
+                    borderWidth: "2px",
+                  }}
+                >
+                  <div 
+                    className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity"
+                    style={{
+                      backgroundColor: "var(--theme-primary)",
+                    }}
+                  />
+                  <div className="relative flex items-center justify-center">
+                    <div 
+                      className="w-16 h-16 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-xl transition-all"
+                      style={{
+                        backgroundColor: "var(--theme-primary)",
+                      }}
+                    >
+                      <LineChart 
+                        className="w-8 h-8 text-white" 
+                        strokeWidth={2.5}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-right relative flex-1">
+                    <h3 className="font-bold text-lg" style={{ color: "var(--theme-primary)" }}>
+                      {t('salesProfit', currentLanguage.code)}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      تقرير شامل للأرباح والخسائر
+                    </p>
+                  </div>
+                </Button>
+
+                {/* زر تقرير إدارة الواتساب */}
+                <Button
+                  onClick={handleExportWhatsappReport}
+                  variant="outline"
+                  className="h-28 flex flex-row-reverse items-center justify-between px-6 hover:shadow-lg transition-all group relative overflow-hidden"
+                  style={{
+                    borderColor: "#25D366", // WhatsApp Green
+                    borderWidth: "2px",
+                  }}
+                >
+                  <div 
+                    className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity"
+                    style={{
+                      backgroundColor: "#25D366",
+                    }}
+                  />
+                  <div className="relative flex items-center justify-center">
+                    <div 
+                      className="w-16 h-16 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-xl transition-all"
+                      style={{
+                        backgroundColor: "#25D366",
+                      }}
+                    >
+                      <MessageSquare 
+                        className="w-8 h-8 text-white" 
+                        strokeWidth={2.5}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-right relative flex-1">
+                    <h3 className="font-bold text-lg" style={{ color: "#128C7E" }}>
+                      تقرير الواتساب
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      تقرير شامل للزبائن والمطالبات المالية
                     </p>
                   </div>
                 </Button>

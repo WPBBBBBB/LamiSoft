@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { getCustomersWithBalances, deleteCustomer, deleteCustomers, type Customer, getCustomer } from "@/lib/supabase-operations"
+import { supabase } from "@/lib/supabase"
 import { logAction } from "@/lib/system-log-operations"
 import { toast } from "sonner"
 import { t } from "@/lib/translations"
@@ -221,6 +222,64 @@ export default function CustomersPage() {
     })
   }
 
+  const handleExportReport = async (autoPrint: boolean = false) => {
+    if (selectedCustomers.length === 0) {
+      toast.error("يرجى تحديد زبائن على الأقل للطباعة")
+      return
+    }
+
+    try {
+      toast.loading("جاري تجهيز تقرير الزبائن...")
+      
+      const { data: { user } } = await supabase.auth.getUser()
+      const generatedBy = user?.user_metadata?.full_name || user?.email || "غير معروف"
+
+      const customersToReport = customers.filter(c => selectedCustomers.includes(c.id))
+      
+      const reportItems = customersToReport.map(c => ({
+          id: c.id,
+          name: c.customer_name || "زبون",
+          type: c.type || "",
+          phone: c.phone_number || "",
+          address: c.address || "",
+          balanceIQD: c.balance_iqd || 0,
+          balanceUSD: c.balance_usd || 0,
+          notes: c.notes || ""
+      }))
+
+      const payload = {
+        generatedBy,
+        date: new Date().toISOString(),
+        items: reportItems,
+        totalIQD: reportItems.reduce((sum, i) => sum + i.balanceIQD, 0),
+        totalUSD: reportItems.reduce((sum, i) => sum + i.balanceUSD, 0),
+        count: reportItems.length
+      }
+
+      const jsonString = JSON.stringify(payload)
+      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const storageKey = `customersReportPayload:${token}`
+      localStorage.setItem(storageKey, jsonString)
+
+      toast.dismiss()
+      toast.success("تم تجهيز التقرير للمحددين")
+
+      window.location.href = `/report/customers?token=${token}&back=/customers${autoPrint ? '&print=true' : ''}`
+      
+      await logAction(
+        "تصدير",
+        `تصدير تقرير زبائن محددين - عدد الزبائن: ${reportItems.length}${autoPrint ? ' (طباعة تلقائية)' : ''}`,
+        "الزبائن",
+        undefined,
+        { customersCount: reportItems.length, autoPrint }
+      )
+    } catch (error) {
+      console.error("Error exporting report:", error)
+      toast.dismiss()
+      toast.error("حدث خطأ أثناء تصدير التقرير")
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex-1 overflow-auto">
@@ -287,7 +346,12 @@ export default function CustomersPage() {
               <Trash2 className="h-4 w-4 theme-danger" />
               {t('delete', currentLanguage.code)}
             </Button>
-            <Button variant="outline" className="gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              disabled={selectedCustomers.length === 0}
+              onClick={() => handleExportReport(true)}
+            >
               <Printer className="h-4 w-4" />
               {t('print', currentLanguage.code)}
             </Button>
@@ -302,7 +366,11 @@ export default function CustomersPage() {
           </div>
 
           <div className="flex flex-wrap gap-3 mb-4">
-            <Button variant="secondary" className="gap-2">
+            <Button 
+              variant="secondary" 
+              className="gap-2"
+              onClick={() => handleExportReport(false)}
+            >
               <FileText className="h-4 w-4" />
               {t('file', currentLanguage.code)}
             </Button>

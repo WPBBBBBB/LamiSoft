@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Wallet, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react"
+import { Wallet, ChevronLeft, ChevronRight, RefreshCw, FileText } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 
@@ -38,6 +38,43 @@ export default function MaterialsBalancePage() {
   useEffect(() => {
     loadMaterialsData()
   }, [])
+
+  const handleExportReport = async () => {
+    try {
+      if (materials.length === 0) {
+        toast.error("لا توجد بيانات لتصديرها")
+        return
+      }
+
+      toast.loading("جاري تجهيز التقرير...")
+      
+      const { data: { user } } = await supabase.auth.getUser()
+      const generatedBy = user?.user_metadata?.full_name || user?.email || "غير معروف"
+
+      const payload = {
+        generatedBy,
+        date: new Date().toISOString(),
+        items: materials,
+        totalAvailableQuantity: materials.reduce((sum, m) => sum + m.availableQuantity, 0),
+        totalSoldQuantity: materials.reduce((sum, m) => sum + m.soldQuantity, 0),
+        count: materials.length
+      }
+
+      const jsonString = JSON.stringify(payload)
+      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const storageKey = `materialBalancesReportPayload:${token}`
+      localStorage.setItem(storageKey, jsonString)
+
+      toast.dismiss()
+      toast.success("تم تجهيز التقرير")
+
+      window.location.href = `/report/material-balances?token=${token}&back=/balance/materials`
+    } catch (error) {
+      console.error("Error exporting report:", error)
+      toast.dismiss()
+      toast.error("حدث خطأ أثناء تصدير التقرير")
+    }
+  }
 
   const loadMaterialsData = async () => {
     try {
@@ -162,10 +199,16 @@ export default function MaterialsBalancePage() {
             {t('viewInventoryAndProfits', currentLanguage.code)}
           </p>
         </div>
-        <Button onClick={loadMaterialsData} variant="outline" className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          {t('refresh', currentLanguage.code)}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleExportReport} variant="outline" className="gap-2">
+            <FileText className="h-4 w-4 theme-info" />
+            {t('file', currentLanguage.code)}
+          </Button>
+          <Button onClick={loadMaterialsData} variant="outline" className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            {t('refresh', currentLanguage.code)}
+          </Button>
+        </div>
       </div>
 
       <Card>

@@ -299,8 +299,41 @@ export default function SalesProfitPage() {
     return new Intl.NumberFormat("en-US").format(amount)
   }
 
-  const handlePrint = () => {
-    window.print()
+  const handleExportReport = async () => {
+    try {
+      if (products.length === 0) {
+        toast.error("لا توجد بيانات لتصديرها")
+        return
+      }
+
+      toast.loading("جاري تجهيز التقرير...")
+      
+      const { data: { user } } = await supabase.auth.getUser()
+      const generatedBy = user?.user_metadata?.full_name || user?.email || "غير معروف"
+
+      const payload = {
+        generatedBy,
+        date: new Date().toISOString(),
+        period: getPeriodLabel(),
+        items: products,
+        totalOverallProfit: totalProfit,
+        totalItems: totalItems
+      }
+
+      const jsonString = JSON.stringify(payload)
+      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const storageKey = `salesProfitReportPayload:${token}`
+      localStorage.setItem(storageKey, jsonString)
+
+      toast.dismiss()
+      toast.success("تم تجهيز التقرير")
+
+      window.location.href = `/report/sales-profit?token=${token}&back=/balance/sales-profit`
+    } catch (error) {
+      console.error("Error exporting report:", error)
+      toast.dismiss()
+      toast.error("حدث خطأ أثناء تصدير التقرير")
+    }
   }
 
   const handleExportExcel = async () => {
@@ -506,9 +539,9 @@ export default function SalesProfitPage() {
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-wrap gap-3">
-            <Button onClick={handlePrint} variant="outline" className="gap-2">
-              <Printer className="h-4 w-4" />
-              {t('printTable', currentLanguage.code)}
+            <Button onClick={handleExportReport} variant="outline" className="gap-2">
+              <FileText className="h-4 w-4 theme-info" />
+              {t('file', currentLanguage.code)}
             </Button>
             <Button onClick={handleExportExcel} variant="outline" className="gap-2">
               <FileSpreadsheet className="h-4 w-4" />

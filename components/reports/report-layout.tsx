@@ -1,20 +1,26 @@
-"use client"
-
 import { useEffect, ReactNode, useState } from "react"
 import { getPrintSettings, type PrintSettings } from "@/lib/print-settings"
+import { Button } from "@/components/ui/button"
+import { Printer, ArrowRight } from "lucide-react"
 
 interface ReportLayoutProps {
   children: ReactNode
   title: string
   storeName?: string
   autoPrint?: boolean
+  footer?: string
+  hideHeader?: boolean
+  backPath?: string
 }
 
 export function ReportLayout({ 
   children, 
   title, 
   storeName = "AL-Lami Soft",
-  autoPrint = true 
+  autoPrint = true,
+  footer,
+  hideHeader = false,
+  backPath = "/reports"
 }: ReportLayoutProps) {
   const [printSettings] = useState<PrintSettings>(() => {
     // تحميل إعدادات الطباعة مرة واحدة عند التهيئة
@@ -34,16 +40,38 @@ export function ReportLayout({
   const displayStoreName = printSettings?.storeName || storeName
   const displaySubtitle = printSettings?.storeSubtitle || "للمطابخ الحديثة والديكورات وتجارة الأثاث والأكسسوارات"
   const displayContact = printSettings?.contactInfo || "للتواصل: 07XX XXX XXXX - العراق/بغداد - كرادة داخل - قرب النفق - كوت-نابي المصلى"
-  const displayFooter = printSettings?.footer || "شكراً لتعاملكم معنا"
+  // If footer prop is provided (even empty string), use it. Otherwise fall back to settings or default.
+  const displayFooter = footer !== undefined ? footer : (printSettings?.footer || "شكراً لتعاملكم معنا")
 
   return (
     <div className="report-container" data-report-title={title}>
-      {}
-      <div className="report-header">
-        <h1 className="store-name">{displayStoreName}</h1>
-        <p className="store-subtitle">{displaySubtitle}</p>
-        <p className="contact-details">{displayContact}</p>
+      {/* Controls Section - Hidden during print */}
+      <div className="report-controls no-print flex justify-center items-center gap-4 py-4 mb-4 bg-gray-50 border-b sticky top-0 z-50">
+        <Button 
+          variant="outline"
+          onClick={() => window.location.href = backPath}
+          className="gap-2 absolute right-4"
+        >
+          <ArrowRight className="h-4 w-4" />
+          رجوع
+        </Button>
+        <Button 
+          onClick={() => window.print()}
+          className="gap-2 px-8"
+        >
+          <Printer className="h-4 w-4" />
+          طباعة التقرير
+        </Button>
       </div>
+
+      {/* Header Section */}
+      {!hideHeader && (
+        <div className="report-header">
+          <h1 className="store-name">{displayStoreName}</h1>
+          <p className="store-subtitle">{displaySubtitle}</p>
+          <p className="contact-details">{displayContact}</p>
+        </div>
+      )}
 
       {}
       <div className="report-content">{children}</div>
@@ -54,6 +82,16 @@ export function ReportLayout({
       </div>
 
       <style jsx global>{`
+        .no-print {
+          display: flex !important;
+        }
+
+        @media print {
+          .no-print {
+            display: none !important;
+          }
+        }
+
         .report-container {
           width: 100%;
           max-width: 210mm;

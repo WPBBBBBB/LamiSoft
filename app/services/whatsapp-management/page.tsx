@@ -319,6 +319,38 @@ export default function WhatsappManagementPage() {
   const totalBalanceIQD = filteredCustomers.reduce((sum, c) => sum + c.balanceiqd, 0)
   const totalBalanceUSD = filteredCustomers.reduce((sum, c) => sum + c.balanceusd, 0)
 
+  const handleExportReport = async () => {
+    try {
+      toast.loading("جاري تجهيز التقرير...")
+      
+      const { data: { user } } = await fetch("/api/auth/user").then(res => res.json()).catch(() => ({ data: { user: null } }))
+      const generatedBy = user?.user_metadata?.full_name || user?.email || "غير معروف"
+
+      const payload = {
+        generatedBy,
+        date: new Date().toISOString(),
+        items: filteredCustomers,
+        totalBalanceIQD,
+        totalBalanceUSD,
+        count: totalCustomers
+      }
+
+      const jsonString = JSON.stringify(payload)
+      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const storageKey = `whatsappReportPayload:${token}`
+      localStorage.setItem(storageKey, jsonString)
+
+      toast.dismiss()
+      toast.success("تم تجهيز التقرير")
+
+      window.location.href = `/report/whatsapp?token=${token}&back=/services/whatsapp-management`
+    } catch (error) {
+      console.error("Error exporting report:", error)
+      toast.dismiss()
+      toast.error("حدث خطأ أثناء تصدير التقرير")
+    }
+  }
+
   return (
     <PermissionGuard requiredPermission="view_services">
     <div className="h-full p-6">
@@ -377,7 +409,11 @@ export default function WhatsappManagementPage() {
       {}
       <Card className="p-4 mb-6">
         <div className="flex items-center gap-3 flex-wrap">
-          <Button variant="outline" size="icon">
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={handleExportReport}
+          >
             <FileText className="h-4 w-4" />
           </Button>
 

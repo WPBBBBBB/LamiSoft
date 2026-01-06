@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { toast } from "sonner"
+import { generateInventoryPDF } from "@/lib/print-inventory"
 import { useAuth } from "@/contexts/auth-context"
 import { Loader2, Plus, X, FileText, Printer } from "lucide-react"
 import {
@@ -42,74 +43,59 @@ interface DetailRow extends InventoryCountDetail {
   searchText: string
 }
 
+// عدد الصفوف الدنيا المحمية من الحذف
+const MINIMUM_ROWS = 6
+
+// دالة مساعدة لإنشاء صف فارغ
+const createEmptyRow = (countId: string = ''): DetailRow => ({
+  tempId: `temp-${Date.now()}-${Math.random()}`,
+  count_id: countId,
+  item_id: '',
+  item_name: '',
+  searchText: '',
+  system_qty: 0,
+  actual_qty: 0,
+  diff_qty: 0,
+  cost: 0,
+  diff_value: 0,
+  item_status: 'عادي',
+  notes: '',
+})
+
 export default function InventoryCountPage() {
-  const { currentUser } = useAuth()
+  const { user: currentUser } = useAuth()
   
   const [stores, setStores] = useState<Store[]>([])
   const [selectedStore, setSelectedStore] = useState<string>("")
   const [countId, setCountId] = useState<string>("")
   const [date, setDate] = useState<Date>(new Date())
   const [notes, setNotes] = useState<string>("")
-  const [details, setDetails] = useState<DetailRow[]>([
-    {
-      tempId: `temp-${Date.now()}`,
-      count_id: '',
-      item_id: '',
-      item_name: '',
-      searchText: '',
-      system_qty: 0,
-      actual_qty: 0,
-      diff_qty: 0,
-      cost: 0,
-      diff_value: 0,
-      item_status: 'عادي',
-      notes: '',
-    },
-  ])
+  const [details, setDetails] = useState<DetailRow[]>(() => 
+    Array.from({ length: MINIMUM_ROWS }, () => createEmptyRow())
+  )
 
   // Whenever the last row is filled (product selected or quantity entered), add a new empty row
   useEffect(() => {
     if (details.length === 0) {
-      setDetails([
-        {
-          tempId: `temp-${Date.now()}`,
-          count_id: '',
-          item_id: '',
-          item_name: '',
-          searchText: '',
-          system_qty: 0,
-          actual_qty: 0,
-          diff_qty: 0,
-          cost: 0,
-          diff_value: 0,
-          item_status: 'عادي',
-          notes: '',
-        },
-      ])
+      // إذا تم حذف جميع الصفوف، أعد إنشاء 6 صفوف
+      setDetails(Array.from({ length: MINIMUM_ROWS }, () => createEmptyRow()))
       return
     }
+    
+    // لا نضيف صفوف تلقائياً إلا إذا وصلنا للصف السادس أو تجاوزناه
+    if (details.length < MINIMUM_ROWS) {
+      return
+    }
+    
     const last = details[details.length - 1]
     // If last row has product or actual_qty entered, add a new row
     if ((last.item_id || last.searchText.trim() || last.actual_qty) && details.length < 100) {
       setDetails([
         ...details,
-        {
-          tempId: `temp-${Date.now()}`,
-          count_id: countId,
-          item_id: '',
-          item_name: '',
-          searchText: '',
-          system_qty: 0,
-          actual_qty: 0,
-          diff_qty: 0,
-          cost: 0,
-          diff_value: 0,
-          item_status: 'عادي',
-          notes: '',
-        },
+        createEmptyRow(countId)
       ])
     }
-  }, [details])
+  }, [details, countId])
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([])
   const [searchResults, setSearchResults] = useState<InventoryItem[]>([])
   const [searchOpen, setSearchOpen] = useState<string | null>(null)
@@ -172,6 +158,14 @@ export default function InventoryCountPage() {
   }
 
   const removeRow = (tempId: string) => {
+    const index = details.findIndex(d => d.tempId === tempId)
+    
+    // منع حذف أول 6 صفوف
+    if (index < MINIMUM_ROWS) {
+      toast.error(`لا يمكن حذف أول ${MINIMUM_ROWS} صفوف`)
+      return
+    }
+    
     setDetails(details.filter(d => d.tempId !== tempId))
   }
 
@@ -286,8 +280,37 @@ export default function InventoryCountPage() {
     if (e.key === "Enter") {
       e.preventDefault()
       const currentIndex = details.findIndex(d => d.tempId === tempId)
-      if (currentIndex === details.length - 1) {
-        addNewRow()
+      
+      // إذا كنا في الصفوف الـ 5 الأولى (index 0-4)، انتقل للصف التالي
+      if (currentIndex < MINIMUM_ROWS - 1) {
+        // التركيز على الصف التالي
+        setTimeout(() => {
+          const nextRow = document.querySelector(`[data-row-index="${currentIndex + 1}"] input`)
+          if (nextRow instanceof HTMLElement) {
+            nextRow.focus()
+          }
+        }, 0)
+      }
+      // إذا كنا في الصف السادس أو ما بعده، أضف صف جديد
+      else if (currentIndex >= MINIMUM_ROWS - 1) {
+        if (currentIndex === details.length - 1) {
+          addNewRow()
+          // التركيز على الصف الجديد
+          setTimeout(() => {
+            const newRow = document.querySelector(`[data-row-index="${currentIndex + 1}"] input`)
+            if (newRow instanceof HTMLElement) {
+              newRow.focus()
+            }
+          }, 100)
+        } else {
+          // الانتقال للصف التالي الموجود
+          setTimeout(() => {
+            const nextRow = document.querySelector(`[data-row-index="${currentIndex + 1}"] input`)
+            if (nextRow instanceof HTMLElement) {
+              nextRow.focus()
+            }
+          }, 0)
+        }
       }
     }
   }
@@ -357,23 +380,10 @@ export default function InventoryCountPage() {
       toast.success("تم اعتماد الجرد بنجاح")
       setCountId("")
       setNotes("")
-      setDetails([
-        {
-          tempId: `temp-${Date.now()}`,
-          count_id: '',
-          item_id: '',
-          item_name: '',
-          searchText: '',
-          system_qty: 0,
-          actual_qty: 0,
-          diff_qty: 0,
-          cost: 0,
-          diff_value: 0,
-          item_status: 'عادي',
-          notes: '',
-        },
-      ])
+      setDetails(Array.from({ length: MINIMUM_ROWS }, () => createEmptyRow()))
       setSelectedStore("")
+      // إنشاء رقم قائمة جديد
+      handleGenerateCountId()
     } catch (error) {
       console.error("Error approving count:", error)
       toast.error("حدث خطأ أثناء اعتماد الجرد")
@@ -382,16 +392,45 @@ export default function InventoryCountPage() {
     }
   }
 
-  const handleApproveAndPrint = async () => {
-    if (!validateCount()) return
+  const openReportWindow = (data: any) => {
+      const jsonString = JSON.stringify(data)
+      // Use text encoder to handle utf-8 correctly before base64
+      const utf8Bytes = new TextEncoder().encode(jsonString)
+      const binaryString = String.fromCharCode(...Array.from(utf8Bytes))
+      const base64Data = btoa(binaryString)
+      const encodedData = encodeURIComponent(base64Data)
 
-    setIsLoading(true)
+      window.location.href = `/report/inventory?s=${encodedData}&back=/inventory-count`
+  }
+
+  const handlePrint = async () => {
     try {
-      await handleApprove()
-      // Generate print
-      setTimeout(() => {
-        window.print()
-      }, 500)
+      setIsLoading(true)
+      const storeName = stores.find(s => s.id === selectedStore)?.storename || ""
+      const managerName = currentUser?.full_name || ""
+      
+      const reportData = {
+          countId,
+          storeName,
+          managerName,
+          date: date.toISOString(),
+          items: details.filter(d => d.item_id).map(d => ({
+              productName: d.item_name,
+              systemQty: d.system_qty,
+              actualQty: d.actual_qty,
+              diffQty: d.diff_qty,
+              cost: d.cost,
+              diffValue: d.diff_value,
+              status: d.item_status
+          })),
+          totalDiffQty: details.reduce((sum, d) => sum + d.diff_qty, 0),
+          totalDiffValue: details.reduce((sum, d) => sum + d.diff_value, 0),
+          notes
+      }
+
+      openReportWindow(reportData)
+      
+      toast.success("تم فتح نافذة الطباعة")
     } catch (error) {
       console.error("Error printing:", error)
       toast.error("حدث خطأ أثناء الطباعة")
@@ -399,6 +438,80 @@ export default function InventoryCountPage() {
       setIsLoading(false)
     }
   }
+
+  const handleApproveAndPrint = async () => {
+    if (!validateCount()) return
+
+    // Capture data before approval (which resets state)
+    const storeName = stores.find(s => s.id === selectedStore)?.storename || ""
+    const managerName = currentUser?.full_name || ""
+    const currentDetails = [...details]
+    const currentCountId = countId
+    const currentNotes = notes
+    const currentDate = date.toISOString()
+
+    setIsLoading(true)
+    try {
+      // First, attempt to approve/save
+      await handleApprove()
+      
+      // If successful, prepare report data
+      const reportData = {
+          countId: currentCountId,
+          storeName,
+          managerName,
+          date: currentDate,
+          items: currentDetails.filter(d => d.item_id).map(d => ({
+              productName: d.item_name,
+              systemQty: d.system_qty,
+              actualQty: d.actual_qty,
+              diffQty: d.diff_qty,
+              cost: d.cost,
+              diffValue: d.diff_value,
+              status: d.item_status
+          })),
+          totalDiffQty: currentDetails.reduce((sum, d) => sum + d.diff_qty, 0),
+          totalDiffValue: currentDetails.reduce((sum, d) => sum + d.diff_value, 0),
+          notes: currentNotes
+      }
+
+      openReportWindow(reportData)
+      
+      toast.success("تم فتح نافذة الطباعة")
+    } catch (error) {
+      console.error("Error printing:", error)
+      toast.error("حدث خطأ أثناء الطباعة")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // State for dropdown position
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number; width: number } | null>(null)
+
+  const updateDropdownPosition = (element: HTMLElement) => {
+    const rect = element.getBoundingClientRect()
+    setDropdownPosition({
+      top: rect.bottom,
+      right: window.innerWidth - rect.right,
+      width: rect.width
+    })
+  }
+
+  // Handle scroll to update position or close
+  useEffect(() => {
+    const handleScroll = () => {
+      if (searchOpen) {
+        setSearchOpen(null) // Close on scroll for simplicity
+      }
+    }
+    window.addEventListener('scroll', handleScroll, true)
+    window.addEventListener('resize', handleScroll, true)
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true)
+      window.removeEventListener('resize', handleScroll, true)
+    }
+  }, [searchOpen])
 
   return (
     <div className="container mx-auto p-4 sm:p-6 space-y-6">
@@ -452,7 +565,8 @@ export default function InventoryCountPage() {
               <Input
                 type="date"
                 value={date.toISOString().split('T')[0]}
-                onChange={(e) => setDate(new Date(e.target.value))}
+                disabled
+                className="bg-muted"
               />
             </div>
           </div>
@@ -469,7 +583,7 @@ export default function InventoryCountPage() {
           </div>
 
           {/* Table */}
-          <div className="rounded-lg border h-[500px] overflow-x-auto overflow-y-auto" ref={tableRef}>
+          <div className="rounded-lg border max-h-[600px] overflow-x-auto overflow-y-auto" ref={tableRef}>
             <Table>
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
@@ -480,19 +594,27 @@ export default function InventoryCountPage() {
                   <TableHead className="w-28">السعر</TableHead>
                   <TableHead className="w-28">الكمية الفعلية</TableHead>
                   <TableHead className="w-28">الفرق</TableHead>
+                  <TableHead className="w-28 text-center">الحالة</TableHead>
                   <TableHead className="min-w-[200px]">ملاحظة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                   {details.map((row, index) => (
-                    <TableRow key={row.tempId} className={getRowColor(row)}>
+                    <TableRow key={row.tempId} className={getRowColor(row)} data-row-index={index}>
                       <TableCell className="text-center">{index + 1}</TableCell>
                       <TableCell>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => removeRow(row.tempId)}
-                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          disabled={index < MINIMUM_ROWS}
+                          className={cn(
+                            "h-8 w-8",
+                            index < MINIMUM_ROWS 
+                              ? "text-muted-foreground cursor-not-allowed opacity-50" 
+                              : "text-destructive hover:text-destructive"
+                          )}
+                          title={index < MINIMUM_ROWS ? "لا يمكن حذف هذا الصف" : "حذف الصف"}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -501,10 +623,12 @@ export default function InventoryCountPage() {
                         <div className="relative">
                           <Input
                             value={row.searchText}
-                            onFocus={() => {
+                            onFocus={(e) => {
+                              updateDropdownPosition(e.target)
                               handleProductSearch(row.tempId, row.searchText)
                             }}
                             onChange={(e) => {
+                              updateDropdownPosition(e.target)
                               const value = e.target.value
                               updateRow(row.tempId, "searchText", value)
                               handleProductSearch(row.tempId, value)
@@ -514,8 +638,16 @@ export default function InventoryCountPage() {
                             }}
                             placeholder="ابحث عن منتج..."
                           />
-                          {searchOpen === row.tempId && searchResults.length > 0 && (
-                            <div className="absolute z-50 right-0 mt-1 w-[520px] max-w-[calc(100vw-2rem)] bg-background border rounded-md shadow-lg max-h-[500px] overflow-auto">
+                          {searchOpen === row.tempId && searchResults.length > 0 && dropdownPosition && createPortal(
+                            <div 
+                              className="fixed bg-background border rounded-md shadow-lg max-h-[300px] overflow-auto"
+                              style={{
+                                top: `${dropdownPosition.top}px`,
+                                right: `${dropdownPosition.right}px`,
+                                width: `${dropdownPosition.width}px`,
+                                zIndex: 9999
+                              }}
+                            >
                               {searchResults.map((item) => (
                                 <button
                                   key={item.id}
@@ -532,7 +664,8 @@ export default function InventoryCountPage() {
                                   </span>
                                 </button>
                               ))}
-                            </div>
+                            </div>,
+                            document.body
                           )}
                         </div>
                       </TableCell>
@@ -571,6 +704,23 @@ export default function InventoryCountPage() {
                           )}
                         />
                       </TableCell>
+                      <TableCell className="text-center">
+                        {!row.item_id ? (
+                          <span className="text-muted-foreground">.</span>
+                        ) : row.diff_qty > 0 ? (
+                          <span className="inline-block px-3 py-1 rounded-[10px] border border-red-200 text-red-600 text-sm font-medium">
+                            زيادة
+                          </span>
+                        ) : row.diff_qty < 0 ? (
+                          <span className="inline-block px-3 py-1 rounded-[10px] border border-orange-500 text-orange-600 text-sm font-medium">
+                            نقص
+                          </span>
+                        ) : (
+                          <span className="inline-block px-3 py-1 rounded-[10px] border border-green-500 text-green-600 text-sm font-medium">
+                            متطابق
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Input
                           value={row.notes}
@@ -583,7 +733,7 @@ export default function InventoryCountPage() {
                   ))}
                   {details.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         لا توجد منتجات. اضغط &quot;إضافة صف&quot; لبدء الجرد
                       </TableCell>
                     </TableRow>
@@ -593,11 +743,28 @@ export default function InventoryCountPage() {
           </div>
 
 
-          <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
-            <span className="text-lg font-semibold">الفروقات الإجمالية (زيادة):</span>
-            <span className="text-2xl font-bold text-red-600">
-              {calculateTotalDiff().toLocaleString()} IQD
-            </span>
+          <div className="flex flex-col md:flex-row justify-between items-center p-4 bg-muted rounded-lg border gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-lg font-semibold">إجمالي فرق العدد:</span>
+              <span className={cn(
+                "text-2xl font-bold dir-ltr",
+                details.reduce((sum, d) => sum + d.diff_qty, 0) > 0 ? "text-red-600" : 
+                details.reduce((sum, d) => sum + d.diff_qty, 0) < 0 ? "text-orange-600" : "text-green-600"
+              )}>
+                {details.reduce((sum, d) => sum + d.diff_qty, 0)}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-lg font-semibold">إجمالي فرق السعر:</span>
+              <span className={cn(
+                "text-2xl font-bold dir-ltr",
+                details.reduce((sum, d) => sum + d.diff_value, 0) > 0 ? "text-red-600" : 
+                details.reduce((sum, d) => sum + d.diff_value, 0) < 0 ? "text-orange-600" : "text-green-600"
+              )}>
+                {details.reduce((sum, d) => sum + d.diff_value, 0).toLocaleString()} IQD
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
