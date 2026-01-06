@@ -10,7 +10,7 @@ interface AuthContextType {
   loading: boolean
   isLoading: boolean
   login: (user: UserWithPermissions) => void
-  logout: () => void
+  logout: () => Promise<void>
   hasPermission: (permission: string) => boolean
   isAuthenticated: boolean
 }
@@ -58,7 +58,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCurrentUser(null)
       
       // Wait for server to clear the session cookie
-      await fetch('/api/auth/logout', { method: 'POST' })
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        cache: 'no-store',
+        credentials: 'include',
+        keepalive: true,
+      })
       
       // Clear any client-side storage
       if (typeof window !== 'undefined') {
@@ -71,17 +76,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       // Redirect to login page
-      router.push('/login')
+      router.replace('/login')
       
       // Force a hard reload to clear any cached state
       setTimeout(() => {
         if (typeof window !== 'undefined') {
-          window.location.href = '/login'
+          window.location.assign('/login')
         }
       }, 100)
     } catch (error) {
       // Even if logout API fails, still redirect to login
-      router.push('/login')
+      router.replace('/login')
     }
   }
 

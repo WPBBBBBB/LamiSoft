@@ -1,24 +1,28 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { AUTH_SESSION_COOKIE } from "@/lib/auth-session"
 
-function isSecureRequest(request: NextRequest): boolean {
-  const proto = request.headers.get("x-forwarded-proto")
-  if (proto) return proto === "https"
-  return new URL(request.url).protocol === "https:"
+function buildDeleteCookieHeader(name: string, secure: boolean): string {
+  // Delete cookie across common attribute variants.
+  // Note: secure cookies can only be set/cleared over HTTPS; sending this header over HTTP is harmless (browser ignores it).
+  const parts = [
+    `${name}=`,
+    "Path=/",
+    "Max-Age=0",
+    "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+    "HttpOnly",
+    "SameSite=Lax",
+  ]
+
+  if (secure) parts.push("Secure")
+  return parts.join("; ")
 }
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   const response = NextResponse.json({ success: true })
 
-  response.cookies.set({
-    name: AUTH_SESSION_COOKIE,
-    value: "",
-    httpOnly: true,
-    sameSite: "lax",
-    secure: isSecureRequest(request),
-    path: "/",
-    maxAge: 0,
-  })
+  // Clear both Secure and non-Secure variants to avoid cases where the session cookie was created under HTTPS behind a proxy.
+  response.headers.append("Set-Cookie", buildDeleteCookieHeader(AUTH_SESSION_COOKIE, true))
+  response.headers.append("Set-Cookie", buildDeleteCookieHeader(AUTH_SESSION_COOKIE, false))
 
   return response
 }

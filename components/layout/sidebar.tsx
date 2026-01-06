@@ -461,9 +461,9 @@ export default function Sidebar() {
               </Button>
               <Button
                 variant="destructive"
-                onClick={() => {
-                  logout()
-                  window.location.href = "/login"
+                onClick={async () => {
+                  setLogoutDialogOpen(false)
+                  await logout()
                 }}
               >
                 {t('logout', currentLanguage.code)}
