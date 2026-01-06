@@ -20,6 +20,7 @@ import {
   formatRemainingTime 
 } from "@/lib/oauth-security"
 import { deleteCookie, getCookie, setCookie } from "@/lib/cookie-utils"
+import { LoginFloatingBackground } from "@/components/login-floating-background"
 
 const SAVED_USERNAME_COOKIE = "als_saved_username"
 
@@ -304,8 +305,11 @@ export default function LoginPage() {
 
   if (showOAuthOptions) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" 
-           style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))' }}>
+      <div
+        className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))' }}
+      >
+        <LoginFloatingBackground />
         {isLoading && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
@@ -318,7 +322,7 @@ export default function LoginPage() {
             </div>
           </div>
         )}
-        <Card className="w-full max-w-md shadow-2xl">
+        <Card className="relative z-10 w-full max-w-md shadow-2xl">
           <CardHeader className="space-y-1 text-center">
             <Button
               variant="ghost"
@@ -419,8 +423,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" 
-         style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))' }}>
+    <div
+      className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden"
+      style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))' }}
+    >
+      <LoginFloatingBackground />
       {isLoading && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
@@ -433,7 +440,7 @@ export default function LoginPage() {
           </div>
         </div>
       )}
-      <Card className="w-full max-w-md shadow-2xl">
+      <Card className="relative z-10 w-full max-w-md shadow-2xl">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-3xl font-bold">{t('welcomeBack', currentLanguage.code)}</CardTitle>
           <CardDescription className="text-base">

@@ -5,6 +5,7 @@ import { Theme, themes, applyTheme, getThemeById } from "@/lib/themes"
 import { FontOption, fonts, applyFont, getFontById, loadGoogleFont } from "@/lib/fonts"
 import { Language, languages } from "@/lib/i18n"
 import { readPersistedValue, writePersistedValue } from "@/lib/cookie-utils"
+import { useTheme as useNextTheme } from "next-themes"
 
 const COOKIE_THEME_ID = "als_theme_id"
 const COOKIE_THEME_MODE = "als_theme_mode"
@@ -38,6 +39,8 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
+  const { theme: nextTheme, setTheme: setNextTheme } = useNextTheme()
+
   const [themeId, setThemeIdState] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const savedThemeId = readPersistedValue("theme-id", COOKIE_THEME_ID)
@@ -122,19 +125,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [mounted] = useState(true)
 
   useEffect(() => {
-    const root = document.documentElement
-    
-    if (mode === "system") {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-      if (prefersDark) {
-        root.classList.add("dark")
-      } else {
-        root.classList.remove("dark")
-      }
-    } else if (mode === "dark") {
-      root.classList.add("dark")
-    } else {
-      root.classList.remove("dark")
+    // Keep next-themes in sync with Settings "mode".
+    // next-themes will handle adding/removing the "dark" class and reacting to system theme changes.
+    if (nextTheme !== mode) {
+      setNextTheme(mode)
     }
 
     document.documentElement.setAttribute("lang", currentLanguage.code)
@@ -163,23 +157,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentFont, mounted])
 
-  useEffect(() => {
-    if (mode === "system" && mounted) {
-      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-      
-      const handleChange = (e: MediaQueryListEvent) => {
-        if (e.matches) {
-          document.documentElement.classList.add("dark")
-        } else {
-          document.documentElement.classList.remove("dark")
-        }
-      }
-      
-      mediaQuery.addEventListener("change", handleChange)
-      
-      return () => mediaQuery.removeEventListener("change", handleChange)
-    }
-  }, [mode, mounted])
+  // System mode changes are handled by next-themes.
 
   const setTheme = (id: string) => {
     const theme = getThemeById(id)
@@ -194,21 +172,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const setMode = (newMode: "light" | "dark" | "system") => {
     setModeState(newMode)
     writePersistedValue("theme-mode", COOKIE_THEME_MODE, newMode, { cookieMaxAgeDays: 365, requireConsent: true })
-    
-    const root = document.documentElement
-    if (newMode === "system") {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-      if (prefersDark) {
-        root.classList.add("dark")
-      } else {
-        root.classList.remove("dark")
-      }
-    } else if (newMode === "dark") {
-      root.classList.add("dark")
-    } else {
-      root.classList.remove("dark")
-    }
-    }
+    setNextTheme(newMode)
+  }
 
   const setLanguage = (langCode: string) => {
     const lang = languages.find((l) => l.code === langCode)

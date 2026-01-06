@@ -13,6 +13,7 @@ import Link from "next/link"
 import { createOTP, verifyOTP, getUserByPhone, resetPassword } from "@/lib/otp-operations"
 import { t } from "@/lib/translations"
 import { useSettings } from "@/components/providers/settings-provider"
+import { LoginFloatingBackground } from "@/components/login-floating-background"
 
 type Step = 'phone' | 'otp' | 'password'
 
@@ -160,9 +161,12 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" 
-         style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))' }}>
-      <Card className="w-full max-w-md shadow-2xl">
+    <div
+      className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden"
+      style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))' }}
+    >
+      <LoginFloatingBackground />
+      <Card className="relative z-10 w-full max-w-md shadow-2xl">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-between">
             <CardTitle className="text-2xl font-bold">{t('resetPassword', currentLanguage.code)}</CardTitle>
