@@ -20,6 +20,7 @@ import {
   Shield,
   LogOut,
   Users,
+  ClipboardList,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -53,6 +54,11 @@ const navigationConfig: (NavItem | NavGroup)[] = [
     titleKey: "home",
     href: "/home",
     icon: Home,
+  },
+  {
+    titleKey: "inventoryCount",
+    href: "/inventory-count",
+    icon: ClipboardList,
   },
   {
     titleKey: "statistics",

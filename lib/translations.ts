@@ -326,6 +326,7 @@ export const systemTranslations = {
 
   "mainOperations": { ar: "العمليات الأساسية", ku: "کردەوە سەرەکییەکان", en: "Main Operations" },
   "inventoryManagement": { ar: "إدارة المخزون", ku: "بەڕێوەبردنی کۆگا", en: "Inventory Management" },
+  "inventoryCount": { ar: "الجرد المخزني", ku: "پێکەری کۆگا", en: "Inventory Count" },
   "people": { ar: "الأشخاص", ku: "کەسەکان", en: "People" },
   "reportsAndStatements": { ar: "التقارير والكشوفات", ku: "ڕاپۆرت و لیستەکان", en: "Reports & Statements" },
 
