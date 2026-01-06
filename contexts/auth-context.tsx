@@ -3,6 +3,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { UserWithPermissions } from '@/lib/users-operations'
+import { deleteCookie } from '@/lib/cookie-utils'
+
+const SAVED_USERNAME_COOKIE = "als_saved_username"
 
 interface AuthContextType {
   user: UserWithPermissions | null
@@ -73,6 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.removeItem(key)
           }
         })
+
+        // Clear remembered login info
+        deleteCookie(SAVED_USERNAME_COOKIE)
       }
       
       // Redirect to login page
