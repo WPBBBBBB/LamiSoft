@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Save, Eye, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
+import { useSettings } from "@/components/providers/settings-provider"
+import { t } from "@/lib/translations"
 
 interface PrintSettings {
   storeName: string
@@ -24,6 +26,9 @@ const defaultSettings: PrintSettings = {
 }
 
 export default function PrintSettingsPage() {
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
+
   const [settings, setSettings] = useState<PrintSettings>(defaultSettings)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -34,16 +39,16 @@ export default function PrintSettingsPage() {
         setSettings(JSON.parse(savedSettings))
       }
     } catch (error) {
-      }
+    }
   }, [])
 
   const handleSave = () => {
     setIsSaving(true)
     try {
       localStorage.setItem("printSettings", JSON.stringify(settings))
-      toast.success("تم حفظ إعدادات الطباعة بنجاح")
+      toast.success(t('printSettingsSaveSuccess', lang))
     } catch (error) {
-      toast.error("فشل حفظ الإعدادات")
+      toast.error(t('printSettingsSaveError', lang))
     } finally {
       setIsSaving(false)
     }
@@ -52,15 +57,15 @@ export default function PrintSettingsPage() {
   const handleReset = () => {
     setSettings(defaultSettings)
     localStorage.removeItem("printSettings")
-    toast.success("تم إعادة تعيين الإعدادات للقيم الافتراضية")
+    toast.success(t('printSettingsResetSuccess', lang))
   }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">إعدادات الطباعة</h1>
+        <h1 className="text-3xl font-bold">{t('printSettings', lang)}</h1>
         <p className="text-muted-foreground">
-          قم بتخصيص معلومات المتجر التي ستظهر في الفواتير المطبوعة
+          {t('printSettingsDescription', lang)}
         </p>
       </div>
 
@@ -70,7 +75,7 @@ export default function PrintSettingsPage() {
           <div className="space-y-2">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Save className="h-5 w-5" />
-              معلومات المتجر
+              {t('storeInformation', lang)}
             </h2>
           </div>
 
@@ -78,13 +83,13 @@ export default function PrintSettingsPage() {
             {/* اسم المتجر */}
             <div className="space-y-2">
               <Label htmlFor="storeName" className="text-base">
-                اسم المتجر / العنوان الرئيسي
+                {t('storeNameMainLabel', lang)}
               </Label>
               <Input
                 id="storeName"
                 value={settings.storeName}
                 onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
-                placeholder="مثال: شركة الميسر"
+                placeholder={t('storeNamePlaceholder', lang)}
                 className="text-lg"
               />
             </div>
@@ -92,13 +97,13 @@ export default function PrintSettingsPage() {
             {/* العنوان الثانوي */}
             <div className="space-y-2">
               <Label htmlFor="storeSubtitle" className="text-base">
-                العنوان الثانوي / التخصص
+                {t('storeSubtitleLabel', lang)}
               </Label>
               <Input
                 id="storeSubtitle"
                 value={settings.storeSubtitle}
                 onChange={(e) => setSettings({ ...settings, storeSubtitle: e.target.value })}
-                placeholder="مثال: للمطابخ الحديثة والديكورات وتجارة الأثاث"
+                placeholder={t('storeSubtitlePlaceholder', lang)}
                 className="text-sm"
               />
             </div>
@@ -106,13 +111,13 @@ export default function PrintSettingsPage() {
             {/* معلومات التواصل */}
             <div className="space-y-2">
               <Label htmlFor="contactInfo" className="text-base">
-                رقم الهاتف والعنوان
+                {t('storeContactLabel', lang)}
               </Label>
               <Textarea
                 id="contactInfo"
                 value={settings.contactInfo}
                 onChange={(e) => setSettings({ ...settings, contactInfo: e.target.value })}
-                placeholder="مثال: للتواصل: 07XX XXX XXXX - العراق/بغداد - كرادة داخل"
+                placeholder={t('storeContactPlaceholder', lang)}
                 className="min-h-20 text-sm resize-none"
               />
             </div>
@@ -120,13 +125,13 @@ export default function PrintSettingsPage() {
             {/* الفوتر */}
             <div className="space-y-2">
               <Label htmlFor="footer" className="text-base">
-                نص التذييل (Footer)
+                {t('storeFooterLabel', lang)}
               </Label>
               <Textarea
                 id="footer"
                 value={settings.footer}
                 onChange={(e) => setSettings({ ...settings, footer: e.target.value })}
-                placeholder="مثال: شكراً لتعاملكم معنا"
+                placeholder={t('storeFooterPlaceholder', lang)}
                 className="min-h-[60px] text-sm resize-none"
               />
             </div>
@@ -140,7 +145,7 @@ export default function PrintSettingsPage() {
               size="lg"
             >
               <Save className="h-5 w-5 ml-2" />
-              {isSaving ? "جاري الحفظ..." : "حفظ الإعدادات"}
+              {isSaving ? t('saving', lang) : t('saveSettings', lang)}
             </Button>
             
             <Button
@@ -150,7 +155,7 @@ export default function PrintSettingsPage() {
               size="lg"
             >
               <RotateCcw className="h-5 w-5 ml-2" />
-              إعادة تعيين
+              {t('reset', lang)}
             </Button>
           </div>
         </Card>
@@ -160,10 +165,10 @@ export default function PrintSettingsPage() {
           <div className="space-y-2">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Eye className="h-5 w-5" />
-              معاينة شكل الطباعة
+              {t('printPreview', lang)}
             </h2>
             <p className="text-sm text-muted-foreground">
-              هذه معاينة لكيفية ظهور البيانات في الفاتورة المطبوعة
+              {t('printPreviewDescription', lang)}
             </p>
           </div>
 
@@ -171,7 +176,7 @@ export default function PrintSettingsPage() {
             {/* الهيدر */}
             <div className="text-center space-y-2 border-b pb-4">
               <h1 className="text-2xl font-bold text-gray-900">
-                {settings.storeName || "اسم المتجر"}
+                {settings.storeName || t('storeNameFallback', lang)}
               </h1>
               {settings.storeSubtitle && (
                 <p className="text-sm text-gray-600">
@@ -188,32 +193,32 @@ export default function PrintSettingsPage() {
             {/* محتوى مثالي */}
             <div className="space-y-4">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">رقم الفاتورة:</span>
+                <span className="text-gray-600">{t('invoiceNumber', lang)}:</span>
                 <span className="font-semibold">S-00001</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">التاريخ:</span>
+                <span className="text-gray-600">{t('invoiceDate', lang)}:</span>
                 <span className="font-semibold">2025-12-26</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">الزبون:</span>
-                <span className="font-semibold">اسم الزبون</span>
+                <span className="text-gray-600">{t('invoiceCustomer', lang)}:</span>
+                <span className="font-semibold">{t('sampleCustomerName', lang)}</span>
               </div>
               
               <div className="border-t pt-4">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="text-right p-2">المادة</th>
-                      <th className="text-center p-2">الكمية</th>
-                      <th className="text-right p-2">المجموع</th>
+                      <th className="text-right p-2">{t('invoiceItem', lang)}</th>
+                      <th className="text-center p-2">{t('invoiceQuantity', lang)}</th>
+                      <th className="text-right p-2">{t('invoiceTotal', lang)}</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr className="border-b">
-                      <td className="p-2">مادة مثالية</td>
+                      <td className="p-2">{t('sampleItemName', lang)}</td>
                       <td className="text-center p-2">2</td>
-                      <td className="text-right p-2">50,000 د.ع</td>
+                      <td className="text-right p-2">50,000 {t('currencyIQDAbbrev', lang)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -221,8 +226,8 @@ export default function PrintSettingsPage() {
 
               <div className="border-t pt-4">
                 <div className="flex justify-between font-bold text-lg">
-                  <span>المجموع الكلي:</span>
-                  <span>50,000 د.ع</span>
+                  <span>{t('invoiceGrandTotal', lang)}:</span>
+                  <span>50,000 {t('currencyIQDAbbrev', lang)}</span>
                 </div>
               </div>
             </div>

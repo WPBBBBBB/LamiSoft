@@ -84,19 +84,28 @@ export default function AccountPage() {
   ].filter(acc => acc.connected)
 
   const permissionsList = [
-    { key: 'view_statistics', label: 'عرض الإحصائيات' },
-    { key: 'view_reports', label: 'عرض التقارير' },
-    { key: 'view_services', label: 'عرض الخدمات' },
-    { key: 'view_people', label: 'عرض الأشخاص' },
-    { key: 'view_notifications', label: 'عرض الإشعارات' },
-    { key: 'add_purchase', label: 'إضافة مشتريات' },
-    { key: 'view_stores', label: 'عرض المخازن' },
-    { key: 'view_store_transfer', label: 'عرض نقل المخزون' },
-  ]
+    { key: 'view_statistics', labelKey: 'permViewStatistics' },
+    { key: 'view_reports', labelKey: 'permViewReports' },
+    { key: 'view_services', labelKey: 'permViewServices' },
+    { key: 'view_people', labelKey: 'permViewPeople' },
+    { key: 'view_notifications', labelKey: 'permViewNotifications' },
+    { key: 'add_purchase', labelKey: 'permAddPurchase' },
+    { key: 'view_stores', labelKey: 'permViewStores' },
+    { key: 'view_store_transfer', labelKey: 'permViewStoreTransfer' },
+  ] as const
+
+  const lang = currentLanguage.code
+
+  const getRoleLabel = (permissionType: string) => {
+    if (permissionType === 'مدير') return t('roleManager', lang)
+    if (permissionType === 'محاسب') return t('roleAccountant', lang)
+    if (permissionType === 'موظف') return t('roleEmployee', lang)
+    return permissionType
+  }
 
   return (
     <div className="p-6 h-full overflow-auto">
-      <h1 className="text-3xl font-bold mb-6">الحساب</h1>
+      <h1 className="text-3xl font-bold mb-6">{t('account', lang)}</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-[30%_70%] gap-6">
         {/* الجزء الأيمن - 30% */}
@@ -141,7 +150,7 @@ export default function AccountPage() {
               {userData.age && (
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  <span>{userData.age} سنة</span>
+                  <span>{userData.age} {t('years', lang)}</span>
                 </div>
               )}
               {userData.address && (
@@ -160,7 +169,7 @@ export default function AccountPage() {
           {/* الحسابات المرتبطة */}
           {connectedAccounts.length > 0 && (
             <Card className="p-6">
-              <h3 className="font-bold mb-4">الحسابات المرتبطة</h3>
+              <h3 className="font-bold mb-4">{t('connectedAccounts', lang)}</h3>
               <div className="flex flex-wrap gap-2">
                 {connectedAccounts.map((account) => (
                   <Badge key={account.provider} variant="secondary" className="text-xs flex items-center gap-1.5">
@@ -204,10 +213,10 @@ export default function AccountPage() {
           <Card className="p-6 bg-linear-to-br from-primary/10 to-accent/10">
             <div className="flex items-center gap-2 mb-4">
               <Shield className="h-5 w-5 text-primary" />
-              <h3 className="font-bold">الصلاحيات والرتبة</h3>
+              <h3 className="font-bold">{t('permissionsAndRole', lang)}</h3>
             </div>
             <div className="mb-4">
-              <Badge className="text-sm">{userData.permission_type}</Badge>
+              <Badge className="text-sm">{getRoleLabel(userData.permission_type)}</Badge>
             </div>
             <div className="space-y-2">
               {userData.permission_type === 'مدير' ? (
@@ -215,7 +224,7 @@ export default function AccountPage() {
                 permissionsList.map((perm) => (
                   <div key={perm.key} className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-foreground">{perm.label}</span>
+                    <span className="text-foreground">{t(perm.labelKey, lang)}</span>
                   </div>
                 ))
               ) : (
@@ -225,7 +234,7 @@ export default function AccountPage() {
                   .map((perm) => (
                     <div key={perm.key} className="flex items-center gap-2 text-sm">
                       <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-foreground">{perm.label}</span>
+                      <span className="text-foreground">{t(perm.labelKey, lang)}</span>
                     </div>
                   ))
               )}
@@ -237,8 +246,8 @@ export default function AccountPage() {
         <div>
           <Tabs defaultValue="personal" className="w-full">
             <TabsList className="w-full grid grid-cols-2">
-              <TabsTrigger value="personal">المعلومات الشخصية</TabsTrigger>
-              <TabsTrigger value="links">الروابط</TabsTrigger>
+              <TabsTrigger value="personal">{t('personalInfo', lang)}</TabsTrigger>
+              <TabsTrigger value="links">{t('linksTab', lang)}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="personal" className="mt-6">

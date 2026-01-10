@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { PermissionGuard } from "@/components/permission-guard"
 import { useRouter } from "next/navigation"
+import { useSettings } from "@/components/providers/settings-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,6 +11,7 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Eye, EyeOff, Save } from "lucide-react"
 import { toast } from "sonner"
+import { t } from "@/lib/translations"
 
 interface WhatsAppSettings {
   id?: string
@@ -27,32 +29,37 @@ interface WhatsAppSettings {
 
 export default function WhatsAppSettingsPage() {
   const router = useRouter()
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
+
   const [showApiKey, setShowApiKey] = useState(false)
   const [activeTab, setActiveTab] = useState("notifications")
-  const [settings, setSettings] = useState<WhatsAppSettings>({
+
+  const [settings, setSettings] = useState<WhatsAppSettings>(() => ({
     api_key: "",
     per_message_base_delay_ms: 3000,
     per_message_jitter_ms: 100,
     batch_size: 5,
     batch_pause_ms: 6000,
-    normal_message_title: "رسالة من AL-LamiSoft",
-    normal_message_body: "مرحباً، هذه رسالة عادية من النظام.",
-    notification_message_title: "رمز التحقق من AL-LamiSoft",
-    notification_message_body: "رمز التحقق الخاص بك هو: {CODE}",
+    normal_message_title: t("whatsappDefaultNormalTitle", lang),
+    normal_message_body: t("whatsappDefaultNormalBody", lang),
+    notification_message_title: t("whatsappDefaultNotificationTitle", lang),
+    notification_message_body: t("whatsappDefaultNotificationBody", lang),
     auto_send_enabled: true,
-  })
-  const [originalSettings, setOriginalSettings] = useState<WhatsAppSettings>({
+  }))
+
+  const [originalSettings, setOriginalSettings] = useState<WhatsAppSettings>(() => ({
     api_key: "",
     per_message_base_delay_ms: 3000,
     per_message_jitter_ms: 100,
     batch_size: 5,
     batch_pause_ms: 6000,
-    normal_message_title: "رسالة من AL-LamiSoft",
-    normal_message_body: "مرحباً، هذه رسالة عادية من النظام.",
-    notification_message_title: "رمز التحقق من AL-LamiSoft",
-    notification_message_body: "رمز التحقق الخاص بك هو: {CODE}",
+    normal_message_title: t("whatsappDefaultNormalTitle", lang),
+    normal_message_body: t("whatsappDefaultNormalBody", lang),
+    notification_message_title: t("whatsappDefaultNotificationTitle", lang),
+    notification_message_body: t("whatsappDefaultNotificationBody", lang),
     auto_send_enabled: true,
-  })
+  }))
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -73,10 +80,10 @@ export default function WhatsAppSettingsPage() {
         setSettings(normalizedData)
         setOriginalSettings(normalizedData)
       } else {
-        toast.error("فشل تحميل الإعدادات")
+        toast.error(t("whatsappSettingsLoadFailed", lang))
       }
     } catch (error) {
-      toast.error("خطأ في تحميل الإعدادات")
+      toast.error(t("whatsappSettingsLoadError", lang))
     } finally {
       setIsLoading(false)
     }
@@ -136,19 +143,19 @@ export default function WhatsAppSettingsPage() {
         const updatedData = await response.json()
         setSettings({ ...settingsToSave, ...updatedData })
         setOriginalSettings({ ...settingsToSave, ...updatedData })
-        toast.success("تم حفظ الإعدادات بنجاح")
+        toast.success(t("whatsappSettingsSaveSuccess", lang))
       } else {
-        toast.error("فشل حفظ الإعدادات")
+        toast.error(t("whatsappSettingsSaveFailed", lang))
       }
     } catch (error) {
-      toast.error("خطأ في حفظ الإعدادات")
+      toast.error(t("whatsappSettingsSaveError", lang))
     }
   }
 
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-muted-foreground">جاري التحميل...</div>
+        <div className="text-muted-foreground">{t("loading", lang)}</div>
       </div>
     )
   }
@@ -157,19 +164,19 @@ export default function WhatsAppSettingsPage() {
     <PermissionGuard requiredRole="مدير">
     <div className="h-full p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">خدمة الواتساب</h1>
+        <h1 className="text-3xl font-bold">{t("whatsappService", lang)}</h1>
         <p className="text-muted-foreground mt-2">
-          إدارة إعدادات خدمة إرسال رسائل الواتساب
+          {t("whatsappServiceDescription", lang)}
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-6">ضبط إعدادات الواتساب</h2>
+          <h2 className="text-xl font-semibold mb-6">{t("whatsappConfigureSettings", lang)}</h2>
           
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="apiKey">API الخاص بالخدمة</Label>
+              <Label htmlFor="apiKey">{t("whatsappServiceApiKey", lang)}</Label>
               <div className="flex gap-2">
                 <Input
                   id="apiKey"
@@ -177,7 +184,7 @@ export default function WhatsAppSettingsPage() {
                   value={settings.api_key || ""}
                   onChange={(e) => handleSettingChange('api_key', e.target.value)}
                   className="font-mono"
-                  placeholder="أدخل مفتاح API"
+                  placeholder={t("whatsappApiKeyPlaceholder", lang)}
                 />
                 <Button
                   variant="outline"
@@ -190,7 +197,7 @@ export default function WhatsAppSettingsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="baseDelay">مدة التأخير بين الرسائل - ملي ثانية</Label>
+              <Label htmlFor="baseDelay">{t("whatsappBaseDelayLabel", lang)}</Label>
               <Input
                 id="baseDelay"
                 type="number"
@@ -199,11 +206,11 @@ export default function WhatsAppSettingsPage() {
                 value={settings.per_message_base_delay_ms}
                 onChange={(e) => handleSettingChange('per_message_base_delay_ms', parseInt(e.target.value))}
               />
-              <p className="text-xs text-muted-foreground">القيمة بين 3000 و 15000 ملي ثانية</p>
+              <p className="text-xs text-muted-foreground">{t("whatsappBaseDelayHelp", lang)}</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="jitter">عامل Jitter - لا حاجة للتغيير</Label>
+              <Label htmlFor="jitter">{t("whatsappJitterLabel", lang)}</Label>
               <Input
                 id="jitter"
                 type="number"
@@ -212,11 +219,11 @@ export default function WhatsAppSettingsPage() {
                 value={settings.per_message_jitter_ms}
                 onChange={(e) => handleSettingChange('per_message_jitter_ms', parseInt(e.target.value))}
               />
-              <p className="text-xs text-muted-foreground">القيمة بين 100 و 2000 ملي ثانية</p>
+              <p className="text-xs text-muted-foreground">{t("whatsappJitterHelp", lang)}</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="batchSize">عدد الرسائل قبل الاستراحة</Label>
+              <Label htmlFor="batchSize">{t("whatsappBatchSizeLabel", lang)}</Label>
               <Input
                 id="batchSize"
                 type="number"
@@ -225,11 +232,11 @@ export default function WhatsAppSettingsPage() {
                 value={settings.batch_size}
                 onChange={(e) => handleSettingChange('batch_size', parseInt(e.target.value))}
               />
-              <p className="text-xs text-muted-foreground">القيمة بين 5 و 50 رسالة</p>
+              <p className="text-xs text-muted-foreground">{t("whatsappBatchSizeHelp", lang)}</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="batchPause">مدة الاستراحة المطولة - ملي ثانية</Label>
+              <Label htmlFor="batchPause">{t("whatsappBatchPauseLabel", lang)}</Label>
               <Input
                 id="batchPause"
                 type="number"
@@ -238,7 +245,7 @@ export default function WhatsAppSettingsPage() {
                 value={settings.batch_pause_ms}
                 onChange={(e) => handleSettingChange('batch_pause_ms', parseInt(e.target.value))}
               />
-              <p className="text-xs text-muted-foreground">القيمة بين 6000 و 2000000 ملي ثانية</p>
+              <p className="text-xs text-muted-foreground">{t("whatsappBatchPauseHelp", lang)}</p>
             </div>
 
             <Button
@@ -247,30 +254,30 @@ export default function WhatsAppSettingsPage() {
               className="w-full gap-2"
             >
               <Save className="h-4 w-4" />
-              {hasChanges() ? "حفظ التغييرات" : "حفظ"}
+              {hasChanges() ? t("saveChanges", lang) : t("save", lang)}
             </Button>
           </div>
         </Card>
 
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-6">هيكلة الرسالة</h2>
+          <h2 className="text-xl font-semibold mb-6">{t("whatsappMessageStructure", lang)}</h2>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="notifications">رسائل الإشعارات</TabsTrigger>
-              <TabsTrigger value="normal">الرسائل العادية</TabsTrigger>
+              <TabsTrigger value="notifications">{t("whatsappNotificationsMessages", lang)}</TabsTrigger>
+              <TabsTrigger value="normal">{t("whatsappNormalMessages", lang)}</TabsTrigger>
             </TabsList>
             
             <TabsContent value="notifications" className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label className="text-base font-semibold">عنوان الرسالة</Label>
+                <Label className="text-base font-semibold">{t("whatsappMessageTitleLabel", lang)}</Label>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                   {settings.notification_message_title}
                 </p>
               </div>
               
               <div className="space-y-2">
-                <Label className="text-base font-semibold">وصف الرسالة</Label>
+                <Label className="text-base font-semibold">{t("whatsappMessageBodyLabel", lang)}</Label>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                   {settings.notification_message_body}
                 </p>
@@ -279,14 +286,14 @@ export default function WhatsAppSettingsPage() {
             
             <TabsContent value="normal" className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label className="text-base font-semibold">عنوان الرسالة</Label>
+                <Label className="text-base font-semibold">{t("whatsappMessageTitleLabel", lang)}</Label>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                   {settings.normal_message_title}
                 </p>
               </div>
               
               <div className="space-y-2">
-                <Label className="text-base font-semibold">وصف الرسالة</Label>
+                <Label className="text-base font-semibold">{t("whatsappMessageBodyLabel", lang)}</Label>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                   {settings.normal_message_body}
                 </p>
@@ -299,7 +306,7 @@ export default function WhatsAppSettingsPage() {
             className="w-full mt-6"
             onClick={() => router.push(`/settings/whatsapp/edit-message?type=${activeTab === "notifications" ? "notification" : "normal"}`)}
           >
-            تعديل الهيكل
+            {t("whatsappEditTemplate", lang)}
           </Button>
         </Card>
       </div>

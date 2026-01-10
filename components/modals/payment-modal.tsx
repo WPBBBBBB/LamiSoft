@@ -32,14 +32,17 @@ import { getCustomers, type Customer } from "@/lib/supabase-operations"
 import { createPayment } from "@/lib/payments-operations"
 import { logAction } from "@/lib/system-log-operations"
 import { toast } from "sonner"
+import { t } from "@/lib/translations"
+import { useSettings } from "@/components/providers/settings-provider"
 
-const formSchema = z.object({
-  customer_id: z.string().min(1, { message: "يرجى اختيار الزبون" }),
-  transaction_type: z.enum(["قبض", "صرف"]),
-  currency_type: z.enum(["IQD", "USD"]),
-  amount: z.string().min(1, { message: "يرجى إدخال المبلغ" }),
-  notes: z.string().optional(),
-})
+const createFormSchema = (lang: string) =>
+  z.object({
+    customer_id: z.string().min(1, { message: t("selectCustomerRequired", lang) }),
+    transaction_type: z.enum(["قبض", "صرف"]),
+    currency_type: z.enum(["IQD", "USD"]),
+    amount: z.string().min(1, { message: t("paymentEnterAmountRequired", lang) }),
+    notes: z.string().optional(),
+  })
 
 interface PaymentModalProps {
   open: boolean
@@ -48,13 +51,17 @@ interface PaymentModalProps {
 }
 
 export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProps) {
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
   const [isLoading, setIsLoading] = useState(false)
   const [customers, setCustomers] = useState<Customer[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [selectOpen, setSelectOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const formSchema = createFormSchema(lang)
+
+  const form = useForm<z.infer<ReturnType<typeof createFormSchema>>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       customer_id: "",
@@ -93,7 +100,7 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
       const data = await getCustomers()
       setCustomers(data)
     } catch (error) {
-      toast.error("حدث خطأ أثناء تحميل العملاء")
+      toast.error(t("paymentFailedLoadCustomers", lang))
     }
   }
 
@@ -102,13 +109,13 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
     customer.phone_number?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<ReturnType<typeof createFormSchema>>) {
     try {
       setIsLoading(true)
 
       const amount = parseFloat(values.amount)
       if (isNaN(amount) || amount <= 0) {
-        toast.error("يرجى إدخال مبلغ صحيح")
+        toast.error(t("paymentEnterValidAmount", lang))
         return
       }
 
@@ -125,7 +132,7 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
       })
 
       if (!result.success) {
-        toast.error(result.error || "حدث خطأ أثناء تسجيل الدفعة")
+        toast.error(result.error || t("paymentSaveFailed", lang))
         return
       }
 
@@ -144,11 +151,11 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
         }
       )
 
-      toast.success("تم تسجيل الدفعة بنجاح")
+      toast.success(t("paymentSavedSuccess", lang))
       onOpenChange(false)
       if (onSuccess) onSuccess()
     } catch (error) {
-      toast.error("حدث خطأ أثناء تسجيل الدفعة")
+      toast.error(t("paymentSaveError", lang))
     } finally {
       setIsLoading(false)
     }
@@ -158,7 +165,7 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">تسجيل دفعة جديدة</DialogTitle>
+          <DialogTitle className="text-2xl">{t("paymentRecordNewTitle", lang)}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -169,10 +176,10 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
               name="customer_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>اختيار الزبون *</FormLabel>
+                  <FormLabel>{t("paymentSelectCustomerLabel", lang)} *</FormLabel>
                   <div className="relative" ref={dropdownRef}>
                     <Input
-                      placeholder="ابحث عن زبون..."
+                      placeholder={t("searchForCustomer", lang)}
                       value={searchQuery}
                       onChange={(e) => {
                         setSearchQuery(e.target.value)
@@ -210,13 +217,13 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
                     {selectOpen && filteredCustomers.length === 0 && searchQuery && (
                       <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md">
                         <div className="p-4 text-center text-sm text-muted-foreground">
-                          لم يتم العثور على زبون
+                          {t("saleCustomerNotFound", lang)}
                         </div>
                       </div>
                     )}
                     {field.value && (
                       <div className="mt-2 p-2 bg-muted rounded-md text-sm">
-                        <span className="font-medium">المختار:</span>{" "}
+                        <span className="font-medium">{t("paymentSelectedCustomerLabel", lang)}</span>{" "}
                         {customers.find(c => c.id === field.value)?.customer_name}
                       </div>
                     )}
@@ -232,16 +239,16 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
               name="currency_type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>نوع العملة *</FormLabel>
+                  <FormLabel>{t("currencyType", lang)} *</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="اختر العملة" />
+                        <SelectValue placeholder={t("paymentSelectCurrencyPlaceholder", lang)} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="IQD">دينار عراقي (IQD)</SelectItem>
-                      <SelectItem value="USD">دولار أمريكي (USD)</SelectItem>
+                      <SelectItem value="IQD">{t("paymentCurrencyIQDLabel", lang)}</SelectItem>
+                      <SelectItem value="USD">{t("paymentCurrencyUSDLabel", lang)}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -255,16 +262,16 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
               name="transaction_type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>نوع العملية *</FormLabel>
+                  <FormLabel>{t("paymentTransactionTypeLabel", lang)} *</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="اختر نوع العملية" />
+                        <SelectValue placeholder={t("paymentSelectTransactionTypePlaceholder", lang)} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="قبض">قبض (تسديد من الزبون)</SelectItem>
-                      <SelectItem value="صرف">صرف (دفع للزبون)</SelectItem>
+                      <SelectItem value="قبض">{t("paymentTransactionReceiveLabel", lang)}</SelectItem>
+                      <SelectItem value="صرف">{t("paymentTransactionPayLabel", lang)}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -278,11 +285,11 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>المبلغ *</FormLabel>
+                  <FormLabel>{t("paymentAmountLabel", lang)} *</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
-                      placeholder="أدخل المبلغ"
+                      placeholder={t("paymentAmountPlaceholder", lang)}
                       {...field}
                     />
                   </FormControl>
@@ -296,10 +303,10 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ملاحظات</FormLabel>
+                  <FormLabel>{t("notes", lang)}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="أدخل أي ملاحظات..."
+                      placeholder={t("paymentNotesPlaceholder", lang)}
                       className="resize-none"
                       rows={3}
                       {...field}
@@ -313,7 +320,7 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
             {}
             <div className="flex gap-4 pt-4">
               <Button type="submit" disabled={isLoading} className="flex-1">
-                {isLoading ? "جاري الحفظ..." : "تسجيل الدفعة"}
+                {isLoading ? t("saving", lang) : t("paymentRecordButton", lang)}
               </Button>
               <Button
                 type="button"
@@ -322,7 +329,7 @@ export function PaymentModal({ open, onOpenChange, onSuccess }: PaymentModalProp
                 disabled={isLoading}
                 className="flex-1"
               >
-                إلغاء
+                {t("cancel", lang)}
               </Button>
             </div>
           </form>

@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider"
 import { SettingsProvider } from "@/components/providers/settings-provider"
 import { ThemeApplier } from "@/components/providers/theme-applier"
 import { AuthProvider } from "@/contexts/auth-context"
+import { CustomButtonsProvider } from "@/contexts/custom-buttons-context"
 import { ProtectedRoute } from "@/components/protected-route"
 import Header from "@/components/layout/header"
 import Sidebar from "@/components/layout/sidebar"
@@ -34,32 +35,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <SettingsProvider>
         <ThemeApplier>
           <AuthProvider>
-            <WeatherProvider>
-              <NotificationProvider>
-                <ProtectedRoute>
-                  {isLoginPage ? (
-                    <main className="min-h-screen">{children}</main>
-                  ) : (
-                    <div className="relative flex min-h-screen">
-                      <Sidebar />
-                      <div
-                        className="flex-1"
-                        style={{ marginLeft: "var(--sidebar-width, 288px)" }}
-                      >
-                        <Header />
-                        <main className="container mx-auto p-6">{children}</main>
+            <CustomButtonsProvider>
+              <WeatherProvider>
+                <NotificationProvider>
+                  <ProtectedRoute>
+                    {isLoginPage ? (
+                      <main className="min-h-screen">{children}</main>
+                    ) : (
+                      <div className="relative flex min-h-screen">
+                        <Sidebar />
+                        <div
+                          className="flex-1"
+                          style={{ marginLeft: "var(--sidebar-width, 288px)" }}
+                        >
+                          <Header />
+                          <main className="container mx-auto p-6">{children}</main>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </ProtectedRoute>
+                    )}
+                  </ProtectedRoute>
 
-                <AnimatePresence>
-                  <NotificationPanel />
-                </AnimatePresence>
-                <WeatherDialog />
-                <WeatherDropZones />
-              </NotificationProvider>
-            </WeatherProvider>
+                  <AnimatePresence>
+                    <NotificationPanel />
+                  </AnimatePresence>
+                  <WeatherDialog />
+                  <WeatherDropZones />
+                </NotificationProvider>
+              </WeatherProvider>
+            </CustomButtonsProvider>
           </AuthProvider>
         </ThemeApplier>
       </SettingsProvider>

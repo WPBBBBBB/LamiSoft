@@ -4,6 +4,8 @@ import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, Loader2 } from "lucide-react"
+import { useSettings } from "@/components/providers/settings-provider"
+import { t } from "@/lib/translations"
 
 interface OAuthLinkDialogProps {
   provider: 'google' | 'microsoft' | 'github'
@@ -15,6 +17,8 @@ interface OAuthLinkDialogProps {
 export default function OAuthLinkDialog({ provider, userId, onClose, onSuccess }: OAuthLinkDialogProps) {
   const [status, setStatus] = useState<'idle' | 'linking' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
 
   const providerConfig = {
     google: {
@@ -79,7 +83,7 @@ export default function OAuthLinkDialog({ provider, userId, onClose, onSuccess }
         }, 1500)
       } else if (event.data.type === 'oauth-error') {
         setStatus('error')
-        setErrorMessage(event.data.error || 'حدث خطأ أثناء الربط')
+        setErrorMessage(event.data.error || t('oauthLinkGenericError', lang))
       }
     }
 
@@ -101,23 +105,23 @@ export default function OAuthLinkDialog({ provider, userId, onClose, onSuccess }
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl">
-            ربط حساب {config.name}
+            {t('oauthLinkDialogTitle', lang)} {config.name}
           </DialogTitle>
           <DialogDescription className="text-center">
-            قم بتسجيل الدخول إلى حساب {config.name} الخاص بك لربطه
+            {t('oauthLinkDialogDescription', lang)} ({config.name})
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-6">
           {status === 'idle' && (
             <div className="text-center space-y-6">
-              <div className={`mx-auto w-24 h-24 rounded-full bg-gradient-to-br ${config.color} flex items-center justify-center shadow-lg`}>
+              <div className={`mx-auto w-24 h-24 rounded-full bg-linear-to-br ${config.color} flex items-center justify-center shadow-lg`}>
                 {config.icon}
               </div>
               <div>
-                <h3 className="font-bold text-lg mb-2">اربط حسابك</h3>
+                <h3 className="font-bold text-lg mb-2">{t('oauthLinkYourAccount', lang)}</h3>
                 <p className="text-sm text-muted-foreground">
-                  سيتم فتح نافذة جديدة لتسجيل الدخول
+                  {t('oauthLinkOpensNewWindow', lang)}
                 </p>
               </div>
               <Button 
@@ -125,20 +129,20 @@ export default function OAuthLinkDialog({ provider, userId, onClose, onSuccess }
                 className="w-full"
                 size="lg"
               >
-                ربط حساب {config.name}
+                {t('linkAccount', lang)} {config.name}
               </Button>
             </div>
           )}
 
           {status === 'linking' && (
             <div className="text-center space-y-6">
-              <div className={`mx-auto w-24 h-24 rounded-full bg-gradient-to-br ${config.color} flex items-center justify-center shadow-lg`}>
+              <div className={`mx-auto w-24 h-24 rounded-full bg-linear-to-br ${config.color} flex items-center justify-center shadow-lg`}>
                 <Loader2 className="h-12 w-12 text-white animate-spin" />
               </div>
               <div>
-                <h3 className="font-bold text-lg mb-2">جاري الربط...</h3>
+                <h3 className="font-bold text-lg mb-2">{t('oauthLinking', lang)}</h3>
                 <p className="text-sm text-muted-foreground">
-                  يرجى إكمال عملية المصادقة في النافذة المفتوحة
+                  {t('oauthCompleteAuthInWindow', lang)}
                 </p>
               </div>
             </div>
@@ -150,9 +154,9 @@ export default function OAuthLinkDialog({ provider, userId, onClose, onSuccess }
                 <CheckCircle className="h-12 w-12 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-lg text-green-600 mb-2">تم الربط بنجاح!</h3>
+                <h3 className="font-bold text-lg text-green-600 mb-2">{t('oauthLinkedSuccessfully', lang)}</h3>
                 <p className="text-sm text-muted-foreground">
-                  تم ربط حساب {config.name} بنجاح
+                  {t('oauthLinkedSuccessfully', lang)} ({config.name})
                 </p>
               </div>
             </div>
@@ -164,7 +168,7 @@ export default function OAuthLinkDialog({ provider, userId, onClose, onSuccess }
                 <XCircle className="h-12 w-12 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-lg text-red-600 mb-2">فشل الربط</h3>
+                <h3 className="font-bold text-lg text-red-600 mb-2">{t('oauthLinkFailed', lang)}</h3>
                 <p className="text-sm text-muted-foreground">
                   {errorMessage}
                 </p>
@@ -174,7 +178,7 @@ export default function OAuthLinkDialog({ provider, userId, onClose, onSuccess }
                 variant="outline"
                 className="w-full"
               >
-                حاول مرة أخرى
+                {t('tryAgain', lang)}
               </Button>
             </div>
           )}

@@ -37,6 +37,8 @@ import {
   type InventoryCountDetail,
 } from "@/lib/inventory-count-operations"
 import { cn } from "@/lib/utils"
+import { t } from "@/lib/translations"
+import { useSettings } from "@/components/providers/settings-provider"
 
 interface DetailRow extends InventoryCountDetail {
   tempId: string
@@ -64,6 +66,8 @@ const createEmptyRow = (countId: string = ''): DetailRow => ({
 
 export default function InventoryCountPage() {
   const { user: currentUser } = useAuth()
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
   
   const [stores, setStores] = useState<Store[]>([])
   const [selectedStore, setSelectedStore] = useState<string>("")
@@ -162,7 +166,7 @@ export default function InventoryCountPage() {
     
     // منع حذف أول 6 صفوف
     if (index < MINIMUM_ROWS) {
-      toast.error(`لا يمكن حذف أول ${MINIMUM_ROWS} صفوف`)
+      toast.error(t("inventoryCountCannotDeleteFirstRows", lang).replace("{count}", String(MINIMUM_ROWS)))
       return
     }
     
@@ -226,7 +230,7 @@ export default function InventoryCountPage() {
 
   const handleProductSearch = (rowKey: string, searchTerm: string) => {
     if (!selectedStore) {
-      toast.error("الرجاء اختيار المخزن")
+      toast.error(t("selectStoreRequired", lang))
       return
     }
 
@@ -332,15 +336,15 @@ export default function InventoryCountPage() {
 
   const validateCount = () => {
     if (!selectedStore) {
-      toast.error("الرجاء اختيار المخزن")
+      toast.error(t("selectStoreRequired", lang))
       return false
     }
     if (!countId) {
-      toast.error("الرجاء إدخال رقم الجرد")
+      toast.error(t("inventoryCountNumberRequired", lang))
       return false
     }
     if (details.length === 0 || details.every(d => !d.item_id)) {
-      toast.error("الرجاء إضافة منتج واحد على الأقل")
+      toast.error(t("addAtLeastOneItem", lang))
       return false
     }
     return true
@@ -367,17 +371,17 @@ export default function InventoryCountPage() {
       const validDetails = details.filter(d => d.item_id)
       const createResult = await createInventoryCount(count, validDetails)
       if (!createResult.success) {
-        toast.error(createResult.error || "فشل حفظ الجرد")
+        toast.error(createResult.error || t("inventoryCountSaveFailed", lang))
         setIsLoading(false)
         return
       }
       const applyResult = await applyInventoryCount(countId, validDetails)
       if (!applyResult.success) {
-        toast.error(applyResult.error || "فشل تطبيق الجرد")
+        toast.error(applyResult.error || t("inventoryCountApplyFailed", lang))
         setIsLoading(false)
         return
       }
-      toast.success("تم اعتماد الجرد بنجاح")
+      toast.success(t("inventoryCountApprovedSuccess", lang))
       setCountId("")
       setNotes("")
       setDetails(Array.from({ length: MINIMUM_ROWS }, () => createEmptyRow()))
@@ -386,7 +390,7 @@ export default function InventoryCountPage() {
       handleGenerateCountId()
     } catch (error) {
       console.error("Error approving count:", error)
-      toast.error("حدث خطأ أثناء اعتماد الجرد")
+      toast.error(t("inventoryCountApproveError", lang))
     } finally {
       setIsLoading(false)
     }
@@ -430,10 +434,10 @@ export default function InventoryCountPage() {
 
       openReportWindow(reportData)
       
-      toast.success("تم فتح نافذة الطباعة")
+      toast.success(t("inventoryCountPrintWindowOpened", lang))
     } catch (error) {
       console.error("Error printing:", error)
-      toast.error("حدث خطأ أثناء الطباعة")
+      toast.error(t("inventoryCountPrintError", lang))
     } finally {
       setIsLoading(false)
     }
@@ -477,10 +481,10 @@ export default function InventoryCountPage() {
 
       openReportWindow(reportData)
       
-      toast.success("تم فتح نافذة الطباعة")
+      toast.success(t("inventoryCountPrintWindowOpened", lang))
     } catch (error) {
       console.error("Error printing:", error)
-      toast.error("حدث خطأ أثناء الطباعة")
+      toast.error(t("inventoryCountPrintError", lang))
     } finally {
       setIsLoading(false)
     }
@@ -519,17 +523,17 @@ export default function InventoryCountPage() {
         <CardHeader>
           <CardTitle className="text-2xl font-bold flex items-center gap-2">
             <FileText className="h-6 w-6" />
-            الجرد المخزني
+            {t("inventoryCount", lang)}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* First Row: Store, Count ID, User, Date */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label>جرد من مخزن</Label>
+              <Label>{t("inventoryCountFromStore", lang)}</Label>
               <Select value={selectedStore} onValueChange={setSelectedStore}>
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر المخزن" />
+                  <SelectValue placeholder={t("selectStore", lang)} />
                 </SelectTrigger>
                 <SelectContent>
                   {stores.map(store => (
@@ -542,7 +546,7 @@ export default function InventoryCountPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>رقم الجرد</Label>
+              <Label>{t("inventoryCountNumber", lang)}</Label>
               <Input
                 value={countId}
                 disabled
@@ -552,7 +556,7 @@ export default function InventoryCountPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>مسؤول العملية</Label>
+              <Label>{t("operationManager", lang)}</Label>
               <Input
                 value={currentUser?.full_name || ""}
                 disabled
@@ -561,7 +565,7 @@ export default function InventoryCountPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>تاريخ الجرد</Label>
+              <Label>{t("inventoryCountDate", lang)}</Label>
               <Input
                 type="date"
                 value={date.toISOString().split('T')[0]}
@@ -573,11 +577,11 @@ export default function InventoryCountPage() {
 
           {/* Notes Row */}
           <div className="space-y-2">
-            <Label>الملاحظة</Label>
+            <Label>{t("notes", lang)}</Label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="أدخل ملاحظاتك هنا..."
+              placeholder={t("inventoryCountNotesPlaceholder", lang)}
               rows={3}
             />
           </div>
@@ -587,15 +591,15 @@ export default function InventoryCountPage() {
             <Table>
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
-                  <TableHead className="w-12">#</TableHead>
+                  <TableHead className="w-12">{t("rowNumber", lang)}</TableHead>
                   <TableHead className="w-12"></TableHead>
-                  <TableHead className="min-w-[250px]">المنتج</TableHead>
-                  <TableHead className="w-28">الكمية النظامية</TableHead>
-                  <TableHead className="w-28">السعر</TableHead>
-                  <TableHead className="w-28">الكمية الفعلية</TableHead>
-                  <TableHead className="w-28">الفرق</TableHead>
-                  <TableHead className="w-28 text-center">الحالة</TableHead>
-                  <TableHead className="min-w-[200px]">ملاحظة</TableHead>
+                  <TableHead className="min-w-[250px]">{t("product", lang)}</TableHead>
+                  <TableHead className="w-28">{t("inventoryCountSystemQty", lang)}</TableHead>
+                  <TableHead className="w-28">{t("price", lang)}</TableHead>
+                  <TableHead className="w-28">{t("inventoryCountActualQty", lang)}</TableHead>
+                  <TableHead className="w-28">{t("difference", lang)}</TableHead>
+                  <TableHead className="w-28 text-center">{t("status", lang)}</TableHead>
+                  <TableHead className="min-w-[200px]">{t("notes", lang)}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -614,7 +618,7 @@ export default function InventoryCountPage() {
                               ? "text-muted-foreground cursor-not-allowed opacity-50" 
                               : "text-destructive hover:text-destructive"
                           )}
-                          title={index < MINIMUM_ROWS ? "لا يمكن حذف هذا الصف" : "حذف الصف"}
+                          title={index < MINIMUM_ROWS ? t("inventoryCountCannotDeleteRow", lang) : t("inventoryCountDeleteRow", lang)}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -636,7 +640,7 @@ export default function InventoryCountPage() {
                             onBlur={() => {
                               setTimeout(() => setSearchOpen(null), 200)
                             }}
-                            placeholder="ابحث عن منتج..."
+                            placeholder={t("searchForProduct", lang)}
                           />
                           {searchOpen === row.tempId && searchResults.length > 0 && dropdownPosition && createPortal(
                             <div 
@@ -709,15 +713,15 @@ export default function InventoryCountPage() {
                           <span className="text-muted-foreground">.</span>
                         ) : row.diff_qty > 0 ? (
                           <span className="inline-block px-3 py-1 rounded-[10px] border border-red-200 text-red-600 text-sm font-medium">
-                            زيادة
+                            {t("inventoryCountStatusIncrease", lang)}
                           </span>
                         ) : row.diff_qty < 0 ? (
                           <span className="inline-block px-3 py-1 rounded-[10px] border border-orange-500 text-orange-600 text-sm font-medium">
-                            نقص
+                            {t("inventoryCountStatusDecrease", lang)}
                           </span>
                         ) : (
                           <span className="inline-block px-3 py-1 rounded-[10px] border border-green-500 text-green-600 text-sm font-medium">
-                            متطابق
+                            {t("inventoryCountStatusMatch", lang)}
                           </span>
                         )}
                       </TableCell>
@@ -726,7 +730,7 @@ export default function InventoryCountPage() {
                           value={row.notes}
                           onChange={(e) => updateRow(row.tempId, "notes", e.target.value)}
                           onKeyDown={(e) => handleKeyDown(e, row.tempId)}
-                          placeholder="ملاحظة..."
+                          placeholder={t("notePlaceholder", lang)}
                         />
                       </TableCell>
                     </TableRow>
@@ -734,7 +738,7 @@ export default function InventoryCountPage() {
                   {details.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                        لا توجد منتجات. اضغط &quot;إضافة صف&quot; لبدء الجرد
+                        {t("inventoryCountEmptyState", lang).replace("{action}", t("inventoryCountAddRow", lang))}
                       </TableCell>
                     </TableRow>
                   )}
@@ -745,7 +749,7 @@ export default function InventoryCountPage() {
 
           <div className="flex flex-col md:flex-row justify-between items-center p-4 bg-muted rounded-lg border gap-4">
             <div className="flex items-center gap-3">
-              <span className="text-lg font-semibold">إجمالي فرق العدد:</span>
+              <span className="text-lg font-semibold">{t("inventoryCountTotalQtyDiff", lang)}</span>
               <span className={cn(
                 "text-2xl font-bold dir-ltr",
                 details.reduce((sum, d) => sum + d.diff_qty, 0) > 0 ? "text-red-600" : 
@@ -756,13 +760,13 @@ export default function InventoryCountPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="text-lg font-semibold">إجمالي فرق السعر:</span>
+              <span className="text-lg font-semibold">{t("inventoryCountTotalPriceDiff", lang)}</span>
               <span className={cn(
                 "text-2xl font-bold dir-ltr",
                 details.reduce((sum, d) => sum + d.diff_value, 0) > 0 ? "text-red-600" : 
                 details.reduce((sum, d) => sum + d.diff_value, 0) < 0 ? "text-orange-600" : "text-green-600"
               )}>
-                {details.reduce((sum, d) => sum + d.diff_value, 0).toLocaleString()} IQD
+                {details.reduce((sum, d) => sum + d.diff_value, 0).toLocaleString()} {t("currencyIQDAbbrev", lang)}
               </span>
             </div>
           </div>
@@ -779,7 +783,7 @@ export default function InventoryCountPage() {
               ) : (
                 <FileText className="h-5 w-5 ml-2" />
               )}
-              اعتماد الجرد
+              {t("inventoryCountApprove", lang)}
             </Button>
             
             <Button
@@ -794,7 +798,7 @@ export default function InventoryCountPage() {
               ) : (
                 <Printer className="h-5 w-5 ml-2" />
               )}
-              اعتماد وطباعة
+              {t("inventoryCountApproveAndPrint", lang)}
             </Button>
           </div>
         </CardContent>
@@ -804,7 +808,7 @@ export default function InventoryCountPage() {
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="bg-card p-8 rounded-lg shadow-lg flex flex-col items-center gap-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-lg font-semibold">جاري معالجة الجرد...</p>
+            <p className="text-lg font-semibold">{t("inventoryCountProcessing", lang)}</p>
           </div>
         </div>
       )}

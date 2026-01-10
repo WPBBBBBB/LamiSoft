@@ -8,6 +8,8 @@ import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
 import { Upload, RotateCw, Crop, Sparkles } from "lucide-react"
 import { toast } from "sonner"
+import { useSettings } from "@/components/providers/settings-provider"
+import { t } from "@/lib/translations"
 
 interface AvatarEditorProps {
   currentAvatar: string | null
@@ -17,6 +19,9 @@ interface AvatarEditorProps {
 }
 
 export default function AvatarEditor({ currentAvatar, userId, onClose, onUpdate }: AvatarEditorProps) {
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(currentAvatar)
   const [rotation, setRotation] = useState(0)
@@ -32,7 +37,7 @@ export default function AvatarEditor({ currentAvatar, userId, onClose, onUpdate 
     const file = e.target.files?.[0]
     if (file) {
       if (!file.type.startsWith('image/')) {
-        toast.error('يرجى اختيار صورة')
+        toast.error(t('pleaseSelectImage', lang))
         return
       }
       setSelectedFile(file)
@@ -97,7 +102,7 @@ export default function AvatarEditor({ currentAvatar, userId, onClose, onUpdate 
 
   const handleUpload = async () => {
     if (!preview) {
-      toast.error('يرجى اختيار صورة أولاً')
+      toast.error(t('pleaseSelectImageFirst', lang))
       return
     }
 
@@ -160,18 +165,18 @@ export default function AvatarEditor({ currentAvatar, userId, onClose, onUpdate 
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'فشل رفع الصورة')
+        throw new Error(errorData.error || t('failedToUploadImage', lang))
       }
 
       const data = await response.json()
-      toast.success('تم رفع الصورة بنجاح')
+      toast.success(t('imageUploadedSuccessfully', lang))
       
       // Update avatar with cache busting
       const newAvatarUrl = `${data.avatar_url}?t=${Date.now()}`
       onUpdate(newAvatarUrl)
       onClose()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء رفع الصورة')
+      toast.error(error instanceof Error ? error.message : t('imageUploadError', lang))
     } finally {
       setIsUploading(false)
     }
@@ -181,7 +186,7 @@ export default function AvatarEditor({ currentAvatar, userId, onClose, onUpdate 
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
         <DialogHeader>
-          <DialogTitle>تعديل الصورة الشخصية</DialogTitle>
+          <DialogTitle>{t('editProfilePicture', lang)}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -192,7 +197,7 @@ export default function AvatarEditor({ currentAvatar, userId, onClose, onUpdate 
           >
             <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              {selectedFile ? selectedFile.name : 'اضغط لاختيار صورة من جهازك'}
+              {selectedFile ? selectedFile.name : t('clickToChooseImage', lang)}
             </p>
             <input
               ref={fileInputRef}
@@ -232,39 +237,39 @@ export default function AvatarEditor({ currentAvatar, userId, onClose, onUpdate 
                 <TabsList className="w-full grid grid-cols-2">
                   <TabsTrigger value="crop">
                     <Crop className="h-4 w-4 mr-2" />
-                    قص وتدوير
+                    {t('cropAndRotate', lang)}
                   </TabsTrigger>
                   <TabsTrigger value="filters">
                     <Sparkles className="h-4 w-4 mr-2" />
-                    الفلاتر
+                    {t('filters', lang)}
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="crop" className="space-y-6 p-4">
                   {/* شكل القص */}
                   <div className="space-y-2">
-                    <Label>شكل القص</Label>
+                    <Label>{t('cropShape', lang)}</Label>
                     <div className="flex gap-4">
                       <Button
                         type="button"
                         variant={cropShape === 'circle' ? 'default' : 'outline'}
                         onClick={() => setCropShape('circle')}
                       >
-                        دائري
+                        {t('circle', lang)}
                       </Button>
                       <Button
                         type="button"
                         variant={cropShape === 'square' ? 'default' : 'outline'}
                         onClick={() => setCropShape('square')}
                       >
-                        مربع
+                        {t('square', lang)}
                       </Button>
                     </div>
                   </div>
 
                   {/* التدوير */}
                   <div className="space-y-2">
-                    <Label>التدوير: {rotation}°</Label>
+                    <Label>{t('rotation', lang)}: {rotation}°</Label>
                     <div className="flex items-center gap-4">
                       <RotateCw className="h-4 w-4" />
                       <Slider
@@ -279,7 +284,7 @@ export default function AvatarEditor({ currentAvatar, userId, onClose, onUpdate 
 
                   {/* التكبير */}
                   <div className="space-y-2">
-                    <Label>التكبير: {zoom.toFixed(1)}x</Label>
+                    <Label>{t('zoom', lang)}: {zoom.toFixed(1)}x</Label>
                     <Slider
                       value={[zoom]}
                       onValueChange={(v) => setZoom(v[0])}
@@ -294,15 +299,15 @@ export default function AvatarEditor({ currentAvatar, userId, onClose, onUpdate 
                 <TabsContent value="filters" className="space-y-6 p-4">
                   {/* اختيار الفلتر */}
                   <div className="space-y-2">
-                    <Label>نوع الفلتر</Label>
+                    <Label>{t('filterType', lang)}</Label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { value: 'none', label: 'بدون' },
-                        { value: 'grayscale', label: 'أبيض وأسود' },
-                        { value: 'sepia', label: 'سيبيا' },
-                        { value: 'brightness', label: 'سطوع' },
-                        { value: 'contrast', label: 'تباين' },
-                        { value: 'blur', label: 'ضبابي' },
+                        { value: 'none', label: t('noneOption', lang) },
+                        { value: 'grayscale', label: t('grayscale', lang) },
+                        { value: 'sepia', label: t('sepia', lang) },
+                        { value: 'brightness', label: t('brightness', lang) },
+                        { value: 'contrast', label: t('contrast', lang) },
+                        { value: 'blur', label: t('blur', lang) },
                       ].map((f) => (
                         <Button
                           key={f.value}
@@ -323,7 +328,7 @@ export default function AvatarEditor({ currentAvatar, userId, onClose, onUpdate 
                   {/* شدة الفلتر */}
                   {filter !== 'none' && (
                     <div className="space-y-2">
-                      <Label>الشدة: {filterValue}%</Label>
+                      <Label>{t('intensity', lang)}: {filterValue}%</Label>
                       <Slider
                         value={[filterValue]}
                         onValueChange={(v) => setFilterValue(v[0])}
@@ -339,10 +344,10 @@ export default function AvatarEditor({ currentAvatar, userId, onClose, onUpdate 
               {/* أزرار الحفظ */}
               <div className="flex justify-end gap-4">
                 <Button variant="outline" onClick={onClose}>
-                  إلغاء
+                  {t('cancel', lang)}
                 </Button>
                 <Button onClick={handleUpload} disabled={isUploading}>
-                  {isUploading ? 'جاري الرفع...' : 'رفع الصورة'}
+                  {isUploading ? t('uploading', lang) : t('uploadImage', lang)}
                 </Button>
               </div>
             </>

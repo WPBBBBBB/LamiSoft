@@ -18,7 +18,17 @@ const HomePage = nextDynamic(() => import("@/app/home/page"), { ssr: false })
 const Header = nextDynamic(() => import("@/components/layout/header"), { ssr: false })
 const Sidebar = nextDynamic(() => import("@/components/layout/sidebar"), { ssr: false })
 
-function ThemePreview({ theme, onMaximize, isFullscreen }: { theme: Theme; onMaximize?: () => void; isFullscreen?: boolean }) {
+function ThemePreview({
+  theme,
+  lang,
+  onMaximize,
+  isFullscreen,
+}: {
+  theme: Theme
+  lang: string
+  onMaximize?: () => void
+  isFullscreen?: boolean
+}) {
   const handleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement
     const link = target.closest('a')
@@ -106,7 +116,7 @@ function ThemePreview({ theme, onMaximize, isFullscreen }: { theme: Theme; onMax
             backgroundColor: theme.colors.primary,
             color: theme.colors.background
           }}
-          title="معاينة بالحجم الكامل"
+          title={t('theme_fullscreenPreview', lang)}
         >
           <Maximize className="h-4 w-4" />
         </button>
@@ -123,7 +133,7 @@ function ThemePreview({ theme, onMaximize, isFullscreen }: { theme: Theme; onMax
         >
           <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
           <span className="text-xs font-medium" style={{ color: theme.colors.text }}>
-            وضع المعاينة
+            {t('theme_previewMode', lang)}
           </span>
         </div>
       )}
@@ -403,6 +413,12 @@ export default function AppearancePage() {
   const [previewTheme, setPreviewTheme] = useState<Theme>(currentTheme)
   const [isFullscreenPreview, setIsFullscreenPreview] = useState(false)
 
+  const themeLabel = (theme: Theme) => {
+    const key = `theme_${theme.id}`
+    const translated = t(key, currentLanguage.code)
+    return translated === key ? theme.name : translated
+  }
+
   const modes = [
     { value: "light", label: t('lightMode', currentLanguage.code), icon: Sun },
     { value: "dark", label: t('darkMode', currentLanguage.code), icon: Moon },
@@ -481,7 +497,7 @@ export default function AppearancePage() {
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="font-semibold">{theme.name}</span>
+                            <span className="font-semibold">{themeLabel(theme)}</span>
                             {currentTheme.id === theme.id && (
                               <Check className="h-4 w-4 text-primary" />
                             )}
@@ -522,7 +538,7 @@ export default function AppearancePage() {
             <div className="order-1 lg:order-2">
               <div className="sticky top-4 sm:top-8">
                 <h3 className="text-sm font-medium mb-2 sm:mb-3 text-muted-foreground">{t('themePreview', currentLanguage.code)}</h3>
-                <ThemePreview theme={previewTheme} onMaximize={() => setIsFullscreenPreview(true)} />
+                <ThemePreview theme={previewTheme} lang={currentLanguage.code} onMaximize={() => setIsFullscreenPreview(true)} />
               </div>
             </div>
           </div>
@@ -538,7 +554,7 @@ export default function AppearancePage() {
         <CardContent>
           <div className="flex items-start gap-4">
             <div className="flex-1">
-              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">{currentTheme.name}</h3>
+              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">{themeLabel(currentTheme)}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {Object.entries(currentTheme.colors).map(([key, value]) => {
                   const colorNames: Record<string, string> = {
@@ -615,14 +631,14 @@ export default function AppearancePage() {
           >
             <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" style={{ color: previewTheme.colors.primary }} />
             <span className="text-xs sm:text-sm font-medium" style={{ color: previewTheme.colors.primary }}>
-              تصغير المعاينة
+              {t('theme_minimizePreview', currentLanguage.code)}
             </span>
           </button>
 
           {}
           <div className="w-full h-full overflow-auto p-4">
             <div className="max-w-[1920px] mx-auto h-full">
-              <ThemePreview theme={previewTheme} isFullscreen={true} />
+              <ThemePreview theme={previewTheme} lang={currentLanguage.code} isFullscreen={true} />
             </div>
           </div>
         </div>

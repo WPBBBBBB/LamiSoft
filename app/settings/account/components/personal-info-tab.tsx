@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { toast } from "sonner"
+import { useSettings } from "@/components/providers/settings-provider"
+import { t } from "@/lib/translations"
 
 interface PersonalInfoUserData {
   id: string
@@ -32,6 +34,9 @@ interface PersonalInfoTabProps {
 }
 
 export default function PersonalInfoTab({ userData, onUpdate }: PersonalInfoTabProps) {
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
+
   const [formData, setFormData] = useState<PersonalInfoFormData>({
     full_name: userData.full_name ?? "",
     age: userData.age !== null && userData.age !== undefined ? String(userData.age) : "",
@@ -75,12 +80,12 @@ export default function PersonalInfoTab({ userData, onUpdate }: PersonalInfoTabP
   const handleUpdate = async () => {
     // Validation
     if (newPassword && newPassword !== passwordConfirm) {
-      toast.error('كلمات المرور غير متطابقة')
+      toast.error(t('passwordsDoNotMatch', lang))
       return
     }
 
     if (newPassword && newPassword.length < 6) {
-      toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل')
+      toast.error(t('passwordMinLength6', lang))
       return
     }
 
@@ -117,14 +122,14 @@ export default function PersonalInfoTab({ userData, onUpdate }: PersonalInfoTabP
         body: JSON.stringify(updateData),
       })
 
-      if (!response.ok) throw new Error('فشل التحديث')
+      if (!response.ok) throw new Error(t('updateFailed', lang))
 
-      toast.success('تم تحديث المعلومات بنجاح')
+      toast.success(t('profileUpdatedSuccessfully', lang))
       setNewPassword('')
       setPasswordConfirm('')
       onUpdate()
     } catch (error) {
-      toast.error('حدث خطأ أثناء التحديث')
+      toast.error(t('updateError', lang))
     } finally {
       setIsUpdating(false)
     }
@@ -136,7 +141,7 @@ export default function PersonalInfoTab({ userData, onUpdate }: PersonalInfoTabP
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* الاسم الثلاثي */}
           <div className="space-y-2">
-            <Label htmlFor="full_name">الاسم الثلاثي</Label>
+            <Label htmlFor="full_name">{t('fullName', lang)}</Label>
             <Input
               id="full_name"
               value={formData.full_name}
@@ -146,7 +151,7 @@ export default function PersonalInfoTab({ userData, onUpdate }: PersonalInfoTabP
 
           {/* العمر */}
           <div className="space-y-2">
-            <Label htmlFor="age">العمر</Label>
+            <Label htmlFor="age">{t('age', lang)}</Label>
             <Input
               id="age"
               type="number"
@@ -157,7 +162,7 @@ export default function PersonalInfoTab({ userData, onUpdate }: PersonalInfoTabP
 
           {/* رقم الهاتف */}
           <div className="space-y-2">
-            <Label htmlFor="phone_number">رقم الهاتف</Label>
+            <Label htmlFor="phone_number">{t('phoneNumber', lang)}</Label>
             <Input
               id="phone_number"
               value={formData.phone_number}
@@ -167,7 +172,7 @@ export default function PersonalInfoTab({ userData, onUpdate }: PersonalInfoTabP
 
           {/* العنوان */}
           <div className="space-y-2">
-            <Label htmlFor="address">العنوان</Label>
+            <Label htmlFor="address">{t('address', lang)}</Label>
             <Input
               id="address"
               value={formData.address}
@@ -177,7 +182,7 @@ export default function PersonalInfoTab({ userData, onUpdate }: PersonalInfoTabP
 
           {/* اسم المستخدم */}
           <div className="space-y-2">
-            <Label htmlFor="username">اسم المستخدم</Label>
+            <Label htmlFor="username">{t('username', lang)}</Label>
             <Input
               id="username"
               value={formData.username}
@@ -187,24 +192,24 @@ export default function PersonalInfoTab({ userData, onUpdate }: PersonalInfoTabP
         </div>
 
         <div className="border-t pt-6">
-          <h3 className="font-bold mb-4">تغيير كلمة المرور</h3>
+          <h3 className="font-bold mb-4">{t('changePassword', lang)}</h3>
           
           {/* تحذير كلمة المرور المشفرة */}
           <Alert className="mb-6 border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
             <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
             <AlertDescription className="text-yellow-800 dark:text-yellow-300">
-              كلمة المرور مشفرة بشكل آمن جداً، يمكنك فقط تغييرها بشكل مباشر إن أحببت
+              {t('passwordEncryptedNote', lang)}
             </AlertDescription>
           </Alert>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* كلمة المرور الجديدة */}
             <div className="space-y-2">
-              <Label htmlFor="new_password">كلمة المرور الجديدة</Label>
+              <Label htmlFor="new_password">{t('newPassword', lang)}</Label>
               <Input
                 id="new_password"
                 type="password"
-                placeholder="أدخل كلمة المرور الجديدة"
+                placeholder={t('enterNewPassword', lang)}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
@@ -212,11 +217,11 @@ export default function PersonalInfoTab({ userData, onUpdate }: PersonalInfoTabP
 
             {/* تأكيد كلمة المرور */}
             <div className="space-y-2">
-              <Label htmlFor="password_confirm">تأكيد كلمة المرور الجديدة</Label>
+              <Label htmlFor="password_confirm">{t('confirmNewPassword', lang)}</Label>
               <Input
                 id="password_confirm"
                 type="password"
-                placeholder="أعد إدخال كلمة المرور"
+                placeholder={t('reenterPassword', lang)}
                 value={passwordConfirm}
                 onChange={(e) => setPasswordConfirm(e.target.value)}
               />
@@ -230,7 +235,7 @@ export default function PersonalInfoTab({ userData, onUpdate }: PersonalInfoTabP
             onClick={handleUpdate}
             disabled={!hasChanges() || isUpdating}
           >
-            {isUpdating ? 'جاري التحديث...' : 'تحديث المعلومات'}
+            {isUpdating ? t('updating', lang) : t('updateInformation', lang)}
           </Button>
         </div>
       </div>

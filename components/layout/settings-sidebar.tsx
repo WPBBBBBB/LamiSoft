@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { ResizableSidebar } from "@/components/ui/resizable-sidebar"
 import { useSettings } from "@/components/providers/settings-provider"
 import { useAuth } from "@/contexts/auth-context"
+import { t } from "@/lib/translations"
 import {
   Palette,
   Languages,
@@ -24,7 +25,7 @@ import {
 } from "lucide-react"
 
 interface NavItem {
-  title: string
+  titleKey: string
   href: string
   icon: React.ComponentType<{ className?: string }>
   adminOnly?: boolean // إضافة خاصية لتحديد الأزرار الخاصة بالمدير فقط
@@ -32,50 +33,50 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   {
-    title: "الحساب",
+    titleKey: "account",
     href: "/settings/account",
     icon: User,
   },
   {
-    title: "المظهر",
+    titleKey: "appearance",
     href: "/settings/appearance",
     icon: Palette,
   },
   {
-    title: "اللغات",
+    titleKey: "languages",
     href: "/settings/language",
     icon: Languages,
   },
   {
-    title: "الخطوط",
+    titleKey: "fonts",
     href: "/settings/fonts",
     icon: Type,
   },
   {
-    title: "إعدادات الطباعة",
+    titleKey: "printSettings",
     href: "/settings/print-settings",
     icon: Printer,
   },
   {
-    title: "قاعدة البيانات",
+    titleKey: "database",
     href: "/settings/database",
     icon: Database,
     adminOnly: true, // للمدير فقط
   },
   {
-    title: "خدمة الواتساب",
+    titleKey: "whatsappService",
     href: "/settings/whatsapp",
     icon: MessageCircle,
     adminOnly: true, // للمدير فقط
   },
   {
-    title: "سجل الحركات",
+    titleKey: "systemLog",
     href: "/settings/system-log",
     icon: FileText,
     adminOnly: true, // للمدير فقط
   },
   {
-    title: "تصفير النظام",
+    titleKey: "systemReset",
     href: "/settings/system-reset",
     icon: RotateCcw,
     adminOnly: true, // للمدير فقط
@@ -90,6 +91,7 @@ export function SettingsSidebar() {
     setSettingsSidebarWidth,
     settingsSidebarCollapsed,
     setSettingsSidebarCollapsed,
+    currentLanguage,
   } = useSettings()
 
   return (
@@ -108,7 +110,7 @@ export function SettingsSidebar() {
           {!settingsSidebarCollapsed && (
             <div className="flex items-center gap-2">
               <SettingsIcon className="h-5 w-5" />
-              <h2 className="text-lg font-semibold">الإعدادات</h2>
+              <h2 className="text-lg font-semibold">{t("settings", currentLanguage.code)}</h2>
             </div>
           )}
           <Button
@@ -135,6 +137,7 @@ export function SettingsSidebar() {
               }
 
               const isActive = pathname === item.href
+              const title = t(item.titleKey, currentLanguage.code)
               return (
                 <Link
                   key={item.href}
@@ -146,10 +149,10 @@ export function SettingsSidebar() {
                       : "text-muted-foreground hover:text-foreground",
                     settingsSidebarCollapsed && "justify-center"
                   )}
-                  title={settingsSidebarCollapsed ? item.title : undefined}
+                  title={settingsSidebarCollapsed ? title : undefined}
                 >
                   <item.icon className={cn("h-5 w-5", settingsSidebarCollapsed ? "h-6 w-6" : "")} />
-                  {!settingsSidebarCollapsed && <span>{item.title}</span>}
+                  {!settingsSidebarCollapsed && <span>{title}</span>}
                 </Link>
               )
             })}

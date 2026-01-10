@@ -2,6 +2,8 @@
 
 import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
+import { t } from "@/lib/translations"
+import { useSettings } from "@/components/providers/settings-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -22,6 +24,8 @@ import { PermissionGuard } from "@/components/permission-guard"
 
 export default function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
   const { id } = use(params)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -54,7 +58,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       const userData = await getUserWithPermissions(id)
       
       if (!userData) {
-        toast.error("المستخدم غير موجود")
+        toast.error(t('userNotFound', lang))
         router.push("/users-permissions")
         return
       }
@@ -83,7 +87,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         })
       }
     } catch (error) {
-      toast.error("حدث خطأ أثناء تحميل البيانات")
+      toast.error(t('errorLoadingData', lang))
     } finally {
       setIsLoading(false)
     }
@@ -117,25 +121,25 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     e.preventDefault()
 
     if (!formData.fullName.trim()) {
-      toast.error("يرجى إدخال الاسم الكامل")
+      toast.error(t('pleaseEnterFullName', lang))
       return
     }
     if (!formData.username.trim()) {
-      toast.error("يرجى إدخال اسم المستخدم")
+      toast.error(t('pleaseEnterUsername', lang))
       return
     }
     if (!formData.password.trim()) {
-      toast.error("يرجى إدخال كلمة المرور")
+      toast.error(t('pleaseEnterPassword', lang))
       return
     }
     if (!formData.permissionType) {
-      toast.error("يرجى اختيار نوع الصلاحية")
+      toast.error(t('pleaseSelectPermissionType', lang))
       return
     }
 
     const usernameExists = await checkUsernameExists(formData.username, id)
     if (usernameExists) {
-      toast.error("اسم المستخدم موجود مسبقاً")
+      toast.error(t('usernameAlreadyExists', lang))
       return
     }
 
@@ -167,11 +171,11 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       }
 
       await updateUser(id, userData, permissionsData)
-      toast.success("تم تحديث المستخدم بنجاح")
+      toast.success(t('updateUserSuccess', lang))
       router.push("/users-permissions")
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "خطأ غير معروف"
-      toast.error("حدث خطأ أثناء التحديث: " + errorMessage)
+      const errorMessage = error instanceof Error ? error.message : t('unknownError', lang)
+      toast.error(`${t('updateUserError', lang)}: ${errorMessage}`)
     } finally {
       setIsSaving(false)
     }
@@ -182,17 +186,17 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   }
 
   const accountantPermissions = [
-    { id: "viewStatistics", label: "عرض الإحصائيات" },
-    { id: "viewReports", label: "عرض التقارير" },
-    { id: "viewServices", label: "عرض الخدمات" },
-    { id: "viewPeople", label: "عرض قائمة الأشخاص" },
+    { id: "viewStatistics", label: t('permViewStatistics', lang) },
+    { id: "viewReports", label: t('permViewReports', lang) },
+    { id: "viewServices", label: t('permViewServices', lang) },
+    { id: "viewPeople", label: t('permViewPeople', lang) },
   ]
 
   const employeeAdditionalPermissions = [
-    { id: "viewNotifications", label: "عرض الإشعارات في الصفحة الرئيسية" },
-    { id: "addPurchase", label: "عرض زر إضافة شراء" },
-    { id: "viewStores", label: "عرض المخازن" },
-    { id: "viewStoreTransfer", label: "عرض النقل المخزني" },
+    { id: "viewNotifications", label: t('permViewNotificationsHome', lang) },
+    { id: "addPurchase", label: t('permShowAddPurchaseButton', lang) },
+    { id: "viewStores", label: t('permViewStores', lang) },
+    { id: "viewStoreTransfer", label: t('permViewStoreTransfer', lang) },
   ]
 
   if (isLoading) {
@@ -201,7 +205,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       <div className="flex-1 overflow-auto">
         <div className="container mx-auto p-6">
           <Card className="p-6">
-            <p className="text-center text-muted-foreground">جاري التحميل...</p>
+            <p className="text-center text-muted-foreground">{t('loading', lang)}</p>
           </Card>
         </div>
       </div>
@@ -219,17 +223,17 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
             variant="outline"
             size="icon"
             onClick={() => router.back()}
-            title="رجوع"
+            title={t('back', lang)}
             className="shrink-0"
           >
             <ArrowRight className="h-5 w-5" />
           </Button>
           <div className="flex-1">
             <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
-              تعديل مستخدم
+              {t('editUserPageTitle', lang)}
             </h1>
             <p className="text-muted-foreground mt-1">
-              تعديل بيانات المستخدم والصلاحيات
+              {t('editUserPageDescription', lang)}
             </p>
           </div>
         </div>
@@ -239,26 +243,26 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
             <div className="space-y-6">
               {}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">المعلومات الأساسية</h3>
+                <h3 className="text-lg font-semibold border-b pb-2">{t('basicInformation', lang)}</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {}
                   <div className="space-y-2">
                     <Label htmlFor="fullName">
-                      الاسم الكامل <span className="text-destructive">*</span>
+                      {t('fullName', lang)} <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="fullName"
                       value={formData.fullName}
                       onChange={(e) => handleInputChange("fullName", e.target.value)}
-                      placeholder="أدخل الاسم الكامل"
+                      placeholder={t('enterFullName', lang)}
                       required
                     />
                   </div>
 
                   {}
                   <div className="space-y-2">
-                    <Label htmlFor="phoneNumber">رقم الهاتف</Label>
+                    <Label htmlFor="phoneNumber">{t('phoneNumber', lang)}</Label>
                     <Input
                       id="phoneNumber"
                       value={formData.phoneNumber}
@@ -271,24 +275,24 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
                   {}
                   <div className="space-y-2">
-                    <Label htmlFor="address">العنوان</Label>
+                    <Label htmlFor="address">{t('address', lang)}</Label>
                     <Input
                       id="address"
                       value={formData.address}
                       onChange={(e) => handleInputChange("address", e.target.value)}
-                      placeholder="أدخل العنوان"
+                      placeholder={t('enterAddress', lang)}
                     />
                   </div>
 
                   {}
                   <div className="space-y-2">
-                    <Label htmlFor="age">العمر</Label>
+                    <Label htmlFor="age">{t('age', lang)}</Label>
                     <Input
                       id="age"
                       type="number"
                       value={formData.age}
                       onChange={(e) => handleInputChange("age", e.target.value)}
-                      placeholder="أدخل العمر"
+                      placeholder={t('enterAge', lang)}
                       min="18"
                       max="100"
                     />
@@ -298,19 +302,19 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
               {}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">بيانات تسجيل الدخول</h3>
+                <h3 className="text-lg font-semibold border-b pb-2">{t('loginData', lang)}</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {}
                   <div className="space-y-2">
                     <Label htmlFor="username">
-                      اسم المستخدم <span className="text-destructive">*</span>
+                      {t('username', lang)} <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="username"
                       value={formData.username}
                       onChange={(e) => handleInputChange("username", e.target.value)}
-                      placeholder="أدخل اسم المستخدم"
+                      placeholder={t('enterUsername', lang)}
                       required
                       dir="ltr"
                     />
@@ -319,14 +323,14 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   {}
                   <div className="space-y-2">
                     <Label htmlFor="password">
-                      كلمة المرور <span className="text-destructive">*</span>
+                      {t('password', lang)} <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="password"
                       type="password"
                       value={formData.password}
                       onChange={(e) => handleInputChange("password", e.target.value)}
-                      placeholder="أدخل كلمة المرور"
+                      placeholder={t('enterPassword', lang)}
                       required
                       dir="ltr"
                     />
@@ -336,11 +340,11 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
               {}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">نوع الصلاحية والأذونات</h3>
+                <h3 className="text-lg font-semibold border-b pb-2">{t('permissionsAndRole', lang)}</h3>
                 
                 <div className="space-y-2">
                   <Label htmlFor="permissionType">
-                    نوع الصلاحية <span className="text-destructive">*</span>
+                    {t('permissionType', lang)} <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={formData.permissionType}
@@ -349,18 +353,18 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     }
                   >
                     <SelectTrigger id="permissionType">
-                      <SelectValue placeholder="اختر نوع الصلاحية" />
+                      <SelectValue placeholder={t('selectPermissionTypePlaceholder', lang)} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="مدير">مدير</SelectItem>
-                      <SelectItem value="محاسب">محاسب</SelectItem>
-                      <SelectItem value="موظف">موظف عادي</SelectItem>
+                      <SelectItem value="مدير">{t('roleManager', lang)}</SelectItem>
+                      <SelectItem value="محاسب">{t('roleAccountant', lang)}</SelectItem>
+                      <SelectItem value="موظف">{t('roleEmployeeRegular', lang)}</SelectItem>
                     </SelectContent>
                   </Select>
                   
                   {formData.permissionType === "مدير" && (
                     <p className="text-sm text-muted-foreground mt-2">
-                      المدير لديه صلاحيات كاملة على جميع أجزاء النظام
+                      {t('managerFullPermissionsHint', lang)}
                     </p>
                   )}
                 </div>
@@ -368,7 +372,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 {}
                 {formData.permissionType === "محاسب" && (
                   <div className="space-y-3 pt-4">
-                    <Label className="text-base">اختر الأجزاء المسموح له بمشاهدتها:</Label>
+                    <Label className="text-base">{t('chooseAllowedSections', lang)}</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-muted/50 rounded-lg">
                       {accountantPermissions.map((perm) => (
                         <div key={perm.id} className="flex items-center space-x-2 space-x-reverse">
@@ -394,7 +398,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 {}
                 {formData.permissionType === "موظف" && (
                   <div className="space-y-3 pt-4">
-                    <Label className="text-base">اختر الأجزاء المسموح له بمشاهدتها:</Label>
+                    <Label className="text-base">{t('chooseAllowedSections', lang)}</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-muted/50 rounded-lg">
                       {}
                       {accountantPermissions.map((perm) => (
@@ -456,11 +460,11 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   className="gap-2"
                 >
                   <X className="h-4 w-4" />
-                  إلغاء
+                  {t('cancel', lang)}
                 </Button>
                 <Button type="submit" disabled={isSaving} className="gap-2">
                   <Save className="h-4 w-4" />
-                  {isSaving ? "جاري الحفظ..." : "حفظ التغييرات"}
+                  {isSaving ? t('saving', lang) : t('saveChanges', lang)}
                 </Button>
               </div>
             </div>

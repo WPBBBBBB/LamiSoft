@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Search, FileText, ShoppingCart, Package, User, UserPlus, ScanLine, Filter, Clock, X, Trash2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -26,12 +26,15 @@ import { useDebounce } from "@/lib/hooks"
 export function SearchBar() {
   const router = useRouter()
   const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
   const { currentUser } = useAuth()
+  const inputRef = useRef<HTMLInputElement | null>(null)
   const [searchValue, setSearchValue] = useState("")
   const debouncedSearchValue = useDebounce(searchValue, 300)
   const [searchFilter, setSearchFilter] = useState<string>("all")
   const [searchHistory, setSearchHistory] = useState<SearchHistory[]>([])
   const [showHistory, setShowHistory] = useState(false)
+  const [isInputFocused, setIsInputFocused] = useState(false)
   const [showFilterMenu, setShowFilterMenu] = useState(false)
   const [customerResults, setCustomerResults] = useState<CustomerSearchResult[]>([])
   const [invoiceResults, setInvoiceResults] = useState<SearchResult[]>([])
@@ -46,6 +49,37 @@ export function SearchBar() {
   const [searchPerformed, setSearchPerformed] = useState(false)
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false)
   const [showSearchResults, setShowSearchResults] = useState(false)
+
+  const getSearchFilterLabel = (filter: string) => {
+    switch (filter) {
+      case "all":
+        return t("homeSearchFilterAll", lang)
+      case "invoices":
+        return t("homeSearchFilterInvoices", lang)
+      case "products":
+        return t("homeSearchFilterProducts", lang)
+      case "customers":
+        return t("homeSearchFilterCustomers", lang)
+      default:
+        return t("homeSearchFilterAll", lang)
+    }
+  }
+
+  // عند إعادة تحميل الصفحة: لا نريد التركيز على حقل البحث أو إظهار آخر عمليات البحث تلقائياً
+  useEffect(() => {
+    setShowHistory(false)
+    setShowSearchResults(false)
+    setIsInputFocused(false)
+
+    if (typeof window !== "undefined") {
+      // بعض المتصفحات قد تعيد التركيز لآخر عنصر نشط بعد refresh
+      requestAnimationFrame(() => {
+        if (document.activeElement === inputRef.current) {
+          inputRef.current?.blur()
+        }
+      })
+    }
+  }, [])
 
   // تحميل تاريخ البحث عند تحميل الصفحة
   useEffect(() => {
@@ -99,7 +133,8 @@ export function SearchBar() {
       setCustomerResults([])
       setInvoiceResults([])
       setProductResults([])
-      setShowHistory(true)
+      // لا تعرض التاريخ إلا إذا كان المستخدم قد ركّز على الحقل فعلاً
+      setShowHistory(isInputFocused && !searchValue.trim())
       setShowSearchResults(false)
       return
     }
@@ -200,7 +235,7 @@ export function SearchBar() {
   }
 
   const handleBarcodeScanned = async (code: string) => {
-    toast.loading('جاري البحث عن القائمة...')
+    toast.loading(t("barcodeSearchLoading", lang))
     
     try {
       let barcodeToSearch = code
@@ -216,15 +251,15 @@ export function SearchBar() {
       toast.dismiss()
       
       if (result) {
-        toast.success('تم العثور على القائمة!')
+        toast.success(t("barcodeSearchFound", lang))
         setSelectedInvoice(result)
         setShowInvoicePreview(true)
       } else {
-        toast.error(`لم يتم العثور على قائمة بهذا الرمز: ${code}`)
+        toast.error(t("barcodeSearchNotFound", lang).replace("{code}", code))
       }
     } catch (error) {
       toast.dismiss()
-      toast.error('حدث خطأ في البحث')
+      toast.error(t("barcodeSearchError", lang))
       }
   }
 
@@ -248,19 +283,19 @@ export function SearchBar() {
             >
               <Filter className="h-3.5 w-3.5" />
               <span>
-                {searchFilter === 'all' ? 'الكل' :
-                 searchFilter === 'invoices' ? 'القوائم' :
-                 searchFilter === 'products' ? 'المنتجات' : 'الزبائن'}
+                {getSearchFilterLabel(searchFilter)}
               </span>
             </Button>
 
             <Input
+              ref={inputRef}
               type="text"
-              placeholder="البحث عن قوائم، زبائن، منتجات..."
+              placeholder={t("homeSearchPlaceholder", lang)}
               className="h-12 pr-32 pl-12 text-base"
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
               onFocus={() => {
+                setIsInputFocused(true)
                 if (!searchValue.trim()) {
                   setShowHistory(true)
                 } else {
@@ -270,6 +305,7 @@ export function SearchBar() {
               onBlur={() => {
                 // تأخير بسيط للسماح بالنقر على عناصر القائمة
                 setTimeout(() => {
+                  setIsInputFocused(false)
                   setShowFilterMenu(false)
                   setShowSearchResults(false)
                   setShowHistory(false)
@@ -283,7 +319,7 @@ export function SearchBar() {
               size="icon"
               className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8"
               onClick={() => setShowBarcodeScanner(true)}
-              title="مسح باركود"
+              title={t("scanBarcode", lang)}
             >
               <ScanLine className="h-5 w-5" style={{ color: 'var(--theme-primary)' }} />
             </Button>
@@ -298,7 +334,7 @@ export function SearchBar() {
                     setShowFilterMenu(false)
                   }}
                 >
-                  <span className="text-sm">الكل</span>
+                  <span className="text-sm">{getSearchFilterLabel("all")}</span>
                 </div>
                 <div 
                   className={`px-3 py-2 cursor-pointer hover:bg-accent transition-colors ${searchFilter === 'invoices' ? 'bg-accent font-semibold' : ''}`}
@@ -307,7 +343,7 @@ export function SearchBar() {
                     setShowFilterMenu(false)
                   }}
                 >
-                  <span className="text-sm">القوائم</span>
+                  <span className="text-sm">{getSearchFilterLabel("invoices")}</span>
                 </div>
                 <div 
                   className={`px-3 py-2 cursor-pointer hover:bg-accent transition-colors ${searchFilter === 'products' ? 'bg-accent font-semibold' : ''}`}
@@ -316,7 +352,7 @@ export function SearchBar() {
                     setShowFilterMenu(false)
                   }}
                 >
-                  <span className="text-sm">المنتجات</span>
+                  <span className="text-sm">{getSearchFilterLabel("products")}</span>
                 </div>
                 <div 
                   className={`px-3 py-2 cursor-pointer hover:bg-accent transition-colors ${searchFilter === 'customers' ? 'bg-accent font-semibold' : ''}`}
@@ -325,7 +361,7 @@ export function SearchBar() {
                     setShowFilterMenu(false)
                   }}
                 >
-                  <span className="text-sm">الزبائن</span>
+                  <span className="text-sm">{getSearchFilterLabel("customers")}</span>
                 </div>
               </div>
             )}
@@ -388,7 +424,7 @@ export function SearchBar() {
             {searchValue.trim() && showSearchResults && (
               <div className="absolute left-0 right-0 top-full z-20 bg-card border rounded-lg shadow-lg mt-2 max-h-96 overflow-y-auto">
                 {searchLoading ? (
-                  <div className="p-4 text-center text-muted-foreground">{t('searching', currentLanguage.code)}</div>
+                  <div className="p-4 text-center text-muted-foreground">{t('searching', lang)}</div>
                 ) : (
                   <div>
                     {}

@@ -22,22 +22,22 @@ import { AlertTriangle, Download, Loader2, CheckCircle2 } from "lucide-react"
 
 interface TableOption {
   id: string
-  label: string
+  labelKey: string
   table: string
 }
 
 const tableOptions: TableOption[] = [
-  { id: "purchases", label: "قوائم الشراء", table: "tb_purchasemain,tb_purchaseproductsdetails" },
-  { id: "sales", label: "قوائم البيع", table: "tb_salesmain,tb_salesdetails" },
-  { id: "inventory", label: "قوائم المنتجات في المخازن", table: "tb_inventory" },
-  { id: "stores", label: "قوائم المخازن", table: "tb_store" },
-  { id: "payments", label: "قوائم الصندوق وسجلاته", table: "payments" },
-  { id: "customers", label: "قوائم العملاء وحساباتهم", table: "customers" },
-  { id: "transfers", label: "سجلات النقل المخزني", table: "store_transfers" },
-  { id: "expenses", label: "صرفيات المتجر", table: "expenses" },
-  { id: "notifications", label: "تنبيهات الزبائن المخزنة", table: "customer_notifications" },
-  { id: "activity", label: "سجل حركات النظام", table: "activity_logs" },
-  { id: "inventory_alerts", label: "سجل الاشعارات المخزني", table: "inventory_alerts" },
+  { id: "purchases", labelKey: "resetTablePurchases", table: "tb_purchasemain,tb_purchaseproductsdetails" },
+  { id: "sales", labelKey: "resetTableSales", table: "tb_salesmain,tb_salesdetails" },
+  { id: "inventory", labelKey: "resetTableInventory", table: "tb_inventory" },
+  { id: "stores", labelKey: "resetTableStores", table: "tb_store" },
+  { id: "payments", labelKey: "resetTablePayments", table: "payments" },
+  { id: "customers", labelKey: "resetTableCustomers", table: "customers" },
+  { id: "transfers", labelKey: "resetTableTransfers", table: "store_transfers" },
+  { id: "expenses", labelKey: "resetTableExpenses", table: "expenses" },
+  { id: "notifications", labelKey: "resetTableNotifications", table: "customer_notifications" },
+  { id: "activity", labelKey: "systemLog", table: "activity_logs" },
+  { id: "inventory_alerts", labelKey: "resetTableInventoryAlerts", table: "inventory_alerts" },
 ]
 
 export default function SystemResetPage() {
@@ -113,9 +113,9 @@ export default function SystemResetPage() {
       if (insertError) {
         }
 
-      toast.success("تم تنزيل النسخة الاحتياطية بنجاح")
+      toast.success(t('systemResetBackupDownloadedSuccess', currentLanguage.code))
     } catch (error) {
-      toast.error("فشل في إنشاء النسخة الاحتياطية")
+      toast.error(t('systemResetBackupCreateFailed', currentLanguage.code))
     } finally {
       setIsBackingUp(false)
     }
@@ -191,7 +191,7 @@ export default function SystemResetPage() {
 
   const handleExecuteReset = () => {
     if (selectedTables.length === 0) {
-      toast.error("يرجى تحديد خيار واحد على الأقل")
+      toast.error(t('systemResetSelectAtLeastOneOption', currentLanguage.code))
       return
     }
     executeReset()
@@ -282,7 +282,7 @@ export default function SystemResetPage() {
                         htmlFor={option.id}
                         className="text-sm font-normal cursor-pointer flex-1"
                       >
-                        {option.label}
+                        {t(option.labelKey, currentLanguage.code)}
                       </Label>
                     </div>
                   ))}

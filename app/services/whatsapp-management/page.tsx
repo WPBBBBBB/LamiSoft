@@ -25,6 +25,8 @@ import { Send, Image as ImageIcon, Megaphone, Eye, FileText, X, RefreshCw, Edit,
 import { toast } from "sonner"
 import { Textarea } from "@/components/ui/textarea"
 import { PermissionGuard } from "@/components/permission-guard"
+import { useSettings } from "@/components/providers/settings-provider"
+import { t } from "@/lib/translations"
 
 interface Customer {
   id: string
@@ -39,6 +41,9 @@ interface Customer {
 
 export default function WhatsappManagementPage() {
   const router = useRouter()
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
+
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [showPreview, setShowPreview] = useState(false)
@@ -71,12 +76,12 @@ export default function WhatsappManagementPage() {
       if (response.ok) {
         const data = await response.json()
         setCustomers(data)
-        toast.success(`تم تحميل ${data.length} زبون`)
+        toast.success(t("whatsappCustomersLoaded", lang).replace("{count}", String(data.length)))
       } else {
-        toast.error("فشل تحميل بيانات الزبائن")
+        toast.error(t("whatsappCustomersLoadFailed", lang))
       }
     } catch {
-      toast.error("خطأ في تحميل بيانات الزبائن")
+      toast.error(t("whatsappCustomersLoadError", lang))
     } finally {
       setIsLoading(false)
     }
@@ -118,12 +123,12 @@ export default function WhatsappManagementPage() {
 
   async function handleRefresh() {
     await loadCustomers()
-    toast.success("تم تحديث البيانات")
+    toast.success(t("whatsappDataRefreshed", lang))
   }
 
   async function handleSendMessages() {
     if (selectedIds.length === 0) {
-      toast.error("يرجى تحديد زبائن على الأقل")
+      toast.error(t("whatsappSelectAtLeastOneCustomer", lang))
       return
     }
 
@@ -137,7 +142,7 @@ export default function WhatsappManagementPage() {
 
     try {
       setIsSending(true)
-      toast.info("جاري إرسال الرسائل...")
+      toast.info(t("whatsappSendingMessagesInfo", lang))
 
       const response = await fetch("/api/whatsapp-send", {
         method: "POST",
@@ -153,10 +158,12 @@ export default function WhatsappManagementPage() {
         const result = await response.json()
         
         if (result.failed === 0) {
-          toast.success(`تم إرسال ${result.success} رسالة بنجاح! ✓`)
+          toast.success(t("whatsappMessagesSentSuccess", lang).replace("{count}", String(result.success)))
         } else {
           toast.warning(
-            `تم إرسال ${result.success} رسالة. فشل ${result.failed} رسالة.`
+            t("whatsappMessagesSentWithFailures", lang)
+              .replace("{success}", String(result.success))
+              .replace("{failed}", String(result.failed))
           )
         }
         
@@ -167,10 +174,10 @@ export default function WhatsappManagementPage() {
         
         setSelectedIds([])
       } else {
-        toast.error("فشل إرسال الرسائل")
+        toast.error(t("whatsappSendMessagesFailed", lang))
       }
     } catch {
-      toast.error("خطأ في إرسال الرسائل")
+      toast.error(t("whatsappSendMessagesError", lang))
     } finally {
       setIsSending(false)
     }
@@ -181,7 +188,7 @@ export default function WhatsappManagementPage() {
     if (!file) return
 
     if (!file.type.startsWith('image/')) {
-      toast.error("يرجى اختيار صورة فقط")
+      toast.error(t("whatsappChooseImageOnly", lang))
       return
     }
 
@@ -202,12 +209,12 @@ export default function WhatsappManagementPage() {
 
   async function handleSendMedia() {
     if (!selectedImage) {
-      toast.error("يرجى اختيار صورة")
+      toast.error(t("whatsappSelectImage", lang))
       return
     }
 
     if (selectedIds.length === 0) {
-      toast.error("يرجى تحديد زبائن")
+      toast.error(t("whatsappSelectCustomers", lang))
       return
     }
 
@@ -215,7 +222,7 @@ export default function WhatsappManagementPage() {
 
     try {
       setIsSendingMedia(true)
-      toast.info("جاري تحميل الصورة وإرسالها...")
+      toast.info(t("whatsappSendingMediaInfo", lang))
 
       const reader = new FileReader()
       reader.readAsDataURL(selectedImage)
@@ -239,10 +246,12 @@ export default function WhatsappManagementPage() {
           const result = await response.json()
           
           if (result.failed === 0) {
-            toast.success(`تم إرسال الصورة إلى ${result.success} زبون بنجاح! ✓`)
+            toast.success(t("whatsappImageSentSuccess", lang).replace("{count}", String(result.success)))
           } else {
             toast.warning(
-              `تم إرسال ${result.success} صورة. فشل ${result.failed}.`
+              t("whatsappImageSentWithFailures", lang)
+                .replace("{success}", String(result.success))
+                .replace("{failed}", String(result.failed))
             )
           }
           
@@ -255,7 +264,7 @@ export default function WhatsappManagementPage() {
           setShowMediaDialog(false)
           clearImageSelection()
         } else {
-          let errorMessage = "فشل إرسال الصورة"
+          let errorMessage = t("whatsappSendImageFailed", lang)
           let errorDetails = ""
           
           try {
@@ -278,30 +287,34 @@ export default function WhatsappManagementPage() {
                 errorDetails = responseText
               }
             } else {
-              errorMessage = `خطأ HTTP ${response.status}: ${response.statusText}`
-              errorDetails = `HTTP ${response.status} - ${response.statusText}\nلم يتم إرجاع محتوى من الخادم`
+              errorMessage = t("whatsappHttpError", lang)
+                .replace("{status}", String(response.status))
+                .replace("{statusText}", String(response.statusText))
+              errorDetails = `HTTP ${response.status} - ${response.statusText}\n${t("whatsappServerReturnedNoContent", lang)}`
             }
           } catch (e) {
-            errorMessage = `خطأ ${response.status}: ${response.statusText}`
-            errorDetails = `HTTP ${response.status} - ${response.statusText}\nخطأ في القراءة: ${e}`
+            errorMessage = t("whatsappHttpErrorShort", lang)
+              .replace("{status}", String(response.status))
+              .replace("{statusText}", String(response.statusText))
+            errorDetails = `HTTP ${response.status} - ${response.statusText}\n${t("whatsappReadError", lang)}: ${e}`
           }
           
           toast.error(errorMessage)
           
           setSendErrors([{
-            customer: "تفاصيل الخطأ",
-            error: `${errorMessage}\n\nالتفاصيل:\n${errorDetails}`
+            customer: t("whatsappErrorDetailsCustomer", lang),
+            error: `${errorMessage}\n\n${t("whatsappDetailsLabel", lang)}\n${errorDetails}`
           }])
           setShowErrorDialog(true)
         }
       }
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "خطأ غير متوقع"
+      const errorMsg = error instanceof Error ? error.message : t("whatsappUnexpectedError", lang)
       
-      toast.error(`خطأ في إرسال الصورة: ${errorMsg}`)
+      toast.error(t("whatsappSendImageErrorWithMessage", lang).replace("{error}", String(errorMsg)))
       
       setSendErrors([{
-        customer: "النظام",
+        customer: t("whatsappSystem", lang),
         error: errorMsg
       }])
       setShowErrorDialog(true)
@@ -321,10 +334,10 @@ export default function WhatsappManagementPage() {
 
   const handleExportReport = async () => {
     try {
-      toast.loading("جاري تجهيز التقرير...")
+      toast.loading(t("whatsappPreparingReport", lang))
       
       const { data: { user } } = await fetch("/api/auth/user").then(res => res.json()).catch(() => ({ data: { user: null } }))
-      const generatedBy = user?.user_metadata?.full_name || user?.email || "غير معروف"
+      const generatedBy = user?.user_metadata?.full_name || user?.email || t("unknownUser", lang)
 
       const payload = {
         generatedBy,
@@ -341,13 +354,13 @@ export default function WhatsappManagementPage() {
       localStorage.setItem(storageKey, jsonString)
 
       toast.dismiss()
-      toast.success("تم تجهيز التقرير")
+      toast.success(t("whatsappReportPrepared", lang))
 
       window.location.href = `/report/whatsapp?token=${token}&back=/services/whatsapp-management`
     } catch (error) {
       console.error("Error exporting report:", error)
       toast.dismiss()
-      toast.error("حدث خطأ أثناء تصدير التقرير")
+      toast.error(t("whatsappReportExportError", lang))
     }
   }
 
@@ -355,9 +368,9 @@ export default function WhatsappManagementPage() {
     <PermissionGuard requiredPermission="view_services">
     <div className="h-full p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">إدارة رسائل الواتساب</h1>
+        <h1 className="text-3xl font-bold">{t("whatsappMessagesManagementTitle", lang)}</h1>
         <p className="text-muted-foreground mt-2">
-          إدارة وإرسال رسائل الواتساب للزبائن
+          {t("whatsappMessagesManagementDescription", lang)}
         </p>
       </div>
 
@@ -369,7 +382,9 @@ export default function WhatsappManagementPage() {
           disabled={isSending || selectedIds.length === 0}
         >
           <Send className="h-4 w-4" />
-          {isSending ? "جاري الإرسال..." : `إرسال رسالة (${selectedIds.length})`}
+          {isSending
+            ? t("whatsappSending", lang)
+            : t("whatsappSendMessageWithCount", lang).replace("{count}", String(selectedIds.length))}
         </Button>
 
         <Button 
@@ -377,7 +392,7 @@ export default function WhatsappManagementPage() {
           className="gap-2"
           onClick={() => {
             if (selectedIds.length === 0) {
-              toast.error("يرجى تحديد زبائن على الأقل")
+              toast.error(t("whatsappSelectAtLeastOneCustomer", lang))
               return
             }
             setShowMediaDialog(true)
@@ -385,12 +400,12 @@ export default function WhatsappManagementPage() {
           disabled={selectedIds.length === 0}
         >
           <ImageIcon className="h-4 w-4" />
-          إرسال وسائط ({selectedIds.length})
+          {t("whatsappSendMediaWithCount", lang).replace("{count}", String(selectedIds.length))}
         </Button>
 
         <Button variant="outline" className="gap-2">
           <Megaphone className="h-4 w-4" />
-          حملة إعلانية
+          {t("whatsappAdCampaign", lang)}
         </Button>
 
         {}
@@ -401,7 +416,7 @@ export default function WhatsappManagementPage() {
             onClick={() => setShowPreview(true)}
           >
             <Eye className="h-4 w-4" />
-            معاينة الرسالة الافتراضية
+            {t("whatsappPreviewDefaultMessage", lang)}
           </Button>
         </div>
       </div>
@@ -419,7 +434,7 @@ export default function WhatsappManagementPage() {
 
           <div className="flex-1 min-w-[200px] max-w-md flex gap-2">
             <Input
-              placeholder="البحث بالاسم أو رقم الهاتف..."
+              placeholder={t("whatsappSearchNameOrPhonePlaceholder", lang)}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -436,7 +451,9 @@ export default function WhatsappManagementPage() {
             variant="outline"
             onClick={handleSelectAll}
           >
-            {selectedIds.length === filteredCustomers.length ? "إلغاء التحديد" : "تحديد الكل"}
+            {selectedIds.length === filteredCustomers.length
+              ? t("deselectAll", lang)
+              : t("selectAll", lang)}
           </Button>
 
           <Button
@@ -445,7 +462,7 @@ export default function WhatsappManagementPage() {
             onClick={handleRefresh}
           >
             <RefreshCw className="h-4 w-4" />
-            تحديث
+            {t("refresh", lang)}
           </Button>
         </div>
       </Card>
@@ -456,27 +473,27 @@ export default function WhatsappManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[100px] text-right">#</TableHead>
-                <TableHead className="text-right">اسم الزبون</TableHead>
-                <TableHead className="text-right">رقم الهاتف</TableHead>
-                <TableHead className="text-right">تاريخ آخر تسديد</TableHead>
-                <TableHead className="text-right">آخر مبلغ مسدد دينار</TableHead>
-                <TableHead className="text-right">آخر مبلغ مسدد $</TableHead>
-                <TableHead className="text-right">الرصيد الحالي دينار</TableHead>
-                <TableHead className="text-right">الرصيد الحالي $</TableHead>
+                <TableHead className="w-[100px] text-right">{t("rowNumber", lang)}</TableHead>
+                <TableHead className="text-right">{t("customerName", lang)}</TableHead>
+                <TableHead className="text-right">{t("phoneNumber", lang)}</TableHead>
+                <TableHead className="text-right">{t("whatsappVarLastPaymentDate", lang)}</TableHead>
+                <TableHead className="text-right">{t("whatsappLastPaymentIQD", lang)}</TableHead>
+                <TableHead className="text-right">{t("whatsappLastPaymentUSD", lang)}</TableHead>
+                <TableHead className="text-right">{t("whatsappCurrentBalanceIQD", lang)}</TableHead>
+                <TableHead className="text-right">{t("whatsappCurrentBalanceUSD", lang)}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                    جاري التحميل...
+                    {t("loading", lang)}
                   </TableCell>
                 </TableRow>
               ) : filteredCustomers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                    لا توجد نتائج
+                    {t("noResults", lang)}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -528,17 +545,17 @@ export default function WhatsappManagementPage() {
         <div className="border-t p-4 bg-muted/30">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">إجمالي الزبائن:</p>
+              <p className="text-sm text-muted-foreground">{t("totalCustomers", lang)}:</p>
               <p className="text-2xl font-bold">{totalCustomers}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">إجمالي المبالغ المستحقة:</p>
+              <p className="text-sm text-muted-foreground">{t("whatsappTotalDueAmountsIQD", lang)}</p>
               <p className="text-2xl font-bold text-orange-600">
                 {totalBalanceIQD.toLocaleString('en-US')} IQD
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">إجمالي المبالغ المستحقة دولار:</p>
+              <p className="text-sm text-muted-foreground">{t("whatsappTotalDueAmountsUSD", lang)}</p>
               <p className="text-2xl font-bold text-green-600">
                 ${totalBalanceUSD.toLocaleString('en-US')}
               </p>
@@ -551,9 +568,11 @@ export default function WhatsappManagementPage() {
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>تفاصيل الأخطاء ({sendErrors.length})</DialogTitle>
+            <DialogTitle>
+              {t("whatsappErrorsDetailsTitle", lang).replace("{count}", String(sendErrors.length))}
+            </DialogTitle>
             <DialogDescription>
-              قائمة بالزبائن الذين فشل إرسال الرسائل إليهم
+              {t("whatsappErrorsDetailsDescription", lang)}
             </DialogDescription>
           </DialogHeader>
 
@@ -567,7 +586,7 @@ export default function WhatsappManagementPage() {
           </div>
 
           <Button onClick={() => setShowErrorDialog(false)} className="w-full">
-            إغلاق
+            {t("close", lang)}
           </Button>
         </DialogContent>
       </Dialog>
@@ -576,9 +595,9 @@ export default function WhatsappManagementPage() {
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>معاينة الرسالة الافتراضية</DialogTitle>
+            <DialogTitle>{t("whatsappDefaultMessagePreviewTitle", lang)}</DialogTitle>
             <DialogDescription>
-              عرض الرسالة المحفوظة في الإعدادات
+              {t("whatsappDefaultMessagePreviewDescription", lang)}
             </DialogDescription>
           </DialogHeader>
 
@@ -586,11 +605,11 @@ export default function WhatsappManagementPage() {
             <Card className="p-6 bg-muted/50">
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">عنوان الرسالة:</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t("whatsappPreviewTitle", lang)}</p>
                   <p className="text-lg font-semibold">{messagePreview.title}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">نص الرسالة:</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t("whatsappPreviewBody", lang)}</p>
                   <p className="whitespace-pre-wrap">{messagePreview.body}</p>
                 </div>
               </div>
@@ -604,7 +623,7 @@ export default function WhatsappManagementPage() {
               }}
             >
               <Edit className="h-4 w-4" />
-              تعديل الرسالة
+              {t("whatsappEditMessage", lang)}
             </Button>
           </div>
         </DialogContent>
@@ -616,21 +635,21 @@ export default function WhatsappManagementPage() {
           <DialogHeader>
             <DialogTitle className="text-2xl flex items-center gap-2">
               <Send className="h-6 w-6 text-primary" />
-              تأكيد إرسال الرسائل
+              {t("whatsappConfirmSendMessagesTitle", lang)}
             </DialogTitle>
             <DialogDescription>
-              يرجى التأكيد قبل إرسال الرسائل
+              {t("whatsappConfirmSendMessagesDescription", lang)}
             </DialogDescription>
           </DialogHeader>
 
           <Card className="p-4 bg-primary/5 border-primary/20">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">عدد الزبائن:</span>
+                <span className="text-muted-foreground">{t("whatsappCustomersCountLabel", lang)}</span>
                 <span className="text-2xl font-bold text-primary">{pendingCustomers.length}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">عدد الرسائل:</span>
+                <span className="text-muted-foreground">{t("whatsappMessagesCountLabel", lang)}</span>
                 <span className="text-xl font-semibold">{pendingCustomers.length}</span>
               </div>
             </div>
@@ -638,7 +657,7 @@ export default function WhatsappManagementPage() {
 
           {pendingCustomers.length > 0 && (
             <div className="max-h-48 overflow-y-auto border rounded-md p-3 space-y-2">
-              <p className="text-sm font-medium text-muted-foreground mb-2">الزبائن المحددون:</p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">{t("whatsappSelectedCustomersLabel", lang)}</p>
               {pendingCustomers.map((customer) => (
                 <div key={customer.id} className="flex items-center gap-2 text-sm">
                   <div className="h-2 w-2 rounded-full bg-primary"></div>
@@ -658,7 +677,7 @@ export default function WhatsappManagementPage() {
                 setPendingCustomers([])
               }}
             >
-              إلغاء
+              {t("cancel", lang)}
             </Button>
             <Button
               className="flex-1 gap-2"
@@ -668,12 +687,12 @@ export default function WhatsappManagementPage() {
               {isSending ? (
                 <>
                   <RefreshCw className="h-4 w-4 animate-spin" />
-                  جاري الإرسال...
+                  {t("whatsappSending", lang)}
                 </>
               ) : (
                 <>
                   <Send className="h-4 w-4" />
-                  تأكيد الإرسال
+                  {t("whatsappConfirmSend", lang)}
                 </>
               )}
             </Button>
@@ -690,10 +709,10 @@ export default function WhatsappManagementPage() {
           <DialogHeader>
             <DialogTitle className="text-2xl flex items-center gap-2">
               <ImageIcon className="h-6 w-6 text-primary" />
-              إرسال صورة إلى الزبائن
+              {t("whatsappSendImageDialogTitle", lang)}
             </DialogTitle>
             <DialogDescription>
-              اختر صورة وأضف وصفاً لها قبل الإرسال
+              {t("whatsappSendImageDialogDescription", lang)}
             </DialogDescription>
           </DialogHeader>
 
@@ -701,22 +720,22 @@ export default function WhatsappManagementPage() {
             {}
             <Card className="p-3 bg-primary/5 border-primary/20 mb-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">عدد الزبائن المحددين:</span>
+                <span className="text-sm text-muted-foreground">{t("whatsappSelectedCustomersCountLabel", lang)}</span>
                 <span className="text-lg font-bold text-primary">{selectedIds.length}</span>
               </div>
             </Card>
 
             {!selectedImage ? (
               <div className="space-y-2">
-                <label className="text-sm font-medium">اختر الصورة</label>
+                <label className="text-sm font-medium">{t("whatsappChooseImageLabel", lang)}</label>
                 <label htmlFor="image-upload" className="block">
                   <Card className="p-8 border-2 border-dashed hover:border-primary/50 cursor-pointer transition-colors">
                     <div className="flex flex-col items-center gap-3 text-center">
                       <Upload className="h-12 w-12 text-muted-foreground" />
                       <div>
-                        <p className="font-medium">اضغط لاختيار صورة</p>
+                        <p className="font-medium">{t("whatsappClickToChooseImage", lang)}</p>
                         <p className="text-sm text-muted-foreground mt-1">
-                          يدعم جميع صيغ الصور (JPG, PNG, GIF, WEBP, إلخ)
+                          {t("whatsappImageFormatsSupported", lang)}
                         </p>
                       </div>
                     </div>
@@ -733,7 +752,7 @@ export default function WhatsappManagementPage() {
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <label className="text-sm font-medium">الصورة المختارة</label>
+                  <label className="text-sm font-medium">{t("whatsappSelectedImageLabel", lang)}</label>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -741,7 +760,7 @@ export default function WhatsappManagementPage() {
                     className="gap-1"
                   >
                     <Trash2 className="h-3 w-3" />
-                    إزالة
+                    {t("remove", lang)}
                   </Button>
                 </div>
                 
@@ -752,18 +771,18 @@ export default function WhatsappManagementPage() {
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={imagePreviewUrl}
-                          alt="معاينة الصورة"
+                          alt={t("whatsappImagePreviewAlt", lang)}
                           className="w-full h-full object-cover"
                         />
                       </div>
                     )}
                     <div className="flex-1 space-y-2">
                       <div>
-                        <p className="text-sm text-muted-foreground">اسم الملف:</p>
+                        <p className="text-sm text-muted-foreground">{t("whatsappFileNameLabel", lang)}</p>
                         <p className="font-medium">{selectedImage.name}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">الحجم:</p>
+                        <p className="text-sm text-muted-foreground">{t("whatsappFileSizeLabel", lang)}</p>
                         <p className="font-medium">{(selectedImage.size / 1024).toFixed(2)} KB</p>
                       </div>
                     </div>
@@ -771,9 +790,9 @@ export default function WhatsappManagementPage() {
                 </Card>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">الوصف (اختياري)</label>
+                  <label className="text-sm font-medium">{t("whatsappImageDescriptionOptionalLabel", lang)}</label>
                   <Textarea
-                    placeholder="أضف وصفاً للصورة..."
+                    placeholder={t("whatsappImageDescriptionPlaceholder", lang)}
                     value={imageDescription}
                     onChange={(e) => setImageDescription(e.target.value)}
                     rows={4}
@@ -791,7 +810,7 @@ export default function WhatsappManagementPage() {
               onClick={() => setShowMediaDialog(false)}
               disabled={isSendingMedia}
             >
-              إلغاء
+              {t("cancel", lang)}
             </Button>
             <Button
               className="flex-1 gap-2"
@@ -801,12 +820,12 @@ export default function WhatsappManagementPage() {
               {isSendingMedia ? (
                 <>
                   <RefreshCw className="h-4 w-4 animate-spin" />
-                  جاري الإرسال...
+                  {t("whatsappSending", lang)}
                 </>
               ) : (
                 <>
                   <Send className="h-4 w-4" />
-                  إرسال الصورة
+                  {t("whatsappSendImageButton", lang)}
                 </>
               )}
             </Button>

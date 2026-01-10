@@ -49,9 +49,13 @@ import {
 import { createCustomer } from "@/lib/supabase-operations"
 import { getCurrentExchangeRate } from "@/lib/exchange-rate-operations"
 import { logAction } from "@/lib/system-log-operations"
+import { useSettings } from "@/components/providers/settings-provider"
+import { t } from "@/lib/translations"
 
 export default function SaleAddPage() {
   const router = useRouter()
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
   const searchParams = useSearchParams()
   const editId = searchParams.get("edit")
   const viewMode = searchParams.get("view") === "true"
@@ -200,12 +204,12 @@ export default function SaleAddPage() {
           setCustomerBalanceIQD(newCustomer.balanceiqd ?? 0)
           setCustomerBalanceUSD(newCustomer.balanceusd ?? 0)
           setSearchCustomer("")
-          
-          toast.success(`تم اختيار الزبون: ${newCustomer.customer_name}`)
+
+          toast.success(t("saleCustomerSelected", lang).replace("{name}", newCustomer.customer_name))
         }
       }
     } catch {
-      toast.error("فشل تحميل البيانات")
+      toast.error(t("failedLoadData", lang))
     }
   }
 
@@ -216,7 +220,7 @@ export default function SaleAddPage() {
       setNumberOfSale(newNumber)
       return newNumber
     } catch {
-      toast.error("فشل توليد رقم القائمة")
+      toast.error(t("failedGenerateSaleNumber", lang))
       return ""
     }
   }
@@ -227,7 +231,7 @@ export default function SaleAddPage() {
       
       const saleData = await getSaleById(saleId)
       if (!saleData) {
-        toast.error("لم يتم العثور على القائمة")
+        toast.error(t("saleNotFound", lang))
         router.push("/reports")
         return
       }
@@ -273,10 +277,10 @@ export default function SaleAddPage() {
         tempId: `product-${index}`,
       }))
       setProducts(productsWithTempId)
-      
-      toast.success("تم تحميل بيانات القائمة")
+
+      toast.success(t("saleDataLoaded", lang))
     } catch {
-      toast.error("فشل تحميل بيانات القائمة")
+      toast.error(t("failedLoadSaleData", lang))
       router.push("/reports")
     } finally {
       setLoadingEditData(false)
@@ -288,12 +292,12 @@ export default function SaleAddPage() {
       const items = await getInventoryByStore(storeId)
       setInventory(items)
       if (items.length === 0) {
-        toast.info("لا توجد مواد متوفرة في هذا المخزن")
+        toast.info(t("noInventoryInStore", lang))
       } else {
-        toast.success(`تم تحميل ${items.length} مادة من المخزن`)
+        toast.success(t("inventoryLoadedCount", lang).replace("{count}", String(items.length)))
       }
     } catch {
-      toast.error("فشل تحميل المواد")
+      toast.error(t("failedLoadInventory", lang))
     }
   }
 
@@ -336,11 +340,11 @@ export default function SaleAddPage() {
       setSearchCustomer("")
       setCustomerSelectOpen(false)
       
-      toast.success(`تم إضافة الزبون: ${newCustomer.customer_name}`)
+      toast.success(t("saleCustomerAdded", lang).replace("{name}", newCustomer.customer_name))
       
       return newCustomer
     } catch (error) {
-      toast.error("فشل إضافة الزبون")
+      toast.error(t("saleCustomerAddFailed", lang))
       throw error
     }
   }
@@ -412,12 +416,12 @@ export default function SaleAddPage() {
 
   const addItemFromNew = () => {
     if (!newItem.productcode.trim() || !newItem.productname.trim()) {
-      toast.error("الرجاء اختيار المادة")
+      toast.error(t("saleSelectProductRequired", lang))
       return
     }
 
     if (newItem.quantity <= 0) {
-      toast.error("الرجاء إدخال كمية صحيحة")
+      toast.error(t("saleEnterValidQuantity", lang))
       return
     }
 
@@ -426,7 +430,7 @@ export default function SaleAddPage() {
       .reduce((sum, i) => sum + Number(i.quantity || 0), 0)
 
     if (availableQuantity > 0 && newItem.quantity > availableQuantity) {
-      toast.error(`الكمية المتوفرة: ${availableQuantity} فقط`)
+      toast.error(t("saleAvailableQuantityOnly", lang).replace("{qty}", String(availableQuantity)))
       return
     }
 
@@ -438,7 +442,7 @@ export default function SaleAddPage() {
     }
 
     setProducts([...products, newProduct])
-  toast.success("تمت إضافة المادة")
+    toast.success(t("saleItemAdded", lang))
 
     setProductSearchCode("")
     setProductSearchName("")
@@ -517,7 +521,7 @@ export default function SaleAddPage() {
 
   const deleteProduct = (tempId: string) => {
     setProducts(products.filter((p) => p.tempId !== tempId))
-    toast.success("تم حذف المادة")
+    toast.success(t("itemDeleted", lang))
   }
 
   const totalProductsCount = products.filter((p) => p.productcode && p.quantity > 0).length
@@ -555,29 +559,29 @@ export default function SaleAddPage() {
     if (saveInFlightRef.current || isSaving) return
 
     if (isViewMode) {
-      toast.error("لا يمكن الحفظ في وضع العرض")
+      toast.error(t("cannotSaveInViewMode", lang))
       return
     }
 
     if (!numberofsale.trim()) {
-      toast.error("الرجاء إدخال رقم القائمة")
+      toast.error(t("enterSaleNumberRequired", lang))
       return
     }
 
     if (!salestoreid) {
-      toast.error("الرجاء اختيار المخزن")
+      toast.error(t("selectStoreRequired", lang))
       return
     }
 
     if (!customerid) {
-      toast.error("الرجاء اختيار الزبون")
+      toast.error(t("selectCustomerRequired", lang))
       return
     }
 
     const validProducts = products.filter((p) => p.productcode && p.quantity > 0)
 
     if (validProducts.length === 0) {
-      toast.error("الرجاء إضافة مادة واحدة على الأقل")
+      toast.error(t("addAtLeastOneItem", lang))
       return
     }
 
@@ -631,9 +635,9 @@ export default function SaleAddPage() {
         
         if (isEditMode) {
           await logAction(
-            "?????",
-            `?? ????? ????? ??? ??? ${numberofsale} ??????: ${selectedCustomer?.customer_name || '??? ?????'}`,
-            "????????",
+            "المبيعات",
+            `تم تعديل قائمة بيع رقم ${numberofsale} للزبون: ${selectedCustomer?.customer_name || t("unknownUser", lang)}`,
+            "تعديل",
             undefined,
             undefined,
             {
@@ -647,9 +651,9 @@ export default function SaleAddPage() {
           )
         } else {
           await logAction(
-            "?????",
-            `??? ????? ????? ????? ??? ??? ${numberofsale} ??????: ${selectedCustomer?.customer_name || '??? ?????'} ????? ${total.toLocaleString()} ${currency}`,
-            "????????",
+            "المبيعات",
+            `تم إضافة قائمة بيع جديدة رقم ${numberofsale} للزبون: ${selectedCustomer?.customer_name || t("unknownUser", lang)} بمبلغ ${total.toLocaleString()} ${currency}`,
+            "إضافة",
             undefined,
             undefined,
             {
@@ -665,9 +669,9 @@ export default function SaleAddPage() {
           
           for (const product of validProducts) {
             await logAction(
-              "??? ?? ??????",
-              `?? ??? ???? ${product.productname} ????? ${product.quantity} ?? ??????`,
-              "???????",
+              "المبيعات",
+              `تم بيع المنتج ${product.productname} بكمية ${product.quantity}`,
+              "بيع منتج",
               undefined,
               undefined,
               {
@@ -680,8 +684,8 @@ export default function SaleAddPage() {
             )
           }
         }
-        
-        toast.success(isEditMode ? "تم تعديل قائمة البيع بنجاح" : "تم حفظ قائمة البيع بنجاح")
+
+        toast.success(isEditMode ? t("saleUpdatedSuccess", lang) : t("saleSavedSuccess", lang))
 
         setProducts([])
         setDetails("")
@@ -716,10 +720,10 @@ export default function SaleAddPage() {
           loadInventory(salestoreid)
         }
       } else {
-        toast.error(result.error || "فشل حفظ قائمة البيع")
+        toast.error(result.error || t("saleSaveFailed", lang))
       }
     } catch {
-      toast.error("حدث خطأ أثناء حفظ القائمة")
+      toast.error(t("saleSaveError", lang))
     } finally {
       setIsSaving(false)
       saveInFlightRef.current = false
@@ -728,17 +732,17 @@ export default function SaleAddPage() {
   
   const handlePrintInvoice = () => {
     if (!customerid || !customername) {
-      toast.error("الرجاء اختيار الزبون")
+      toast.error(t("selectCustomerRequired", lang))
       return
     }
 
     if (products.length === 0) {
-      toast.error("الرجاء إضافة مادة واحدة على الأقل")
+      toast.error(t("addAtLeastOneItem", lang))
       return
     }
 
     const selectedStore = stores.find(s => s.id === salestoreid)
-    const storeName = selectedStore?.storename || "المخزن الرئيسي"
+    const storeName = selectedStore?.storename || t("mainStore", lang)
 
     const isExistingSale = Boolean(editId)
     const receivedIQD = hasAmountReceived ? amountReceivedIQD : 0
@@ -812,7 +816,7 @@ export default function SaleAddPage() {
       >
         <div className="flex items-center gap-3 rounded-lg border bg-background px-4 py-3 shadow">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span className="text-sm">جاري حفظ القائمة...</span>
+          <span className="text-sm">{t("savingSaleList", lang)}</span>
         </div>
       </div>
     )}
@@ -824,13 +828,13 @@ export default function SaleAddPage() {
             <ArrowRight className="h-5 w-5 theme-icon" />
           </Button>
           <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
-            {isViewMode ? "كشف قائمة بيع" : isEditMode ? "تعديل قائمة بيع" : "إضافة قائمة بيع"}
+            {isViewMode ? t("viewSale", lang) : isEditMode ? t("editSale", lang) : t("addSaleList", lang)}
           </h1>
         </div>
         {loadingEditData && (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span>جاري تحميل البيانات...</span>
+            <span>{t("loadingSaleData", lang)}</span>
           </div>
         )}
       </div>
@@ -841,7 +845,7 @@ export default function SaleAddPage() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           {}
           <div className="space-y-2">
-            <Label htmlFor="numberofsale">رقم القائمة (تلقائي)</Label>
+            <Label htmlFor="numberofsale">{t("saleNumberAuto", lang)}</Label>
             <Input
               id="numberofsale"
               value={numberofsale}
@@ -853,35 +857,35 @@ export default function SaleAddPage() {
 
           {}
           <div className="space-y-2">
-            <Label>نوع التسعير</Label>
+            <Label>{t("priceType", lang)}</Label>
             <Select value={pricetype} onValueChange={(v: "جملة" | "مفرد") => setPriceType(v)} disabled={isViewMode}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="مفرد">مفرد</SelectItem>
-                <SelectItem value="جملة">جملة</SelectItem>
+                <SelectItem value="مفرد">{t("retail", lang)}</SelectItem>
+                <SelectItem value="جملة">{t("wholesale", lang)}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {}
           <div className="space-y-2">
-            <Label>نوع الدفع</Label>
+            <Label>{t("paymentType", lang)}</Label>
             <Select value={paytype} onValueChange={(v: "نقدي" | "آجل") => setPayType(v)} disabled={isViewMode}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="نقدي">نقدي</SelectItem>
-                <SelectItem value="آجل">آجل</SelectItem>
+                <SelectItem value="نقدي">{t("cash", lang)}</SelectItem>
+                <SelectItem value="آجل">{t("credit", lang)}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {}
           <div className="space-y-2">
-            <Label>نوع العملة</Label>
+            <Label>{t("currency", lang)}</Label>
             <Select
               value={currencyType}
               onValueChange={(v: "دينار" | "دولار") => setCurrencyType(v)}
@@ -891,15 +895,15 @@ export default function SaleAddPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="دينار">دينار</SelectItem>
-                <SelectItem value="دولار">دولار</SelectItem>
+                <SelectItem value="دينار">{t("dinar", lang)}</SelectItem>
+                <SelectItem value="دولار">{t("dollar", lang)}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {}
           <div className="space-y-2">
-            <Label>سعر الصرف الحالي</Label>
+            <Label>{t("exchangeRate", lang)}</Label>
             <div className="flex items-center h-10 px-3 rounded-md border bg-muted">
               <span className="font-semibold text-lg">{exchangeRate.toLocaleString()}</span>
             </div>
@@ -910,11 +914,11 @@ export default function SaleAddPage() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
           {}
           <div className="space-y-2 md:col-span-3">
-            <Label>اسم الزبون</Label>
+            <Label>{t("customerNameLabel", lang)}</Label>
             <div className="relative" ref={customerDropdownRef}>
               <Input
-                placeholder="ابحث عن زبون..."
-                value={searchCustomer || (customername || "")}
+                placeholder={t("searchForCustomer", lang)}
+                value={searchCustomer || customername || ""}
                 onChange={(e) => {
                   setSearchCustomer(e.target.value)
                   setCustomerSelectOpen(true)
@@ -958,10 +962,12 @@ export default function SaleAddPage() {
                       return (
                         <div className="px-3 py-3 text-center space-y-1">
                           <div className="text-sm text-muted-foreground">
-                            ?? ???? ??? ?????
+                            {t("saleCustomerNotFound", lang)}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            ???? <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Enter</kbd> ?????? ???? ???? ??????
+                            {t("salePressEnterToAddCustomer", lang).split("{key}")[0]}
+                            <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Enter</kbd>
+                            {t("salePressEnterToAddCustomer", lang).split("{key}")[1]}
                           </div>
                         </div>
                       )
@@ -991,7 +997,7 @@ export default function SaleAddPage() {
           {}
           <div className="space-y-2 md:col-span-2">
             <Label className="font-semibold text-blue-600 dark:text-blue-400">
-              رصيد سابق دينار
+              {t("previousBalanceIQD", lang)}
             </Label>
             <div className="flex items-center h-10 px-3 rounded-md border bg-muted">
               <span className="font-semibold text-lg">
@@ -1003,7 +1009,7 @@ export default function SaleAddPage() {
           {}
           <div className="space-y-2 md:col-span-2">
             <Label className="font-semibold text-green-600 dark:text-green-400">
-              رصيد سابق دولار
+              {t("previousBalanceUSD", lang)}
             </Label>
             <div className="flex items-center h-10 px-3 rounded-md border bg-muted">
               <span className="font-semibold text-lg">
@@ -1014,10 +1020,10 @@ export default function SaleAddPage() {
 
           {}
           <div className="space-y-2 md:col-span-3">
-            <Label>المخزن</Label>
+            <Label>{t("store", lang)}</Label>
             <Select value={salestoreid} onValueChange={setSaleStoreId} disabled={isViewMode}>
               <SelectTrigger>
-                <SelectValue placeholder="اختر المخزن" />
+                <SelectValue placeholder={t("selectStore", lang)} />
               </SelectTrigger>
               <SelectContent>
                 {stores.map((store) => (
@@ -1046,7 +1052,7 @@ export default function SaleAddPage() {
                   disabled={isViewMode}
                 />
                 <Label htmlFor="hasAmountReceived" className="cursor-pointer">
-                  مبلغ واصل
+                  {t("amountReceived", lang)}
                 </Label>
               </div>
             </div>
@@ -1057,7 +1063,7 @@ export default function SaleAddPage() {
         {hasAmountReceived && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 rounded-lg bg-accent/50">
             <div className="space-y-2">
-              <Label>عملة المبلغ الواصل</Label>
+              <Label>{t("amountReceivedCurrency", lang)}</Label>
               <Select
                 value={amountCurrency}
                 onValueChange={(v: "دينار" | "دولار") => {
@@ -1070,14 +1076,14 @@ export default function SaleAddPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="دينار">دينار</SelectItem>
-                  <SelectItem value="دولار">دولار</SelectItem>
+                  <SelectItem value="دينار">{t("dinar", lang)}</SelectItem>
+                  <SelectItem value="دولار">{t("dollar", lang)}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>المبلغ الواصل</Label>
+              <Label>{t("amountReceived", lang)}</Label>
               <Input
                 type="number"
                 value={
@@ -1093,7 +1099,7 @@ export default function SaleAddPage() {
         {}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="space-y-2">
-            <Label>تاريخ العملية</Label>
+            <Label>{t("dateTime", lang)}</Label>
             <Input
               type="datetime-local"
               value={datetime}
@@ -1103,11 +1109,11 @@ export default function SaleAddPage() {
           </div>
 
           <div className="space-y-2 md:col-span-3">
-            <Label>ملاحظات</Label>
+            <Label>{t("notes", lang)}</Label>
             <Textarea
               value={details}
               onChange={(e) => setDetails(e.target.value)}
-              placeholder="ملاحظات إضافية"
+              placeholder={t("additionalNotes", lang)}
               rows={2}
               readOnly={isViewMode}
             />
@@ -1130,14 +1136,14 @@ export default function SaleAddPage() {
               disabled={isViewMode}
             />
             <Label htmlFor="discountEnabled" className="cursor-pointer font-semibold">
-              تفعيل الخصم
+              {t("enableDiscount", lang)}
             </Label>
           </div>
 
           {discountEnabled && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-lg bg-accent/50">
               <div className="space-y-2">
-                <Label>عملة الخصم</Label>
+                <Label>{t("discountCurrency", lang)}</Label>
                 <Select
                   value={discountCurrency}
                   onValueChange={(v: "دينار" | "دولار") => {
@@ -1150,14 +1156,14 @@ export default function SaleAddPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="دينار">دينار</SelectItem>
-                    <SelectItem value="دولار">دولار</SelectItem>
+                    <SelectItem value="دينار">{t("dinar", lang)}</SelectItem>
+                    <SelectItem value="دولار">{t("dollar", lang)}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>مبلغ الخصم</Label>
+                <Label>{t("discountAmount", lang)}</Label>
                 <Input
                   type="number"
                   value={discountCurrency === "دينار" ? discountIQD : discountUSD}
@@ -1173,19 +1179,19 @@ export default function SaleAddPage() {
         <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: "var(--theme-surface)", borderLeft: "4px solid var(--theme-primary)" }}>
           <div className="flex flex-wrap items-center justify-between gap-6">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium" style={{ color: "var(--theme-text)" }}>عدد المواد:</span>
+              <span className="text-sm font-medium" style={{ color: "var(--theme-text)" }}>{t("itemsCount", lang)}:</span>
               <span className="font-bold text-lg" style={{ color: "var(--theme-text)" }}>{totalProductsCount}</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm" style={{ color: "var(--theme-text)" }}>إجمالي دينار:</span>
+              <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("totalIQD", lang)}:</span>
               <span className="font-bold text-lg text-green-600 dark:text-green-400">
                 {totalSaleIQD.toLocaleString()}
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm" style={{ color: "var(--theme-text)" }}>إجمالي دولار:</span>
+              <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("totalUSD", lang)}:</span>
               <span className="font-bold text-lg text-blue-600 dark:text-blue-400">
                 {totalSaleUSD.toLocaleString()}
               </span>
@@ -1194,14 +1200,14 @@ export default function SaleAddPage() {
             {discountEnabled && (
               <>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>بعد الخصم دينار:</span>
+                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("afterDiscountIQD", lang)}:</span>
                   <span className="font-bold text-lg text-purple-600 dark:text-purple-400">
                     {afterDiscountIQD.toLocaleString()}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>بعد الخصم دولار:</span>
+                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("afterDiscountUSD", lang)}:</span>
                   <span className="font-bold text-lg text-purple-600 dark:text-purple-400">
                     {afterDiscountUSD.toLocaleString()}
                   </span>
@@ -1212,24 +1218,24 @@ export default function SaleAddPage() {
             {hasAmountReceived && (
               <>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>واصل دينار:</span>
+                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("receivedIQD", lang)}:</span>
                   <span className="font-bold text-lg" style={{ color: "var(--theme-text)" }}>{amountReceivedIQD.toLocaleString()}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>واصل دولار:</span>
+                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("receivedUSD", lang)}:</span>
                   <span className="font-bold text-lg" style={{ color: "var(--theme-text)" }}>{amountReceivedUSD.toLocaleString()}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>المتبقي دينار:</span>
+                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("remainingIQD", lang)}:</span>
                   <span className="font-bold text-lg text-orange-600 dark:text-orange-400">
                     {finalTotalIQD.toLocaleString()}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>المتبقي دولار:</span>
+                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("remainingUSD", lang)}:</span>
                   <span className="font-bold text-lg text-orange-600 dark:text-orange-400">
                     {finalTotalUSD.toLocaleString()}
                   </span>
@@ -1252,15 +1258,15 @@ export default function SaleAddPage() {
                 }}
               >
                 <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>#</TableHead>
-                <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>حذف</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>رمز المادة</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>اسم المادة</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>الكمية</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>س. مفرد دينار</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>س. مفرد دولار</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>إجمالي دينار</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>إجمالي دولار</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>ملاحظة</TableHead>
+                <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>{t("delete", lang)}</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("productCode", lang)}</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("productName", lang)}</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("quantity", lang)}</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("saleRetailPriceIQD", lang)}</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("saleRetailPriceUSD", lang)}</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("totalIQD", lang)}</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("totalUSD", lang)}</TableHead>
+                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("notes", lang)}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1268,7 +1274,7 @@ export default function SaleAddPage() {
             {!isViewMode && (
             <TableRow style={{ backgroundColor: "var(--theme-accent)", opacity: 0.9 }}>
               <TableCell className="text-center font-bold" style={{ color: "var(--theme-text)" }}>
-                جديد
+                {t("new", lang)}
               </TableCell>
                 <TableCell className="text-center">
                   <Plus className="h-5 w-5 theme-success mx-auto" />
@@ -1283,7 +1289,7 @@ export default function SaleAddPage() {
                         setShowSuggestions(true)
                         updateSuggestionPosition(codeInputRef)
                       }}
-                      placeholder="رمز المادة"
+                      placeholder={t("productCode", lang)}
                       className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
                     />
                   </div>
@@ -1298,7 +1304,7 @@ export default function SaleAddPage() {
                         setShowSuggestions(true)
                         updateSuggestionPosition(nameInputRef)
                       }}
-                      placeholder="اسم المادة"
+                      placeholder={t("productName", lang)}
                       className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
                     />
                   </div>
@@ -1357,10 +1363,10 @@ export default function SaleAddPage() {
                 </TableCell>
                 <TableCell>
                   <Input
-                    value={newItem.notes || ""}
+                    value={newItem.notes}
                     onChange={(e) => updateNewItem("notes", e.target.value)}
                     onKeyPress={(e) => handleNewItemKeyPress(e)}
-                    placeholder="ملاحظة"
+                    placeholder={t("notes", lang)}
                     className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
                   />
                 </TableCell>
@@ -1487,11 +1493,11 @@ export default function SaleAddPage() {
                   <TableCell>
                     <div className="flex gap-1">
                       <Input
-                        value={product.notes || ""}
+                        value={product.notes}
                         onChange={(e) =>
                           updateProduct(product.tempId, "notes", e.target.value)
                         }
-                        placeholder="ملاحظة"
+                        placeholder={t("notes", lang)}
                         className="flex-1 h-8 text-foreground"
                         title={product.notes}
                       />
@@ -1527,12 +1533,12 @@ export default function SaleAddPage() {
               {isSaving ? (
                 <>
                   <Loader2 className="h-5 w-5 ml-2 animate-spin theme-icon" />
-                  جاري الحفظ...
+                  {t("saving", lang)}
                 </>
               ) : (
                 <>
                   <Save className="h-5 w-5 ml-2 theme-success" />
-                  {isEditMode ? "تحديث القائمة" : "إضافة قائمة البيع"}
+                  {isEditMode ? t("updateSaleList", lang) : t("addSaleList", lang)}
                 </>
               )}
             </Button>
@@ -1545,7 +1551,7 @@ export default function SaleAddPage() {
               className="flex-1 md:flex-initial"
             >
               <Printer className="h-5 w-5 ml-2" />
-              طباعة الفاتورة
+              {t("printInvoice", lang)}
             </Button>
           </div>
         )}
@@ -1559,7 +1565,7 @@ export default function SaleAddPage() {
               className="w-full md:w-auto"
             >
               <Printer className="h-5 w-5 ml-2" />
-              طباعة الفاتورة
+              {t("printInvoice", lang)}
             </Button>
           </div>
         )}
@@ -1569,13 +1575,13 @@ export default function SaleAddPage() {
       <Dialog open={viewingNote !== null} onOpenChange={(open) => !open && setViewingNote(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>التفاصيل</DialogTitle>
+            <DialogTitle>{t("details", lang)}</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <p className="whitespace-pre-wrap">{viewingNote}</p>
           </div>
           <DialogFooter>
-            <Button onClick={() => setViewingNote(null)}>إغلاق</Button>
+            <Button onClick={() => setViewingNote(null)}>{t("close", lang)}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1614,7 +1620,7 @@ export default function SaleAddPage() {
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <span>🎯 الاقتراحات المتاحة ({filteredInventory.length})</span>
+          <span>{t("availableSuggestions", lang).replace("{count}", String(filteredInventory.length))}</span>
           <button
             onClick={() => setShowSuggestions(false)}
             style={{
@@ -1627,7 +1633,7 @@ export default function SaleAddPage() {
               fontWeight: 'bold'
             }}
           >
-            ✕ إغلاق
+            ✕ {t("close", lang)}
           </button>
         </div>
         
@@ -1645,35 +1651,35 @@ export default function SaleAddPage() {
                   fontWeight: 'bold',
                   color: 'var(--theme-text)',
                   fontSize: '15px'
-                }}>رمز المادة</th>
+                }}>{t("productCode", lang)}</th>
                 <th style={{ 
                   padding: '14px 16px', 
                   textAlign: 'right', 
                   fontWeight: 'bold',
                   color: 'var(--theme-text)',
                   fontSize: '15px'
-                }}>اسم المادة</th>
+                }}>{t("productName", lang)}</th>
                 <th style={{ 
                   padding: '14px 16px', 
                   textAlign: 'center', 
                   fontWeight: 'bold',
                   color: 'var(--theme-text)',
                   fontSize: '15px'
-                }}>س. دينار</th>
+                }}>{t("priceIQDShort", lang)}</th>
                 <th style={{ 
                   padding: '14px 16px', 
                   textAlign: 'center', 
                   fontWeight: 'bold',
                   color: 'var(--theme-text)',
                   fontSize: '15px'
-                }}>س. دولار</th>
+                }}>{t("priceUSDShort", lang)}</th>
                 <th style={{ 
                   padding: '14px 16px', 
                   textAlign: 'center', 
                   fontWeight: 'bold',
                   color: 'var(--theme-text)',
                   fontSize: '15px'
-                }}>المتوفر</th>
+                }}>{t("availableQuantity", lang)}</th>
               </tr>
             </thead>
             <tbody>
@@ -1755,7 +1761,7 @@ export default function SaleAddPage() {
           fontSize: '14px',
           fontWeight: 'bold'
         }}>
-          📊 عدد النتائج: {filteredInventory.length} | اضغط على أي صف للاختيار ⬇️
+          {t("suggestionsFooter", lang).replace("{count}", String(filteredInventory.length))}
         </div>
       </div>,
       document.body

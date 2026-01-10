@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { PermissionGuard } from "@/components/permission-guard"
 import { useRouter } from "next/navigation"
+import { useSettings } from "@/components/providers/settings-provider"
+import { t } from "@/lib/translations"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -46,6 +48,8 @@ import { supabase } from "@/lib/supabase"
 
 export default function SystemLogPage() {
   const router = useRouter()
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
   const [logs, setLogs] = useState<SystemLog[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
@@ -73,13 +77,13 @@ export default function SystemLogPage() {
       const err = error as { message?: string; code?: string }
       
       if (err?.message?.includes('relation "tb_systemlog" does not exist')) {
-        toast.error("جدول السجلات غير موجود. الرجاء إنشاء الجدول في Supabase أولاً")
+        toast.error(t("systemLogTableMissingCreateFirst", lang))
       } else if (err?.code === 'PGRST116') {
-        toast.error("الجدول غير موجود. راجع ملف SYSTEM_LOG_SQL.sql")
+        toast.error(t("systemLogTableMissingCheckSql", lang))
       } else if (err?.message) {
-        toast.error(`خطأ: ${err.message}`)
+        toast.error(`${t("errorPrefix", lang)}: ${err.message}`)
       } else {
-        toast.error("فشل في تحميل السجلات. تأكد من إنشاء جدول tb_systemlog في Supabase")
+        toast.error(t("systemLogLoadFailedEnsureTable", lang))
       }
     } finally {
       setLoading(false)
@@ -122,49 +126,49 @@ export default function SystemLogPage() {
 
   const handleDeleteSelected = async () => {
     if (selectedIds.length === 0) {
-      toast.error("الرجاء تحديد سجل واحد على الأقل")
+      toast.error(t("systemLogSelectAtLeastOne", lang))
       return
     }
 
     try {
       await deleteSystemLogs(selectedIds)
-      toast.success(`تم حذف ${selectedIds.length} سجل بنجاح`)
+      toast.success(`${t("systemLogDeletedCountSuccess", lang)} (${selectedIds.length})`)
       setSelectedIds([])
       fetchLogs()
     } catch (error: unknown) {
       const err = error as { message?: string }
-      toast.error(err?.message || "فشل في حذف السجلات")
+      toast.error(err?.message || t("systemLogDeleteFailed", lang))
     }
   }
 
   const handleDeleteAll = async () => {
     if (!passwordInput) {
-      toast.error("الرجاء إدخال كلمة المرور")
+      toast.error(t("systemLogEnterPassword", lang))
       return
     }
 
     try {
       const savedUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser')
       if (!savedUser) {
-        toast.error("لم يتم العثور على بيانات المستخدم")
+        toast.error(t("systemLogUserNotFound", lang))
         return
       }
 
       const userData = JSON.parse(savedUser)
       
       if (userData.password !== passwordInput) {
-        toast.error("كلمة المرور غير صحيحة")
+        toast.error(t("systemLogWrongPassword", lang))
         return
       }
 
       await deleteAllSystemLogs()
-      toast.success("تم حذف جميع السجلات بنجاح")
+      toast.success(t("systemLogDeleteAllSuccess", lang))
       setShowDeleteAllDialog(false)
       setPasswordInput("")
       fetchLogs()
     } catch (error: unknown) {
       const err = error as { message?: string }
-      toast.error(err?.message || "فشل في حذف جميع السجلات")
+      toast.error(err?.message || t("systemLogDeleteAllFailed", lang))
     }
   }
 
@@ -199,7 +203,7 @@ export default function SystemLogPage() {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold">سجل حركات النظام</h1>
+        <h1 className="text-2xl font-bold">{t("systemLog", lang)}</h1>
       </div>
 
       {}
@@ -210,14 +214,14 @@ export default function SystemLogPage() {
           disabled={selectedIds.length === 0}
         >
           <Trash2 className="h-4 w-4 ml-2" />
-          حذف المحدد ({selectedIds.length})
+          {t("systemLogDeleteSelected", lang)} ({selectedIds.length})
         </Button>
         <Button
           variant="destructive"
           onClick={() => setShowDeleteAllDialog(true)}
         >
           <Trash2 className="h-4 w-4 ml-2" />
-          تنظيف الكل
+          {t("systemLogDeleteAll", lang)}
         </Button>
       </div>
 
@@ -225,7 +229,7 @@ export default function SystemLogPage() {
       <div className="flex items-center gap-2">
         <div className="flex-1">
           <Input
-            placeholder="بحث في السجلات..."
+            placeholder={t("systemLogSearchPlaceholder", lang)}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -236,21 +240,21 @@ export default function SystemLogPage() {
           onClick={handleClearSearch}
         >
           <X className="h-4 w-4 ml-2" />
-          تنظيف
+          {t("systemLogClear", lang)}
         </Button>
         <Button
           variant="default"
           onClick={handleSearch}
         >
           <RefreshCw className="h-4 w-4 ml-2" />
-          بحث
+          {t("search", lang)}
         </Button>
         <Button
           variant="outline"
           onClick={fetchLogs}
         >
           <RefreshCw className="h-4 w-4 ml-2" />
-          تحديث
+          {t("refresh", lang)}
         </Button>
       </div>
 
@@ -259,32 +263,32 @@ export default function SystemLogPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px] text-center">#</TableHead>
+              <TableHead className="w-[50px] text-center">{t("systemLogColumnIndex", lang)}</TableHead>
               <TableHead className="w-[50px] text-center">
                 <Checkbox
                   checked={selectedIds.length === logs.length && logs.length > 0}
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
-              <TableHead>مسؤول الحركة</TableHead>
-              <TableHead>نوع الحركة</TableHead>
-              <TableHead>الجدول المتأثر</TableHead>
-              <TableHead>تفاصيل</TableHead>
-              <TableHead>القيمة السابقة</TableHead>
-              <TableHead>تاريخ الحدث</TableHead>
+              <TableHead>{t("systemLogColumnActionOwner", lang)}</TableHead>
+              <TableHead>{t("systemLogColumnActionType", lang)}</TableHead>
+              <TableHead>{t("systemLogColumnAffectedTable", lang)}</TableHead>
+              <TableHead>{t("systemLogColumnDetails", lang)}</TableHead>
+              <TableHead>{t("systemLogColumnOldValue", lang)}</TableHead>
+              <TableHead>{t("systemLogColumnEventDate", lang)}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-8">
-                  جاري التحميل...
+                  {t("loading", lang)}
                 </TableCell>
               </TableRow>
             ) : logs.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-8">
-                  لا توجد سجلات
+                  {t("systemLogNoRecords", lang)}
                 </TableCell>
               </TableRow>
             ) : (
@@ -310,13 +314,13 @@ export default function SystemLogPage() {
                           size="sm"
                           className="h-7 w-7 p-0"
                           onClick={() => setViewingUserName(log.user_name || null)}
-                          title="معاينة"
+                          title={t("systemLogPreview", lang)}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                         </Button>
                       </div>
                     ) : (
-                      log.user_name || "غير معروف"
+                      log.user_name || t("unknownUser", lang)
                     )}
                   </TableCell>
                   <TableCell>
@@ -339,7 +343,7 @@ export default function SystemLogPage() {
                           size="sm"
                           className="h-7 w-7 p-0"
                           onClick={() => setViewingDetails(log.description || null)}
-                          title="معاينة"
+                          title={t("systemLogPreview", lang)}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                         </Button>
@@ -357,7 +361,7 @@ export default function SystemLogPage() {
                           size="sm"
                           className="h-7 w-7 p-0"
                           onClick={() => setViewingOldValue(log.old_value || null)}
-                          title="معاينة"
+                          title={t("systemLogPreview", lang)}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                         </Button>
@@ -379,7 +383,7 @@ export default function SystemLogPage() {
       {}
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          عدد الحركات: <span className="font-semibold">{totalCount}</span>
+          {t("systemLogCount", lang)}: <span className="font-semibold">{totalCount}</span>
         </div>
         
         <div className="flex items-center gap-2">
@@ -401,7 +405,7 @@ export default function SystemLogPage() {
           </Button>
           
           <span className="text-sm px-4">
-            صفحة {currentPage} من {totalPages || 1}
+            {t("systemLogPage", lang)} {currentPage} {t("systemLogOf", lang)} {totalPages || 1}
           </span>
           
           <Button
@@ -427,21 +431,18 @@ export default function SystemLogPage() {
       <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد حذف جميع السجلات</AlertDialogTitle>
+            <AlertDialogTitle>{t("systemLogDeleteAllConfirmTitle", lang)}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-4">
-                <span className="block">
-                  هذه العملية ستحذف جميع سجلات النظام ولا يمكن التراجع عنها.
-                  الرجاء إدخال كلمة المرور الخاصة بك للتأكيد.
-                </span>
+                <span className="block">{t("systemLogDeleteAllConfirmDescription", lang)}</span>
                 <div className="space-y-2">
-                  <Label htmlFor="password">كلمة المرور</Label>
+                  <Label htmlFor="password">{t("systemLogPasswordLabel", lang)}</Label>
                   <Input
                     id="password"
                     type="password"
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
-                    placeholder="أدخل كلمة المرور"
+                    placeholder={t("systemLogPasswordPlaceholder", lang)}
                   />
                 </div>
               </div>
@@ -449,13 +450,13 @@ export default function SystemLogPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPasswordInput("")}>
-              إلغاء
+              {t("cancel", lang)}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAll}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              حذف الكل
+              {t("systemLogDeleteAllAction", lang)}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -465,7 +466,7 @@ export default function SystemLogPage() {
       <AlertDialog open={viewingDetails !== null} onOpenChange={(open) => !open && setViewingDetails(null)}>
         <AlertDialogContent className="max-w-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>تفاصيل الحركة</AlertDialogTitle>
+            <AlertDialogTitle>{t("systemLogDetailsTitle", lang)}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="py-4">
                 <div className="bg-muted p-4 rounded-lg whitespace-pre-wrap text-foreground">
@@ -476,7 +477,7 @@ export default function SystemLogPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => setViewingDetails(null)}>
-              إغلاق
+              {t("close", lang)}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -486,7 +487,7 @@ export default function SystemLogPage() {
       <AlertDialog open={viewingOldValue !== null} onOpenChange={(open) => !open && setViewingOldValue(null)}>
         <AlertDialogContent className="max-w-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>القيمة السابقة</AlertDialogTitle>
+            <AlertDialogTitle>{t("systemLogOldValueTitle", lang)}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="py-4">
                 <div className="bg-muted p-4 rounded-lg">
@@ -506,7 +507,7 @@ export default function SystemLogPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => setViewingOldValue(null)}>
-              إغلاق
+              {t("close", lang)}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -516,7 +517,7 @@ export default function SystemLogPage() {
       <AlertDialog open={viewingUserName !== null} onOpenChange={(open) => !open && setViewingUserName(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>مسؤول الحركة</AlertDialogTitle>
+            <AlertDialogTitle>{t("systemLogActionOwnerTitle", lang)}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="py-4">
                 <div className="bg-muted p-4 rounded-lg text-center">
@@ -527,7 +528,7 @@ export default function SystemLogPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => setViewingUserName(null)}>
-              إغلاق
+              {t("close", lang)}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

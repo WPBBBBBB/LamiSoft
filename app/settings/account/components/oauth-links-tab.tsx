@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import OAuthLinkDialog from "./oauth-link-dialog"
+import { useSettings } from "@/components/providers/settings-provider"
+import { t } from "@/lib/translations"
 
 type OAuthProviderKey = "google" | "microsoft" | "github"
 
@@ -26,6 +28,8 @@ interface OAuthLinksTabProps {
 
 export default function OAuthLinksTab({ userData, onUpdate }: OAuthLinksTabProps) {
   const [linkDialog, setLinkDialog] = useState<OAuthProviderKey | null>(null)
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
 
   const oauthProviders = [
     {
@@ -80,12 +84,12 @@ export default function OAuthLinksTab({ userData, onUpdate }: OAuthLinksTabProps
         }),
       })
 
-      if (!response.ok) throw new Error('فشل إلغاء الربط')
+      if (!response.ok) throw new Error(t('oauthUnlinkFailed', lang))
 
-      toast.success(`تم إلغاء ربط ${providerName} بنجاح`)
+      toast.success(t('oauthUnlinkedSuccessfully', lang))
       onUpdate()
     } catch (error) {
-      toast.error('حدث خطأ أثناء إلغاء الربط')
+      toast.error(t('oauthUnlinkError', lang))
     }
   }
 
@@ -101,7 +105,7 @@ export default function OAuthLinksTab({ userData, onUpdate }: OAuthLinksTabProps
           {provider.connected ? (
             <div className="space-y-4">
               <div>
-                <Badge variant="secondary" className="mb-2">متصل</Badge>
+                <Badge variant="secondary" className="mb-2">{t('oauthConnected', lang)}</Badge>
                 <p className="text-sm text-muted-foreground truncate">
                   {provider.email || "-"}
                 </p>
@@ -112,19 +116,19 @@ export default function OAuthLinksTab({ userData, onUpdate }: OAuthLinksTabProps
                 className="w-full"
                 onClick={() => handleUnlink(provider.key, provider.name)}
               >
-                إلغاء الربط
+                {t('unlink', lang)}
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
-              <Badge variant="outline">غير متصل</Badge>
+              <Badge variant="outline">{t('oauthNotConnected', lang)}</Badge>
               <Button
                 variant="default"
                 size="sm"
                 className="w-full"
                 onClick={() => setLinkDialog(provider.key)}
               >
-                ربط الحساب
+                {t('linkAccount', lang)}
               </Button>
             </div>
           )}

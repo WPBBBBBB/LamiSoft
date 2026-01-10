@@ -5,6 +5,8 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { ReportLayout } from "@/components/reports/report-layout"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
+import { t } from "@/lib/translations"
+import { useSettings } from "@/components/providers/settings-provider"
 
 interface UserReportItem {
   id: string
@@ -27,6 +29,8 @@ interface UserReportData {
 function UsersReportContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
   const [reportData, setReportData] = useState<UserReportData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -35,7 +39,7 @@ function UsersReportContent() {
       try {
         const token = searchParams.get("token")
         if (!token) {
-          setError("رمز التقرير مفقود")
+          setError(t('reportTokenMissing', lang))
           return
         }
 
@@ -46,11 +50,11 @@ function UsersReportContent() {
           const parsedData = JSON.parse(cachedData)
           setReportData(parsedData)
         } else {
-          setError("لا توجد بيانات للعرض أو انتهت صلاحية التقرير")
+          setError(t('reportDataExpired', lang))
         }
       } catch (err) {
         console.error("Error loading report data:", err)
-        setError("خطأ في تحميل بيانات التقرير")
+        setError(t('reportDataLoadError', lang))
       }
     }
 
@@ -76,7 +80,7 @@ function UsersReportContent() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">جاري التحميل...</p>
+          <p className="text-gray-600">{t('loading', lang)}</p>
         </div>
       </div>
     )
@@ -84,27 +88,43 @@ function UsersReportContent() {
 
   const backPath = searchParams.get("back") || "/users-permissions"
   const shouldAutoPrint = searchParams.get("print") === "true"
+  const dateLocale = lang === 'en' ? 'en-US' : 'ar-EG'
+
+  const getPermissionLabel = (type: string) => {
+    switch (type) {
+      case "مدير":
+        return t('roleManager', lang)
+      case "محاسب":
+        return t('roleAccountant', lang)
+      case "موظف":
+        return t('roleEmployee', lang)
+      case "مستخدم":
+        return t('user', lang)
+      default:
+        return type
+    }
+  }
 
   return (
     <ReportLayout 
-      title="تقرير المستخدمين والصلاحيات" 
-      storeName={"الشركة"} 
+      title={t('usersPermissionsReportTitle', lang)} 
+      storeName={t('company', lang)} 
       autoPrint={shouldAutoPrint} 
       footer="" 
       hideHeader={true}
       backPath={backPath}
     >
       <div className="custom-header mb-6 text-center border-b pb-4">
-        <h1 className="text-xl font-bold">كشف بأسماء المستخدمين وصلاحياتهم</h1>
+        <h1 className="text-xl font-bold">{t('usersPermissionsReportHeader', lang)}</h1>
       </div>
 
       <div className="header-info flex justify-between mb-6 text-sm">
         <div>
-          <p>تاريخ التقرير: {new Date(reportData.date).toLocaleDateString("ar-EG")}</p>
-          <p>بواسطة: {reportData.generatedBy}</p>
+          <p>{t('reportDateLabel', lang)}: {new Date(reportData.date).toLocaleDateString(dateLocale)}</p>
+          <p>{t('generatedByLabel', lang)}: {reportData.generatedBy}</p>
         </div>
         <div>
-          <p>عدد المستخدمين: {reportData.count}</p>
+          <p>{t('usersCountLabel', lang)}: {reportData.count}</p>
         </div>
       </div>
 
@@ -112,12 +132,12 @@ function UsersReportContent() {
         <thead>
           <tr className="bg-gray-100 print:bg-gray-100">
             <th className="border p-2 text-center w-12">#</th>
-            <th className="border p-2 text-right">الاسم الكامل</th>
-            <th className="border p-2 text-right">اسم المستخدم</th>
-            <th className="border p-2 text-right">رقم الهاتف</th>
-            <th className="border p-2 text-right">العنوان</th>
-            <th className="border p-2 text-center">العمر</th>
-            <th className="border p-2 text-center">نوع الصلاحية</th>
+            <th className="border p-2 text-right">{t('fullName', lang)}</th>
+            <th className="border p-2 text-right">{t('username', lang)}</th>
+            <th className="border p-2 text-right">{t('phoneNumber', lang)}</th>
+            <th className="border p-2 text-right">{t('address', lang)}</th>
+            <th className="border p-2 text-center">{t('age', lang)}</th>
+            <th className="border p-2 text-center">{t('permissionType', lang)}</th>
           </tr>
         </thead>
         <tbody>
@@ -135,7 +155,7 @@ function UsersReportContent() {
                   item.permission_type === "محاسب" ? "bg-blue-100 text-blue-700" :
                   "bg-green-100 text-green-700"
                 }`}>
-                  {item.permission_type}
+                  {getPermissionLabel(item.permission_type)}
                 </span>
               </td>
             </tr>
@@ -154,9 +174,15 @@ function UsersReportContent() {
   )
 }
 
+function UsersReportFallback() {
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
+  return <div className="p-4">{t('loading', lang)}</div>
+}
+
 export default function UsersReportPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<UsersReportFallback />}>
       <UsersReportContent />
     </Suspense>
   )

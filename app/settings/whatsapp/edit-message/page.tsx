@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useSettings } from "@/components/providers/settings-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,10 +10,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
 import { Save, User, Calendar, DollarSign, Clock, Building2, CreditCard, ArrowRight } from "lucide-react"
 import { toast } from "sonner"
+import { t } from "@/lib/translations"
 
 export default function EditMessagePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
   const type = searchParams.get("type") as "normal" | "notification" || "normal"
   
   const [title, setTitle] = useState("")
@@ -21,13 +25,13 @@ export default function EditMessagePage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const variables = [
-    { label: "اسم الزبون", code: "{CustomerName}", icon: User },
-    { label: "تاريخ آخر تسديد", code: "{LastPaymentDate}", icon: Calendar },
-    { label: "المبلغ الواصل (الأخير)", code: "{LastAmount}", icon: DollarSign },
-    { label: "المبلغ المتبقي", code: "{RemainingBalance}", icon: CreditCard },
-    { label: "التاريخ الحالي", code: "{CurrentDate}", icon: Calendar },
-    { label: "الوقت الحالي", code: "{CurrentTime}", icon: Clock },
-    { label: "اسم الشركة", code: "{CompanyName}", icon: Building2 },
+    { labelKey: "whatsappVarCustomerName", code: "{CustomerName}", icon: User },
+    { labelKey: "whatsappVarLastPaymentDate", code: "{LastPaymentDate}", icon: Calendar },
+    { labelKey: "whatsappVarLastAmount", code: "{LastAmount}", icon: DollarSign },
+    { labelKey: "whatsappVarRemainingBalance", code: "{RemainingBalance}", icon: CreditCard },
+    { labelKey: "whatsappVarCurrentDate", code: "{CurrentDate}", icon: Calendar },
+    { labelKey: "whatsappVarCurrentTime", code: "{CurrentTime}", icon: Clock },
+    { labelKey: "whatsappVarCompanyName", code: "{CompanyName}", icon: Building2 },
   ]
 
   useEffect(() => {
@@ -48,7 +52,7 @@ export default function EditMessagePage() {
         }
       }
     } catch (error) {
-      toast.error("فشل تحميل البيانات")
+      toast.error(t("whatsappDataLoadFailed", lang))
     } finally {
       setIsLoading(false)
     }
@@ -73,12 +77,12 @@ export default function EditMessagePage() {
 
   async function handleSave() {
     if (!title.trim()) {
-      toast.error("يرجى إدخال عنوان الرسالة")
+      toast.error(t("whatsappTemplateTitleRequired", lang))
       return
     }
 
     if (!body.trim()) {
-      toast.error("يرجى إدخال نص الرسالة")
+      toast.error(t("whatsappTemplateBodyRequired", lang))
       return
     }
 
@@ -124,21 +128,21 @@ export default function EditMessagePage() {
       })
 
       if (response.ok) {
-        toast.success("تم حفظ هيكل الرسالة بنجاح")
+        toast.success(t("whatsappTemplateSaveSuccess", lang))
         router.push("/settings/whatsapp")
       } else {
         const errorData = await response.json()
-        toast.error(`فشل حفظ هيكل الرسالة: ${errorData.error || 'خطأ غير معروف'}`)
+        toast.error(`${t("whatsappTemplateSaveFailed", lang)}: ${errorData.error || t("unknownError", lang)}`)
       }
     } catch (error) {
-      toast.error(`فشل حفظ هيكل الرسالة: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`)
+      toast.error(`${t("whatsappTemplateSaveFailed", lang)}: ${error instanceof Error ? error.message : t("unknownError", lang)}`)
     }
   }
 
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-muted-foreground">جاري التحميل...</div>
+        <div className="text-muted-foreground">{t("loading", lang)}</div>
       </div>
     )
   }
@@ -156,10 +160,10 @@ export default function EditMessagePage() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold">
-            {type === "normal" ? "تعديل هيكل الرسالة العادية" : "تعديل هيكل رسالة الإشعار"}
+            {type === "normal" ? t("whatsappEditNormalTemplateTitle", lang) : t("whatsappEditNotificationTemplateTitle", lang)}
           </h1>
           <p className="text-muted-foreground mt-1">
-            استخدم المتغيرات لإضافة بيانات ديناميكية في الرسالة
+            {t("whatsappEditMessageDescription", lang)}
           </p>
         </div>
       </div>
@@ -169,13 +173,13 @@ export default function EditMessagePage() {
         <Card className="p-6">
           <div className="space-y-2">
             <Label htmlFor="messageTitle" className="text-base font-semibold">
-              عنوان الرسالة
+              {t("whatsappMessageTitleLabel", lang)}
             </Label>
             <Input
               id="messageTitle"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="مثال: رسالة من AL-LamiSoft"
+              placeholder={t("whatsappMessageTitlePlaceholder", lang)}
               className="text-base"
             />
           </div>
@@ -187,28 +191,28 @@ export default function EditMessagePage() {
           <Card className="lg:col-span-2 p-6">
             <div className="space-y-2">
               <Label htmlFor="messageBody" className="text-base font-semibold">
-                نص الرسالة
+                {t("whatsappMessageBodyLabel", lang)}
               </Label>
               <Textarea
                 id="messageBody"
                 ref={textareaRef}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                placeholder="اكتب نص الرسالة هنا... يمكنك استخدام الأزرار على اليسار لإضافة المتغيرات"
+                placeholder={t("whatsappMessageBodyPlaceholder", lang)}
                 className="min-h-[400px] text-base"
                 dir="rtl"
               />
               <p className="text-xs text-muted-foreground">
-                استخدم المتغيرات من الأزرار على اليسار لإضافة بيانات ديناميكية في الرسالة
+                {t("whatsappMessageBodyHint", lang)}
               </p>
             </div>
           </Card>
 
           {}
           <Card className="p-6">
-            <h3 className="text-base font-semibold mb-3">المتغيرات المتاحة</h3>
+            <h3 className="text-base font-semibold mb-3">{t("whatsappAvailableVariables", lang)}</h3>
             <p className="text-xs text-muted-foreground mb-4">
-              اضغط على أي زر لإضافة المتغير في موضع المؤشر
+              {t("whatsappClickVariableToInsert", lang)}
             </p>
             <div className="space-y-2">
               {variables.map((variable) => (
@@ -220,15 +224,15 @@ export default function EditMessagePage() {
                   onClick={() => insertVariable(variable.code)}
                 >
                   <variable.icon className="h-4 w-4" />
-                  {variable.label}
+                  {t(variable.labelKey, lang)}
                 </Button>
               ))}
             </div>
 
             <div className="mt-6 p-3 bg-muted rounded text-xs">
-              <p className="font-semibold mb-2">مثال:</p>
+              <p className="font-semibold mb-2">{t("whatsappExampleLabel", lang)}</p>
               <p className="text-muted-foreground whitespace-pre-wrap">
-                عزيزي الزبون {"{CustomerName}"}, نشكرك على استخدام خدماتنا...
+                {t("whatsappExampleText", lang)}
               </p>
             </div>
           </Card>
@@ -236,14 +240,14 @@ export default function EditMessagePage() {
 
         {}
         <Card className="p-6 bg-muted/50">
-          <h3 className="text-base font-semibold mb-4">معاينة الرسالة:</h3>
+          <h3 className="text-base font-semibold mb-4">{t("whatsappMessagePreview", lang)}</h3>
           <div className="space-y-3">
             <div>
-              <span className="text-sm text-muted-foreground">العنوان:</span>
+              <span className="text-sm text-muted-foreground">{t("whatsappPreviewTitle", lang)}</span>
               <p className="font-semibold text-lg mt-1">{title || "---"}</p>
             </div>
             <div>
-              <span className="text-sm text-muted-foreground">النص:</span>
+              <span className="text-sm text-muted-foreground">{t("whatsappPreviewBody", lang)}</span>
               <p className="whitespace-pre-wrap mt-1">{body || "---"}</p>
             </div>
           </div>
@@ -255,14 +259,14 @@ export default function EditMessagePage() {
             variant="outline"
             onClick={() => router.push("/settings/whatsapp")}
           >
-            إلغاء
+            {t("cancel", lang)}
           </Button>
           <Button
             onClick={handleSave}
             className="gap-2"
           >
             <Save className="h-4 w-4" />
-            حفظ التغييرات
+            {t("saveChanges", lang)}
           </Button>
         </div>
       </div>

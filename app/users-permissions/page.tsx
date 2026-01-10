@@ -44,6 +44,7 @@ import { PermissionGuard } from "@/components/permission-guard"
 export default function UsersPermissionsPage() {
   const router = useRouter()
   const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
   const [users, setUsers] = useState<UserWithPermissions[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -61,7 +62,7 @@ export default function UsersPermissionsPage() {
       const data = await getUsersWithPermissions()
       setUsers(data)
     } catch (error) {
-      toast.error("حدث خطأ أثناء تحميل البيانات")
+      toast.error(t('errorLoadingData', lang))
     } finally {
       setIsLoading(false)
     }
@@ -92,7 +93,7 @@ export default function UsersPermissionsPage() {
 
   const handleRefresh = () => {
     loadUsers()
-    toast.success("تم تحديث البيانات")
+    toast.success(t('dataRefreshed', lang))
   }
 
   const handleClearSearch = () => {
@@ -114,23 +115,23 @@ export default function UsersPermissionsPage() {
       setUserToDelete(null)
       loadUsers()
     } catch (error) {
-      toast.error("حدث خطأ أثناء الحذف")
+      toast.error(t('deleteErrorOccurred', lang))
     }
   }
 
   const handleDeleteSelected = async () => {
     if (selectedUsers.length === 0) {
-      toast.error("يرجى تحديد مستخدمين للحذف")
+      toast.error(t('selectUsersToDelete', lang))
       return
     }
 
     try {
       await deleteUsers(selectedUsers)
-      toast.success("تم حذف " + selectedUsers.length + " مستخدم بنجاح")
+      toast.success(t('usersDeletedSuccess', lang).replace('{count}', String(selectedUsers.length)))
       setSelectedUsers([])
       loadUsers()
     } catch (error) {
-      toast.error("حدث خطأ أثناء الحذف")
+      toast.error(t('deleteErrorOccurred', lang))
     }
   }
 
@@ -159,25 +160,40 @@ export default function UsersPermissionsPage() {
     }
   }
 
+  const getPermissionLabel = (type: string) => {
+    switch (type) {
+      case "مدير":
+        return t('roleManager', lang)
+      case "محاسب":
+        return t('roleAccountant', lang)
+      case "موظف":
+        return t('roleEmployee', lang)
+      case "مستخدم":
+        return t('user', lang)
+      default:
+        return type
+    }
+  }
+
   const handleExportReport = async (autoPrint: boolean = false) => {
     if (selectedUsers.length === 0) {
-      toast.error("يرجى تحديد مستخدمين على الأقل للطباعة")
+      toast.error(t('selectUsersToPrint', lang))
       return
     }
 
     try {
-      toast.loading("جاري تجهيز التقرير...")
+      toast.loading(t('preparingReport', lang))
       
       const userRes = await fetch("/api/auth/user").catch(() => null)
       const userData = userRes ? await userRes.json().catch(() => null) : null
       const user = userData?.data?.user
-      const generatedBy = user?.user_metadata?.full_name || user?.email || "غير معروف"
+      const generatedBy = user?.user_metadata?.full_name || user?.email || t('unknownUser', lang)
 
       const usersToReport = users.filter(u => selectedUsers.includes(u.id))
       
       if (usersToReport.length === 0) {
         toast.dismiss()
-        toast.error("لم يتم العثور على بيانات للمستخدمين المحددين")
+        toast.error(t('noSelectedUsersDataFound', lang))
         return
       }
 
@@ -205,14 +221,14 @@ export default function UsersPermissionsPage() {
       localStorage.setItem(storageKey, jsonString)
 
       toast.dismiss()
-      toast.success(autoPrint ? "جاري فتح نافذة الطباعة..." : "تم تجهيز التقرير")
+      toast.success(autoPrint ? t('openingPrintWindow', lang) : t('reportPrepared', lang))
 
       window.location.href = `/report/users?token=${token}&back=/users-permissions${autoPrint ? '&print=true' : ''}`
       
     } catch (error) {
       console.error("Error exporting report:", error)
       toast.dismiss()
-      toast.error("حدث خطأ غير متوقع أثناء تجهيز التقرير")
+      toast.error(t('unexpectedError', lang))
     }
   }
 
@@ -221,7 +237,7 @@ export default function UsersPermissionsPage() {
       <div className="flex-1 overflow-auto">
         <div className="container mx-auto p-6">
           <Card className="p-6">
-            <p className="text-center text-muted-foreground">جاري التحميل...</p>
+            <p className="text-center text-muted-foreground">{t('loading', lang)}</p>
           </Card>
         </div>
       </div>
@@ -238,7 +254,7 @@ export default function UsersPermissionsPage() {
             variant="outline"
             size="icon"
             onClick={() => router.back()}
-            title="رجوع"
+            title={t('back', lang)}
             className="shrink-0"
           >
             <ArrowRight className="h-5 w-5" />
@@ -259,7 +275,7 @@ export default function UsersPermissionsPage() {
             <Link href="/users-permissions/add">
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
-                إضافة
+                {t('add', lang)}
               </Button>
             </Link>
             <Button 
@@ -269,7 +285,7 @@ export default function UsersPermissionsPage() {
               onClick={() => handleExportReport(true)}
             >
               <Printer className="h-4 w-4" />
-              طباعة
+              {t('print', lang)}
             </Button>
           </div>
 
@@ -282,7 +298,7 @@ export default function UsersPermissionsPage() {
               onClick={() => handleExportReport(false)}
             >
               <FileText className="h-4 w-4" />
-              الملف
+              {t('file', lang)}
             </Button>
             <div className="flex-1 flex gap-2" style={{ minWidth: "300px" }}>
               <div className="relative flex-1">
@@ -299,7 +315,7 @@ export default function UsersPermissionsPage() {
                 variant="outline"
                 size="icon"
                 onClick={handleClearSearch}
-                title="تنظيف"
+                title={t('cleanSearch', lang)}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -318,20 +334,20 @@ export default function UsersPermissionsPage() {
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
-                  <TableHead className="text-right">الاسم الكامل</TableHead>
-                  <TableHead className="text-right">رقم الهاتف</TableHead>
-                  <TableHead className="text-right">العنوان</TableHead>
-                  <TableHead className="text-center">العمر</TableHead>
-                  <TableHead className="text-center">{t('permissionType', currentLanguage.code)}</TableHead>
-                  <TableHead className="text-right">تاريخ الإضافة</TableHead>
-                  <TableHead className="text-center">الإجراءات</TableHead>
+                  <TableHead className="text-right">{t('fullName', lang)}</TableHead>
+                  <TableHead className="text-right">{t('phoneNumber', lang)}</TableHead>
+                  <TableHead className="text-right">{t('address', lang)}</TableHead>
+                  <TableHead className="text-center">{t('age', lang)}</TableHead>
+                  <TableHead className="text-center">{t('permissionType', lang)}</TableHead>
+                  <TableHead className="text-right">{t('createdAt', lang)}</TableHead>
+                  <TableHead className="text-center">{t('actions', lang)}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                      لا توجد بيانات
+                      {t('noData', lang)}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -363,7 +379,7 @@ export default function UsersPermissionsPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline" className={getPermissionColor(user.permission_type)}>
-                          {user.permission_type}
+                          {getPermissionLabel(user.permission_type)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right text-sm">
@@ -376,7 +392,7 @@ export default function UsersPermissionsPage() {
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => router.push(`/users-permissions/edit/${user.id}`)}
-                            title="تعديل"
+                            title={t('edit', lang)}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -385,7 +401,7 @@ export default function UsersPermissionsPage() {
                             size="icon"
                             className="h-8 w-8 text-destructive hover:text-destructive"
                             onClick={() => handleDeleteClick(user.id)}
-                            title="حذف"
+                            title={t('delete', lang)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -401,7 +417,7 @@ export default function UsersPermissionsPage() {
           {}
           <div className="mt-4 flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              إجمالي المستخدمين: <span className="font-bold">{filteredUsers.length}</span>
+              {t('totalUsersCount', lang)}: <span className="font-bold">{filteredUsers.length}</span>
             </div>
             <Button
               variant="outline"
@@ -410,7 +426,7 @@ export default function UsersPermissionsPage() {
               onClick={handleRefresh}
             >
               <RefreshCw className="h-4 w-4" />
-              تحديث
+              {t('refresh', lang)}
             </Button>
           </div>
         </Card>
@@ -419,9 +435,9 @@ export default function UsersPermissionsPage() {
         <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>تأكيد الحذف</DialogTitle>
+              <DialogTitle>{t('confirmDeleteTitle', lang)}</DialogTitle>
               <DialogDescription>
-                هل أنت متأكد من حذف هذا المستخدم؟ لا يمكن التراجع عن هذا الإجراء.
+                {t('confirmDeleteUser', lang)}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -429,10 +445,10 @@ export default function UsersPermissionsPage() {
                 variant="outline"
                 onClick={() => setDeleteConfirmOpen(false)}
               >
-                إلغاء
+                {t('cancel', lang)}
               </Button>
               <Button variant="destructive" onClick={confirmDelete}>
-                حذف
+                {t('delete', lang)}
               </Button>
             </DialogFooter>
           </DialogContent>
