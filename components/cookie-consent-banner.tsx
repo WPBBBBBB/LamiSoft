@@ -18,7 +18,6 @@ export function CookieConsentBanner() {
       }
     },
     () => getCookieConsent(),
-    // On the server we can't read browser storage; default to hidden.
     () => "accepted"
   )
 
@@ -32,7 +31,7 @@ export function CookieConsentBanner() {
         <Card className="p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <p className="text-sm text-muted-foreground">
-              نستخدم كوكيز ضرورية لتسجيل الدخول وتشغيل الموقع. وبموافقتك سنحفظ أيضاً تفضيلات الثيم ونوع الخط على هذا الجهاز.
+              نستخدم كوكيز ضرورية لتشغيل الموقع. بالموافقة سنحفظ تفضيلات المظهر ونوع الخط على هذا الجهاز.
             </p>
             <div className="flex gap-2">
               <Button
