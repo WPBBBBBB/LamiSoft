@@ -10,6 +10,12 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Don't ship source maps to the browser in production.
+  productionBrowserSourceMaps: false,
+  // Reduce information leakage via console logs in production.
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production",
+  },
   turbopack: {},
   images: {
     unoptimized: true,
