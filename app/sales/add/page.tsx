@@ -88,8 +88,8 @@ export default function SaleAddPage() {
 
   const [discountEnabled, setDiscountEnabled] = useState(false)
   const [discountCurrency, setDiscountCurrency] = useState<"دينار" | "دولار">("دينار")
-  const [discountIQD, setDiscountIQD] = useState(0)
-  const [discountUSD, setDiscountUSD] = useState(0)
+  const [discountIQD, setDiscountIQD] = useState<number | "">(0)
+  const [discountUSD, setDiscountUSD] = useState<number | "">(0)
 
   const [stores, setStores] = useState<Store[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -529,8 +529,11 @@ export default function SaleAddPage() {
   const totalSaleIQD = products.reduce((sum, p) => sum + (p.totalpriceiqd || 0), 0)
   const totalSaleUSD = products.reduce((sum, p) => sum + (p.totalpriceusd || 0), 0)
 
-  const afterDiscountIQD = totalSaleIQD - (discountEnabled ? discountIQD : 0)
-  const afterDiscountUSD = totalSaleUSD - (discountEnabled ? discountUSD : 0)
+  const discountIQDNumber = typeof discountIQD === "number" ? discountIQD : 0
+  const discountUSDNumber = typeof discountUSD === "number" ? discountUSD : 0
+
+  const afterDiscountIQD = totalSaleIQD - (discountEnabled ? discountIQDNumber : 0)
+  const afterDiscountUSD = totalSaleUSD - (discountEnabled ? discountUSDNumber : 0)
 
   const finalTotalIQD = afterDiscountIQD - amountReceivedIQD
   const finalTotalUSD = afterDiscountUSD - amountReceivedUSD
@@ -545,12 +548,27 @@ export default function SaleAddPage() {
     }
   }
 
-  const handleDiscountChange = (value: number) => {
+  const handleDiscountChange = (rawValue: string) => {
+    if (rawValue === "") {
+      if (discountCurrency === "دينار") {
+        setDiscountIQD("")
+        setDiscountUSD(0)
+      } else {
+        setDiscountUSD("")
+        setDiscountIQD(0)
+      }
+      return
+    }
+
+    const parsed = Number(rawValue)
+    if (Number.isNaN(parsed)) return
+
+    const clamped = Math.max(0, parsed)
     if (discountCurrency === "دينار") {
-      setDiscountIQD(value)
+      setDiscountIQD(clamped)
       setDiscountUSD(0)
     } else {
-      setDiscountUSD(value)
+      setDiscountUSD(clamped)
       setDiscountIQD(0)
     }
   }
@@ -602,8 +620,8 @@ export default function SaleAddPage() {
         datetime,
         discountenabled: discountEnabled,
         discountcurrency: discountEnabled ? discountCurrency : undefined,
-        discountiqd: discountIQD,
-        discountusd: discountUSD,
+        discountiqd: discountIQDNumber,
+        discountusd: discountUSDNumber,
         totalsaleiqd: totalSaleIQD,
         totalsaleusd: totalSaleUSD,
         amountreceivediqd: amountReceivedIQD,
@@ -765,8 +783,8 @@ export default function SaleAddPage() {
       })),
       totalIQD: afterDiscountIQD,
       totalUSD: afterDiscountUSD,
-      discountIQD: discountEnabled ? discountIQD : 0,
-      discountUSD: discountEnabled ? discountUSD : 0,
+      discountIQD: discountEnabled ? discountIQDNumber : 0,
+      discountUSD: discountEnabled ? discountUSDNumber : 0,
       amountReceivedIQD: hasAmountReceived ? amountReceivedIQD : 0,
       amountReceivedUSD: hasAmountReceived ? amountReceivedUSD : 0,
       datetime: datetime || new Date().toISOString(),
@@ -1167,7 +1185,8 @@ export default function SaleAddPage() {
                 <Input
                   type="number"
                   value={discountCurrency === "دينار" ? discountIQD : discountUSD}
-                  onChange={(e) => handleDiscountChange(parseFloat(e.target.value) || 0)}
+                  min={0}
+                  onChange={(e) => handleDiscountChange(e.target.value)}
                   placeholder="0"
                 />
               </div>
