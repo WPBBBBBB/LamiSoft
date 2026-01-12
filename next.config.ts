@@ -15,11 +15,14 @@ const nextConfig: NextConfig = {
   },
   logging: {
     fetches: {
-      fullUrl: true,
+      // Avoid leaking sensitive query params/tokens in production logs.
+      fullUrl: process.env.NODE_ENV === "development",
     },
   },
   async headers() {
     const isDev = process.env.NODE_ENV === "development";
+    const enableApiCors = process.env.ENABLE_API_CORS === "true";
+    const apiCorsAllowOrigin = (process.env.API_CORS_ALLOW_ORIGIN || "").trim();
 
     // Pragmatic CSP for Next.js App Router:
     // - Allows inline scripts (Next injects some inline scripts)
@@ -45,6 +48,9 @@ const nextConfig: NextConfig = {
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "X-Frame-Options", value: "DENY" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      // Cross-origin isolation (safe defaults). Note: COEP can break 3rd-party assets, so it's intentionally not enabled here.
+      { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+      { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
       {
         key: "Permissions-Policy",
         value:
@@ -52,6 +58,7 @@ const nextConfig: NextConfig = {
       },
       { key: "X-DNS-Prefetch-Control", value: "on" },
       { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
+      { key: "X-Download-Options", value: "noopen" },
       // HSTS only makes sense over HTTPS (production). Browsers ignore it on HTTP.
       {
         key: "Strict-Transport-Security",
@@ -65,21 +72,29 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: securityHeaders,
       },
-      // If you truly need CORS, scope it to APIs only.
-      {
-        source: "/api/:path*",
-        headers: [
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          {
-            key: "Access-Control-Allow-Methods",
-            value: "GET,POST,PUT,DELETE,OPTIONS",
-          },
-          {
-            key: "Access-Control-Allow-Headers",
-            value: "Content-Type, Authorization",
-          },
-        ],
-      },
+      // CORS: disabled by default for stronger security.
+      // If you need cross-origin API access, set:
+      //   ENABLE_API_CORS=true
+      //   API_CORS_ALLOW_ORIGIN=https://your-domain.com
+      ...(enableApiCors && apiCorsAllowOrigin
+        ? [
+            {
+              source: "/api/:path*",
+              headers: [
+                { key: "Access-Control-Allow-Origin", value: apiCorsAllowOrigin },
+                { key: "Vary", value: "Origin" },
+                {
+                  key: "Access-Control-Allow-Methods",
+                  value: "GET,POST,PUT,DELETE,OPTIONS",
+                },
+                {
+                  key: "Access-Control-Allow-Headers",
+                  value: "Content-Type, Authorization",
+                },
+              ],
+            },
+          ]
+        : []),
     ]
   },
 };
