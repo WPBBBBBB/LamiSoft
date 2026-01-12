@@ -20,7 +20,6 @@ function getEnvInt(name: string, fallback: number): number {
 function shouldRateLimit(request: NextRequest): boolean {
   if (process.env.NODE_ENV === "development") return false
   if (process.env.RATE_LIMIT_ENABLED === "false") return false
-  // OPTIONS preflight should not be blocked.
   if (request.method === "OPTIONS") return false
   return true
 }
