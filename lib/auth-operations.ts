@@ -13,14 +13,28 @@ export interface LoginResult {
   error?: string
 }
 
+function normalizeDigits(input: string): string {
+  const arabicIndic = "٠١٢٣٤٥٦٧٨٩"
+  const easternArabicIndic = "۰۱۲۳۴۵۶۷۸۹"
+
+  return input
+    .replace(/[٠-٩]/g, (d) => String(arabicIndic.indexOf(d)))
+    .replace(/[۰-۹]/g, (d) => String(easternArabicIndic.indexOf(d)))
+}
+
+function normalizeUsername(input: string): string {
+  return normalizeDigits(input.trim().normalize("NFKC")).toLowerCase()
+}
+
 export async function loginWithPassword(
   credentials: LoginCredentials,
   ipAddress?: string
 ): Promise<LoginResult> {
   try {
     const users = await getUsersWithPermissions()
-    
-    const user = users.find(u => u.username === credentials.username)
+
+    const requestedUsername = normalizeUsername(credentials.username)
+    const user = users.find((u) => normalizeUsername(u.username) === requestedUsername)
 
     if (!user) {
       await logLoginAttempt({
@@ -75,7 +89,11 @@ export async function loginWithPassword(
 
     let isPasswordValid = false
     
-    if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
+    if (
+      user.password.startsWith('$2a$') ||
+      user.password.startsWith('$2b$') ||
+      user.password.startsWith('$2y$')
+    ) {
       isPasswordValid = await verifyPassword(credentials.password, user.password)
     } else {
       isPasswordValid = credentials.password === user.password
