@@ -3,6 +3,15 @@ import { AUTH_SESSION_COOKIE } from "@/lib/auth-session"
 
 const SAVED_USERNAME_COOKIE = "als_saved_username"
 
+function getCookieDomain(): string | null {
+  const domain = (process.env.AUTH_COOKIE_DOMAIN || "").trim()
+  if (!domain) return null
+
+  if (domain.includes(";") || domain.includes("\n") || domain.includes("\r") || domain.includes(" ")) return null
+
+  return domain
+}
+
 function buildDeleteCookieHeader(name: string, secure: boolean, httpOnly: boolean): string {
   // Delete cookie across common attribute variants.
   // Note: secure cookies can only be set/cleared over HTTPS; sending this header over HTTP is harmless (browser ignores it).
@@ -13,6 +22,9 @@ function buildDeleteCookieHeader(name: string, secure: boolean, httpOnly: boolea
     "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
     "SameSite=Lax",
   ]
+
+  const domain = getCookieDomain()
+  if (domain) parts.push(`Domain=${domain}`)
 
   if (httpOnly) parts.push("HttpOnly")
 

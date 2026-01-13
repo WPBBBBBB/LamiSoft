@@ -6,6 +6,16 @@ import { logSecurityEvent } from "@/lib/security-logger"
 const REMEMBER_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
 const SESSION_MAX_AGE_SECONDS = 12 * 60 * 60
 
+function getCookieDomain(): string | null {
+  const domain = (process.env.AUTH_COOKIE_DOMAIN || "").trim()
+  if (!domain) return null
+
+  // Basic hardening to avoid header injection.
+  if (domain.includes(";") || domain.includes("\n") || domain.includes("\r") || domain.includes(" ")) return null
+
+  return domain
+}
+
 function buildSessionCookieHeader(token: string, maxAge: number, secure: boolean): string {
   const parts = [
     `${AUTH_SESSION_COOKIE}=${encodeURIComponent(token)}`,
@@ -14,6 +24,9 @@ function buildSessionCookieHeader(token: string, maxAge: number, secure: boolean
     "HttpOnly",
     "SameSite=Lax",
   ]
+
+  const domain = getCookieDomain()
+  if (domain) parts.push(`Domain=${domain}`)
 
   if (secure) parts.push("Secure")
   return parts.join("; ")
