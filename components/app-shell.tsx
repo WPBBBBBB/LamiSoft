@@ -20,7 +20,13 @@ import { WeatherDropZones } from "@/components/weather-drop-zones"
 import { CookieConsentBanner } from "@/components/cookie-consent-banner"
 import { CookieThemeSync } from "@/components/providers/cookie-theme-sync"
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  nonce,
+}: {
+  children: React.ReactNode
+  nonce?: string
+}) {
   const pathname = usePathname()
   const isLoginPage = pathname === "/login" || pathname === "/forgot-password"
 
@@ -30,6 +36,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       defaultTheme="system"
       enableSystem
       disableTransitionOnChange
+      nonce={nonce}
     >
       <CookieThemeSync />
       <SettingsProvider>

@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
 import { PwaSwRegister } from "@/components/pwa-sw-register";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -17,11 +18,13 @@ const geistMono = Geist_Mono({
   preload: false,
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nonce = (await headers()).get("x-nonce") || undefined
+
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
@@ -43,7 +46,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <PwaSwRegister />
-        <AppShell>{children}</AppShell>
+        <AppShell nonce={nonce}>{children}</AppShell>
       </body>
     </html>
   );
