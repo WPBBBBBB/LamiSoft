@@ -16,6 +16,7 @@ import {
   type NotificationSettings as Settings,
 } from '@/lib/notification-system'
 import { toast } from 'sonner'
+import { useAuth } from '@/contexts/auth-context'
 
 interface NotificationContextType {
   notifications: Notification[]
@@ -40,6 +41,7 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -154,12 +156,22 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Initial load
   useEffect(() => {
+    if (!isAuthenticated) {
+      setNotifications([])
+      setUnreadCount(0)
+      setSettings(null)
+      setIsLoading(false)
+      return
+    }
+
     loadSettings()
     refreshNotifications()
-  }, [loadSettings, refreshNotifications])
+  }, [isAuthenticated, loadSettings, refreshNotifications])
 
   // Subscribe to real-time notifications
   useEffect(() => {
+    if (!isAuthenticated) return
+
     const unsubscribe = subscribeToNotifications((notification) => {
       setNotifications((prev) => [notification, ...prev])
       setUnreadCount((prev) => prev + 1)
@@ -194,7 +206,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     })
 
     return unsubscribe
-  }, [soundEnabled, settings, playNotificationSound])
+  }, [isAuthenticated, soundEnabled, settings, playNotificationSound])
 
   // Mark as read
   const markAsRead = useCallback(async (id: string) => {

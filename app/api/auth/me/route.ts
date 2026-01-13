@@ -6,12 +6,14 @@ export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get(AUTH_SESSION_COOKIE)?.value
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      // Returning 200 avoids noisy console "Failed to load resource (401)" on pages
+      // that check the session before the user is logged in.
+      return NextResponse.json(null)
     }
 
     const payload = await verifySessionToken(token)
     if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json(null)
     }
 
     const userId = payload.sub
@@ -23,7 +25,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (userError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json(null)
     }
 
     const { data: permissions, error: permError } = await supabase
@@ -53,6 +55,6 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json(null)
   }
 }

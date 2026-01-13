@@ -330,6 +330,7 @@ export default function LoginPage() {
               onClick={() => setShowOAuthOptions(false)}
               className="absolute top-4 right-4"
               disabled={isLoading}
+              aria-label={t('close', currentLanguage.code)}
             >
               <ArrowRight className="h-5 w-5" />
             </Button>
@@ -489,6 +490,7 @@ export default function LoginPage() {
                   className="absolute left-1 top-[50%] -translate-y-[50%] h-7 w-7"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
+                  aria-label={showPassword ? t('hidePassword', currentLanguage.code) : t('viewPassword', currentLanguage.code)}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -523,6 +525,7 @@ export default function LoginPage() {
                     onClick={refreshCaptcha}
                     disabled={isLoading}
                     title={t('refreshCaptcha', currentLanguage.code)}
+                    aria-label={t('refreshCaptcha', currentLanguage.code)}
                   >
                     <RefreshCw className="h-4 w-4" />
                   </Button>
