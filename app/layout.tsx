@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
-        <title>AL-LamiSoft</title>
+        <title>AL-LamiSoft - اللامي سوفت</title>
         <meta name="description" content="قم بإدارة مبيعاتك والمشتريات والمخازن الخاصة بك, كذلك التحكم بالبيانات وأمكانية جرد المخزن بشكل دوري . الأطلاع على أرباح المتجر وتقارير شاملة بكل شيء. جرب اللامي سوفت الأن" />
         <link rel="icon" href="/aave.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
