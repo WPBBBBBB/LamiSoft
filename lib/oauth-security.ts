@@ -64,7 +64,7 @@ export async function checkOAuthBlock(deviceFingerprint: string): Promise<BlockI
       .from('oauth_blocks')
       .select('*')
       .eq('device_fingerprint', deviceFingerprint)
-      .single()
+      .maybeSingle()
 
     if (error || !data) {
       return {
@@ -129,7 +129,7 @@ export async function recordFailedOAuthAttempt(
       .from('oauth_blocks')
       .select('*')
       .eq('device_fingerprint', deviceInfo.fingerprint)
-      .single()
+      .maybeSingle()
 
     let newBlockLevel = 1
     let totalAttempts = 1
