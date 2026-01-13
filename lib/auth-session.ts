@@ -13,7 +13,9 @@ function base64UrlDecode(input: string): Uint8Array {
 function getAuthSecret(): string {
   const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
   if (!secret) {
-    // Dev fallback only. Set AUTH_SECRET in production.
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Missing AUTH_SECRET in production")
+    }
     return "dev-insecure-auth-secret"
   }
   return secret

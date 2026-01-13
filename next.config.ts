@@ -5,14 +5,25 @@ const withPWA = withPWAInit({
   dest: "public",
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === "development",
+  disable:
+    process.env.NODE_ENV === "development" ||
+    process.env.DISABLE_PWA === "true",
 });
 
+const enableSri = process.env.ENABLE_SRI === "true" && process.env.NODE_ENV === "production";
+
 const nextConfig: NextConfig = {
+  ...(enableSri
+    ? {
+        experimental: {
+          sri: {
+            algorithm: "sha256",
+          },
+        },
+      }
+    : {}),
   poweredByHeader: false,
-  // Don't ship source maps to the browser in production.
   productionBrowserSourceMaps: false,
-  // Reduce information leakage via console logs in production.
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
@@ -22,12 +33,10 @@ const nextConfig: NextConfig = {
   },
   logging: {
     fetches: {
-      // Avoid leaking sensitive query params/tokens in production logs.
       fullUrl: process.env.NODE_ENV === "development",
     },
   },
   async headers() {
-    const isDev = process.env.NODE_ENV === "development";
     const enableApiCors = process.env.ENABLE_API_CORS === "true";
     const apiCorsAllowOrigin = (process.env.API_CORS_ALLOW_ORIGIN || "").trim();
 
@@ -35,7 +44,6 @@ const nextConfig: NextConfig = {
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "X-Frame-Options", value: "DENY" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-      // Cross-origin isolation (safe defaults). Note: COEP can break 3rd-party assets, so it's intentionally not enabled here.
       { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
       { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
       {
@@ -46,7 +54,6 @@ const nextConfig: NextConfig = {
       { key: "X-DNS-Prefetch-Control", value: "on" },
       { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
       { key: "X-Download-Options", value: "noopen" },
-      // HSTS only makes sense over HTTPS (production). Browsers ignore it on HTTP.
       {
         key: "Strict-Transport-Security",
         value: "max-age=63072000; includeSubDomains; preload",
@@ -58,10 +65,7 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: securityHeaders,
       },
-      // CORS: disabled by default for stronger security.
-      // If you need cross-origin API access, set:
-      //   ENABLE_API_CORS=true
-      //   API_CORS_ALLOW_ORIGIN=https://your-domain.com
+
       ...(enableApiCors && apiCorsAllowOrigin
         ? [
             {
@@ -81,7 +85,7 @@ const nextConfig: NextConfig = {
             },
           ]
         : []),
-    ]
+    ];
   },
 };
 

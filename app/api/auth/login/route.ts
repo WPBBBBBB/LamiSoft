@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { loginWithPassword } from "@/lib/auth-operations"
 import { AUTH_SESSION_COOKIE, createSessionToken } from "@/lib/auth-session"
+import { logSecurityEvent } from "@/lib/security-logger"
 
 const REMEMBER_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
 const SESSION_MAX_AGE_SECONDS = 12 * 60 * 60
@@ -25,11 +26,22 @@ export async function POST(request: NextRequest) {
     const rememberMe = !!body.rememberMe
 
     if (!username || !password) {
+      logSecurityEvent("warn", "login_rejected", {
+        reason: "missing_credentials",
+        ip: body.ipAddress || null,
+        userAgent: request.headers.get("user-agent") || null,
+      })
       return NextResponse.json({ success: false, error: "بيانات الدخول غير مكتملة" }, { status: 400 })
     }
 
     const result = await loginWithPassword({ username, password }, body.ipAddress)
     if (!result.success || !result.user) {
+      logSecurityEvent("warn", "login_failed", {
+        username,
+        ip: body.ipAddress || null,
+        userAgent: request.headers.get("user-agent") || null,
+        error: result.error || null,
+      })
       return NextResponse.json({ success: false, error: result.error || "فشل تسجيل الدخول" }, { status: 401 })
     }
 
@@ -49,8 +61,18 @@ export async function POST(request: NextRequest) {
       maxAge,
     })
 
+    logSecurityEvent("info", "login_success", {
+      userId: String(result.user.id),
+      username,
+      rememberMe,
+      ip: body.ipAddress || null,
+    })
+
     return response
   } catch (error) {
+    logSecurityEvent("error", "login_error", {
+      error: error instanceof Error ? error.message : String(error),
+    })
     return NextResponse.json({ success: false, error: "حدث خطأ أثناء تسجيل الدخول" }, { status: 500 })
   }
 }

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server"
+import { logSecurityEvent } from "./lib/security-logger"
 
 type Counter = { count: number; resetAt: number }
 
@@ -38,8 +39,28 @@ function isSensitiveApiPath(pathname: string): boolean {
     pathname.startsWith("/api/auth/") ||
     pathname.startsWith("/api/send-otp") ||
     pathname.startsWith("/api/whatsapp-send") ||
-    pathname.startsWith("/api/whatsapp-send-media")
+    pathname.startsWith("/api/whatsapp-send-media") ||
+    pathname.startsWith("/api/whatsapp-settings") ||
+    // Any user-modifying endpoints should be protected.
+    pathname.startsWith("/api/user/")
   )
+}
+
+function isStateChangingMethod(method: string): boolean {
+  return method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE"
+}
+
+function isSameOriginRequest(request: NextRequest): boolean {
+  const expectedOrigin = request.nextUrl.origin
+
+  const origin = request.headers.get("origin")
+  if (origin) return origin === expectedOrigin
+
+  const referer = request.headers.get("referer")
+  if (referer) return referer.startsWith(expectedOrigin + "/")
+
+  // If neither Origin nor Referer is present, treat it as unsafe for state-changing requests.
+  return false
 }
 
 function toBase64(value: string): string {
@@ -93,6 +114,27 @@ export function proxy(request: NextRequest) {
 
   // 1) Sensitive API protection (rate limit + no-store)
   if (isSensitiveApiPath(pathname)) {
+    // CSRF protection: require same-origin for state-changing requests.
+    if (isStateChangingMethod(request.method) && request.method !== "OPTIONS") {
+      if (!isSameOriginRequest(request)) {
+        logSecurityEvent("warn", "csrf_blocked", {
+          pathname,
+          method: request.method,
+          ip: getClientIp(request),
+          origin: request.headers.get("origin") || null,
+          referer: request.headers.get("referer") || null,
+          userAgent: request.headers.get("user-agent") || null,
+        })
+
+        const blocked = NextResponse.json(
+          { success: false, error: "CSRF: الطلب غير مسموح من هذا المصدر" },
+          { status: 403 }
+        )
+        applyNoStore(blocked)
+        return blocked
+      }
+    }
+
     // Set anti-caching headers for sensitive endpoints.
     const next = NextResponse.next()
     applyNoStore(next)
@@ -118,6 +160,13 @@ export function proxy(request: NextRequest) {
 
     if (current.count > maxPerWindow) {
       const retryAfterSeconds = Math.max(1, Math.ceil((current.resetAt - now) / 1000))
+      logSecurityEvent("warn", "rate_limited", {
+        pathname,
+        method: request.method,
+        ip,
+        userAgent: request.headers.get("user-agent") || null,
+        retryAfterSeconds,
+      })
       const blocked = NextResponse.json(
         { success: false, error: "طلبات كثيرة جداً. حاول مرة أخرى بعد قليل." },
         { status: 429 }

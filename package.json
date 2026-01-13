@@ -3,8 +3,10 @@
   "version": "2.2.1",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "next dev",
+    "dev:webpack": "next dev --webpack",
     "build": "next build",
+    "build:webpack": "next build --webpack",
     "start": "next start",
     "lint": "next lint",
     "health": "node scripts/health-check.mjs"
