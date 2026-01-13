@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { CloudSun } from "lucide-react"
 import { useWeather } from "@/components/providers/weather-provider"
+import { useSettings } from "@/components/providers/settings-provider"
+import { t } from "@/lib/translations"
 
 type WeatherResponse = {
   current: {
@@ -12,6 +14,7 @@ type WeatherResponse = {
 }
 
 export function WeatherButton() {
+  const { currentLanguage } = useSettings()
   const { setIsWeatherOpen } = useWeather()
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<WeatherResponse | null>(null)
@@ -39,7 +42,7 @@ export function WeatherButton() {
         : "/api/weather"
 
       const res = await fetch(url, { cache: "no-store" })
-      if (!res.ok) throw new Error("فشل جلب بيانات الطقس")
+      if (!res.ok) throw new Error(t("failedToLoadWeather", currentLanguage.code))
 
       const json = (await res.json()) as WeatherResponse
       setData(json)
@@ -64,7 +67,7 @@ export function WeatherButton() {
     >
       <span className="flex items-center gap-2">
         <CloudSun className="h-4 w-4 theme-icon" />
-        الطقس
+        {t("weather", currentLanguage.code)}
       </span>
       <span className="text-sm font-semibold">{todayTempText}</span>
     </Button>

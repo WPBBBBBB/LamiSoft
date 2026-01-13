@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNotifications } from '@/components/providers/notification-provider'
+import { useSettings } from '@/components/providers/settings-provider'
+import { t } from '@/lib/translations'
 import { Confetti } from '@/components/ui/confetti'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -73,12 +75,16 @@ const typeStyles: Record<Notification['type'], { icon: string; color: string; gr
 }
 
 function NotificationItem({ notification }: { notification: Notification }) {
+  const { currentLanguage } = useSettings()
   const { markAsRead, archiveNotif } = useNotifications()
   const style = typeStyles[notification.type] || typeStyles.system_info
   const Icon = iconMap[notification.icon || style.icon] || Bell
   const gradient = colorMap[notification.color] || colorMap[style.gradient]
 
   const isMilestone = notification.type.startsWith('milestone_')
+
+  const normalized = (currentLanguage.code || 'en').toLowerCase().split(/[-_]/)[0]
+  const locale = normalized === 'ar' ? 'ar-IQ' : normalized === 'ku' ? 'ckb-IQ' : 'en-US'
 
   // Handle click on notification to mark as read
   const handleNotificationClick = () => {
@@ -156,7 +162,7 @@ function NotificationItem({ notification }: { notification: Notification }) {
                 )}
               </h4>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {new Date(notification.created_at).toLocaleString('en-US', {
+                {new Date(notification.created_at).toLocaleString(locale, {
                   hour: '2-digit',
                   minute: '2-digit',
                   day: 'numeric',
@@ -178,10 +184,10 @@ function NotificationItem({ notification }: { notification: Notification }) {
                 className="text-xs"
               >
                 {notification.priority === 'critical'
-                  ? 'عاجل'
+                  ? t('urgent', currentLanguage.code)
                   : notification.priority === 'high'
-                  ? 'مهم'
-                  : 'منخفض'}
+                  ? t('important', currentLanguage.code)
+                  : t('low', currentLanguage.code)}
               </Badge>
             )}
           </div>
@@ -204,7 +210,7 @@ function NotificationItem({ notification }: { notification: Notification }) {
                 className="h-7 text-xs"
               >
                 <Check className="h-3 w-3 mr-1" />
-                قراءة
+                {t('readAction', currentLanguage.code)}
               </Button>
             )}
             <Button
@@ -214,7 +220,7 @@ function NotificationItem({ notification }: { notification: Notification }) {
               className="h-7 text-xs"
             >
               <Archive className="h-3 w-3 mr-1" />
-              إخفاء
+              {t('hide', currentLanguage.code)}
             </Button>
           </div>
         </div>
@@ -224,6 +230,7 @@ function NotificationItem({ notification }: { notification: Notification }) {
 }
 
 export function NotificationPanel() {
+  const { currentLanguage } = useSettings()
   const {
     notifications,
     unreadCount,
@@ -289,7 +296,7 @@ export function NotificationPanel() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Bell className="h-5 w-5" />
-              <h2 className="text-xl font-bold">الإشعارات</h2>
+              <h2 className="text-xl font-bold">{t('notifications', currentLanguage.code)}</h2>
               {unreadCount > 0 && (
                 <Badge variant="destructive" className="rounded-full">
                   {unreadCount}
@@ -316,12 +323,12 @@ export function NotificationPanel() {
               {soundEnabled ? (
                 <>
                   <Bell className="h-4 w-4 mr-1" />
-                  أصوات مفعلة
+                  {t('soundEnabled', currentLanguage.code)}
                 </>
               ) : (
                 <>
                   <BellOff className="h-4 w-4 mr-1" />
-                  أصوات مكتومة
+                  {t('soundMuted', currentLanguage.code)}
                 </>
               )}
             </Button>
@@ -333,7 +340,7 @@ export function NotificationPanel() {
               disabled={unreadCount === 0}
             >
               <Check className="h-4 w-4 mr-1" />
-              قراءة الكل
+              {t('readAll', currentLanguage.code)}
             </Button>
 
             <Button
@@ -342,7 +349,7 @@ export function NotificationPanel() {
               onClick={archiveAllRead}
             >
               <Trash2 className="h-4 w-4 mr-1" />
-              تنظيف
+              {t('cleanUp', currentLanguage.code)}
             </Button>
           </div>
         </div>
@@ -358,10 +365,10 @@ export function NotificationPanel() {
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Bell className="h-16 w-16 text-muted-foreground mb-4" />
                 <p className="text-lg font-medium text-muted-foreground">
-                  لا توجد إشعارات
+                  {t('noNotifications', currentLanguage.code)}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  سنعلمك عندما يكون هناك جديد
+                  {t('wellNotifyWhenNew', currentLanguage.code)}
                 </p>
               </div>
             ) : (

@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CloudSun, X, Droplets, Wind } from "lucide-react"
 import { toast } from "sonner"
+import { t } from "@/lib/translations"
+import { useSettings } from "@/components/providers/settings-provider"
 
 type WeatherWidgetData = {
   id: string
@@ -30,6 +32,7 @@ interface WeatherWidgetProps {
 }
 
 export function WeatherWidget({ data, onRemove }: WeatherWidgetProps) {
+  const { currentLanguage } = useSettings()
   const nodeRef = useRef<HTMLDivElement>(null)
   const [weather, setWeather] = useState<CurrentWeather | null>(null)
   const [loading, setLoading] = useState(true)
@@ -43,11 +46,11 @@ export function WeatherWidget({ data, onRemove }: WeatherWidgetProps) {
     try {
       setLoading(true)
       const response = await fetch(`/api/weather?lat=${data.lat}&lon=${data.lon}`)
-      if (!response.ok) throw new Error("فشل تحميل الطقس")
+      if (!response.ok) throw new Error(t("failedToLoadWeather", currentLanguage.code))
       const result = await response.json()
       setWeather(result.current)
     } catch (error) {
-      toast.error("فشل تحميل بيانات الطقس")
+      toast.error(t("failedToLoadWeather", currentLanguage.code))
       } finally {
       setLoading(false)
     }
@@ -98,7 +101,7 @@ export function WeatherWidget({ data, onRemove }: WeatherWidgetProps) {
           </div>
         ) : (
           <p className="text-center text-[10px] text-muted-foreground py-2">
-            لا توجد بيانات
+            {t("noData", currentLanguage.code)}
           </p>
         )}
       </Card>

@@ -9,6 +9,8 @@ import { Bell, RefreshCw, Eye, EyeOff, Trash2, Calendar, User, Phone, AlertTrian
 import { Confetti } from "@/components/ui/confetti"
 import { toast } from "sonner"
 import { useNotifications } from "@/components/providers/notification-provider"
+import { useSettings } from "@/components/providers/settings-provider"
+import { t } from "@/lib/translations"
 import {
   getAllNotifications,
   markNotificationAsRead,
@@ -22,12 +24,22 @@ function metadataShowsConfetti(metadata: unknown): boolean {
 }
 
 export default function NotificationsPage() {
+  const { currentLanguage } = useSettings()
   const { runChecks, refreshNotifications, markAllAsRead: providerMarkAllAsRead } = useNotifications()
   const [notifications, setNotifications] = useState<DebtNotification[]>([])
   const [showRead, setShowRead] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
+
+  const getLocaleFromLanguage = useCallback((code: string) => {
+    const normalized = (code || "en").toLowerCase().split(/[-_]/)[0]
+    if (normalized === "ar") return "ar-IQ"
+    if (normalized === "ku") return "ckb-IQ"
+    return "en-US"
+  }, [])
+
+  const locale = getLocaleFromLanguage(currentLanguage.code)
 
   const fetchNotifications = useCallback(async () => {
     setIsLoading(true)
@@ -47,10 +59,10 @@ export default function NotificationsPage() {
           audio.play().catch(() => {}) // تجاهل الخطأ إذا لم يكن الملف موجود
         }
       } else {
-        toast.error(result.error || "فشل جلب الإشعارات")
+        toast.error(result.error || t("failedToFetchNotifications", currentLanguage.code))
       }
     } catch (error) {
-      toast.error("حدث خطأ أثناء جلب الإشعارات")
+      toast.error(t("errorFetchingNotifications", currentLanguage.code))
     } finally {
       setIsLoading(false)
     }
@@ -70,7 +82,7 @@ export default function NotificationsPage() {
       // تحديث القائمة المحلية
       await fetchNotifications()
     } catch (error) {
-      toast.error("حدث خطأ أثناء التحديث")
+      toast.error(t("errorRefreshing", currentLanguage.code))
     } finally {
       setIsRefreshing(false)
     }
@@ -80,16 +92,16 @@ export default function NotificationsPage() {
     try {
       const result = await markNotificationAsRead(id)
       if (result.success) {
-        toast.success("تم تعيين الإشعار كمقروء")
+        toast.success(t("notificationMarkedAsRead", currentLanguage.code))
         // تحديث الـ provider (سيحدث الهيدر تلقائياً)
         await refreshNotifications()
         // تحديث القائمة المحلية
         await fetchNotifications()
       } else {
-        toast.error(result.error || "فشل تعيين الإشعار")
+        toast.error(result.error || t("failedToMarkNotification", currentLanguage.code))
       }
     } catch (error) {
-      toast.error("حدث خطأ")
+      toast.error(t("errorOccurred", currentLanguage.code))
     }
   }
 
@@ -100,26 +112,26 @@ export default function NotificationsPage() {
       // تحديث القائمة المحلية
       await fetchNotifications()
     } catch (error) {
-      toast.error("حدث خطأ")
+      toast.error(t("errorOccurred", currentLanguage.code))
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذا الإشعار؟")) return
+    if (!confirm(t("confirmDeleteNotification", currentLanguage.code))) return
 
     try {
       const result = await deleteNotification(id)
       if (result.success) {
-        toast.success("تم حذف الإشعار")
+        toast.success(t("notificationDeleted", currentLanguage.code))
         // تحديث الـ provider (سيحدث الهيدر تلقائياً)
         await refreshNotifications()
         // تحديث القائمة المحلية
         await fetchNotifications()
       } else {
-        toast.error(result.error || "فشل الحذف")
+        toast.error(result.error || t("deleteFailed", currentLanguage.code))
       }
     } catch (error) {
-      toast.error("حدث خطأ")
+      toast.error(t("errorOccurred", currentLanguage.code))
     }
   }
 
@@ -142,16 +154,20 @@ export default function NotificationsPage() {
   const getNotificationBadge = (type: string, metadata?: unknown) => {
     // إشعار احتفالي (معلم الزبائن)
     if (metadataShowsConfetti(metadata)) {
-      return <Badge className="bg-linear-to-r from-amber-400 to-yellow-500 text-white border-none">🏆 إنجاز رائع</Badge>
+      return (
+        <Badge className="bg-linear-to-r from-amber-400 to-yellow-500 text-white border-none">
+          🏆 {t("amazingAchievement", currentLanguage.code)}
+        </Badge>
+      )
     }
     
     switch (type) {
       case 'تنبيه_قبل_3_ايام':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">اقتراب موعد</Badge>
+        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">{t("dueSoon", currentLanguage.code)}</Badge>
       case 'تنبيه_مرور_شهر':
-        return <Badge variant="outline" className="bg-red-100 text-red-800">مرور شهر</Badge>
+        return <Badge variant="outline" className="bg-red-100 text-red-800">{t("monthPassed", currentLanguage.code)}</Badge>
       default:
-        return <Badge variant="outline">عام</Badge>
+        return <Badge variant="outline">{t("general", currentLanguage.code)}</Badge>
     }
   }
 
@@ -165,15 +181,15 @@ export default function NotificationsPage() {
       {/* الهيدر */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">إشعارات الديون</h1>
+          <h1 className="text-3xl font-bold">{t("debtNotificationsTitle", currentLanguage.code)}</h1>
           <p className="text-muted-foreground mt-1">
-            إدارة إشعارات مواعيد التسديد والديون المستحقة
+            {t("debtNotificationsDescription", currentLanguage.code)}
           </p>
         </div>
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
             <Badge variant="destructive" className="text-lg px-3 py-1">
-              {unreadCount} غير مقروء
+              {unreadCount} {t("unread", currentLanguage.code)}
             </Badge>
           )}
         </div>
@@ -189,7 +205,7 @@ export default function NotificationsPage() {
               size="lg"
             >
               <RefreshCw className={`h-5 w-5 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
-              تحديث الإشعارات
+              {t("refreshNotifications", currentLanguage.code)}
             </Button>
 
             <Button
@@ -199,7 +215,7 @@ export default function NotificationsPage() {
               size="lg"
             >
               <Eye className="h-5 w-5 mr-2" />
-              تعيين الكل كمقروء
+              {t("markAllAsRead", currentLanguage.code)}
             </Button>
 
             <Button
@@ -210,12 +226,12 @@ export default function NotificationsPage() {
               {showRead ? (
                 <>
                   <EyeOff className="h-5 w-5 mr-2" />
-                  إخفاء المقروءة
+                  {t("hideRead", currentLanguage.code)}
                 </>
               ) : (
                 <>
                   <Eye className="h-5 w-5 mr-2" />
-                  عرض المقروءة
+                  {t("showRead", currentLanguage.code)}
                 </>
               )}
             </Button>
@@ -228,35 +244,35 @@ export default function NotificationsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-6 w-6" />
-            قائمة الإشعارات ({notifications.length})
+            {t("notificationsList", currentLanguage.code)} ({notifications.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="text-center py-12">
               <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">جاري تحميل الإشعارات...</p>
+              <p className="text-muted-foreground">{t("loadingNotifications", currentLanguage.code)}</p>
             </div>
           ) : notifications.length === 0 ? (
             <div className="text-center py-12">
               <Bell className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-lg text-muted-foreground">لا توجد إشعارات</p>
+              <p className="text-lg text-muted-foreground">{t("noNotifications", currentLanguage.code)}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">الحالة</TableHead>
-                    <TableHead className="text-right">النوع</TableHead>
-                    <TableHead className="text-right">الزبون</TableHead>
-                    <TableHead className="text-right">الهاتف</TableHead>
-                    <TableHead className="text-right">الرسالة</TableHead>
-                    <TableHead className="text-right">آخر دفعة</TableHead>
-                    <TableHead className="text-right">المبلغ المسدد</TableHead>
-                    <TableHead className="text-right">الرصيد الحالي</TableHead>
-                    <TableHead className="text-right">التاريخ</TableHead>
-                    <TableHead className="text-right">الإجراءات</TableHead>
+                    <TableHead className="text-right">{t("status", currentLanguage.code)}</TableHead>
+                    <TableHead className="text-right">{t("type", currentLanguage.code)}</TableHead>
+                    <TableHead className="text-right">{t("customer", currentLanguage.code)}</TableHead>
+                    <TableHead className="text-right">{t("phone", currentLanguage.code)}</TableHead>
+                    <TableHead className="text-right">{t("message", currentLanguage.code)}</TableHead>
+                    <TableHead className="text-right">{t("lastPayment", currentLanguage.code)}</TableHead>
+                    <TableHead className="text-right">{t("paidAmount", currentLanguage.code)}</TableHead>
+                    <TableHead className="text-right">{t("currentBalance", currentLanguage.code)}</TableHead>
+                    <TableHead className="text-right">{t("date", currentLanguage.code)}</TableHead>
+                    <TableHead className="text-right">{t("actions", currentLanguage.code)}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -267,9 +283,9 @@ export default function NotificationsPage() {
                     >
                       <TableCell>
                         {notification.is_read ? (
-                          <Badge variant="outline">مقروء</Badge>
+                          <Badge variant="outline">{t("read", currentLanguage.code)}</Badge>
                         ) : (
-                          <Badge>جديد</Badge>
+                          <Badge>{t("new", currentLanguage.code)}</Badge>
                         )}
                       </TableCell>
                       <TableCell>
@@ -302,7 +318,7 @@ export default function NotificationsPage() {
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm">
-                              {new Date(notification.last_payment_date).toLocaleDateString('ar-IQ')}
+                              {new Date(notification.last_payment_date).toLocaleDateString(locale)}
                             </span>
                           </div>
                         ) : (
@@ -342,7 +358,7 @@ export default function NotificationsPage() {
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-muted-foreground">
-                          {new Date(notification.created_at).toLocaleString('ar-IQ')}
+                          {new Date(notification.created_at).toLocaleString(locale)}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -352,7 +368,7 @@ export default function NotificationsPage() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleMarkAsRead(notification.id)}
-                              title="تعيين كمقروء"
+                              title={t("setAsReadTooltip", currentLanguage.code)}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -361,7 +377,7 @@ export default function NotificationsPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDelete(notification.id)}
-                            title="حذف"
+                            title={t("delete", currentLanguage.code)}
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>

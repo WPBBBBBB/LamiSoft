@@ -54,6 +54,8 @@ import {
 import { getCurrentExchangeRate } from "@/lib/exchange-rate-operations"
 import { toast } from "sonner"
 import { use } from "react"
+import { t } from "@/lib/translations"
+import { useSettings } from "@/components/providers/settings-provider"
 
 type EditingRow = {
   id: string
@@ -65,10 +67,16 @@ type EditingRow = {
   sellpriceusd: number
 }
 
-const UNIT_OPTIONS = ["كارتون", "قطعة", "كغم", "لتر"]
+const UNIT_OPTIONS = [
+  { value: "كارتون", labelKey: "unitCarton" },
+  { value: "قطعة", labelKey: "unitPiece" },
+  { value: "كغم", labelKey: "unitKg" },
+  { value: "لتر", labelKey: "unitLiter" },
+] as const
 
 export default function StoreDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
+  const { currentLanguage } = useSettings()
   const { id: storeId } = use(params)
   const [store, setStore] = useState<Store | null>(null)
   const [inventory, setInventory] = useState<InventoryItem[]>([])
@@ -100,6 +108,31 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeId])
 
+  const normalizedLang = (currentLanguage.code || "en").toLowerCase().split(/[-_]/)[0]
+  const locale = normalizedLang === "ar" ? "ar-IQ" : normalizedLang === "ku" ? "ckb-IQ" : "en-US"
+
+  const formatNumber = (value: number) => {
+    try {
+      return value.toLocaleString(locale)
+    } catch {
+      return value.toLocaleString()
+    }
+  }
+
+  const formatDate = (value: string | number | Date) => {
+    const date = value instanceof Date ? value : new Date(value)
+    try {
+      return date.toLocaleDateString(locale)
+    } catch {
+      return date.toLocaleDateString("en-GB")
+    }
+  }
+
+  const formatUnit = (unit: string) => {
+    const found = UNIT_OPTIONS.find((o) => o.value === unit)
+    return found ? t(found.labelKey, currentLanguage.code) : unit
+  }
+
   async function loadStoreData() {
     try {
       setIsLoading(true)
@@ -108,7 +141,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       setStore(storeData)
       setInventory(inventoryData)
     } catch {
-      toast.error("حدث خطأ أثناء تحميل البيانات")
+      toast.error(t("errorLoadingData", currentLanguage.code))
     } finally {
       setIsLoading(false)
     }
@@ -141,7 +174,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     loadStoreData()
     setEditingRows(new Set())
     setEditedData(new Map())
-    toast.success("تم تحديث البيانات")
+    toast.success(t("dataRefreshed", currentLanguage.code))
   }
 
   const handleClearSearch = () => {
@@ -193,7 +226,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     if (!data) return
 
     if (!data.productcode.trim() || !data.productname.trim()) {
-      toast.error("الرجاء إدخال رمز واسم المادة")
+      toast.error(t("enterMaterialCodeAndName", currentLanguage.code))
       return
     }
 
@@ -208,17 +241,17 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
         storeid: storeId,
       })
       
-      toast.success("تم تحديث المادة بنجاح")
+      toast.success(t("materialUpdatedSuccess", currentLanguage.code))
       handleCancelEdit(id)
       loadStoreData()
     } catch {
-      toast.error("حدث خطأ أثناء الحفظ")
+      toast.error(t("saveFailed", currentLanguage.code))
     }
   }
 
   const handleSaveNewRow = async () => {
     if (!newRowData.productcode.trim() || !newRowData.productname.trim()) {
-      toast.error("الرجاء إدخال رمز واسم المادة")
+      toast.error(t("enterMaterialCodeAndName", currentLanguage.code))
       return
     }
 
@@ -238,11 +271,11 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
         lowstocknotify: false,
       })
       
-      toast.success("تم إضافة المادة بنجاح")
+      toast.success(t("materialAddedSuccess", currentLanguage.code))
       resetNewRowData()
       loadStoreData()
     } catch {
-      toast.error("حدث خطأ أثناء الإضافة")
+      toast.error(t("addFailed", currentLanguage.code))
     }
   }
 
@@ -284,7 +317,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
 
   const handleDeleteClick = () => {
     if (selectedItems.length === 0) {
-      toast.error("الرجاء اختيار مادة واحدة على الأقل للحذف")
+      toast.error(t("selectAtLeastOneItemToDelete", currentLanguage.code))
       return
     }
     setDeleteConfirmOpen(true)
@@ -296,10 +329,12 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     try {
       if (selectedItems.length === 1) {
         await deleteInventoryItem(selectedItems[0])
-        toast.success("تم حذف المادة بنجاح")
+        toast.success(t("materialDeletedSuccess", currentLanguage.code))
       } else {
         await deleteInventoryItems(selectedItems)
-        toast.success(`تم حذف ${selectedItems.length} مادة بنجاح`)
+        toast.success(
+          `${t("deletedItemsPrefix", currentLanguage.code)} ${selectedItems.length} ${t("materials", currentLanguage.code)} ${t("successfullySuffix", currentLanguage.code)}`
+        )
       }
       
       setDeleteConfirmOpen(false)
@@ -310,14 +345,14 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       if (error && typeof error === 'object' && 'message' in error) {
         const err = error as { message?: string; code?: string }
         if (err.message?.includes('foreign key') || err.code === '23503') {
-          toast.error("لا يمكن حذف هذه المادة لأنها مرتبطة بعمليات بيع أو شراء سابقة")
+          toast.error(t("cannotDeleteLinkedItem", currentLanguage.code))
         } else if (err.message) {
-          toast.error("حدث خطأ أثناـ الحذف: " + err.message)
+          toast.error(`${t("errorDeletingData", currentLanguage.code)}: ${err.message}`)
         } else {
-          toast.error("حدث خطأ أثناء الحذف")
+          toast.error(t("errorDeletingData", currentLanguage.code))
         }
       } else {
-        toast.error("حدث خطأ أثناء الحذف")
+        toast.error(t("errorDeletingData", currentLanguage.code))
       }
       
       setDeleteConfirmOpen(false)
@@ -329,7 +364,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       <div className="flex-1 overflow-auto">
         <div className="container mx-auto p-6">
           <Card className="p-6">
-            <p className="text-center text-muted-foreground">جاري التحميل...</p>
+            <p className="text-center text-muted-foreground">{t("loading", currentLanguage.code)}</p>
           </Card>
         </div>
       </div>
@@ -341,9 +376,9 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       <div className="flex-1 overflow-auto">
         <div className="container mx-auto p-6">
           <Card className="p-6 text-center">
-            <p className="mb-4">المخزن غير موجود</p>
+            <p className="mb-4">{t("storeNotFound", currentLanguage.code)}</p>
             <Button onClick={() => router.push("/stores")}>
-              العودة للمخازن
+              {t("backToStores", currentLanguage.code)}
             </Button>
           </Card>
         </div>
@@ -388,7 +423,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
               disabled={selectedItems.length === 0}
             >
               <Trash2 className="h-4 w-4" />
-              حذف المحدد ({selectedItems.length})
+              {t("deleteSelected", currentLanguage.code)} ({selectedItems.length})
             </Button>
           </div>
 
@@ -400,7 +435,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
             <div className="relative flex-1">
               <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="البحث عن مادة (الرمز، الاسم)..."
+                placeholder={t("searchMaterialPlaceholder", currentLanguage.code)}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pr-10"
@@ -421,7 +456,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
             <Table>
               <TableHeader>
                 <TableRow style={{ background: 'linear-gradient(to right, var(--theme-surface), var(--theme-accent))', color: 'var(--theme-text)' }}>
-                  <TableHead className="text-center w-[50px]" style={{ color: 'var(--theme-text)' }}>#</TableHead>
+                  <TableHead className="text-center w-[50px]" style={{ color: 'var(--theme-text)' }}>{t("rowNumber", currentLanguage.code)}</TableHead>
                   <TableHead className="text-center w-[50px]" style={{ color: 'var(--theme-text)' }}>
                     <Checkbox
                       checked={selectedItems.length === filteredInventory.length && filteredInventory.length > 0}
@@ -434,14 +469,14 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                       }}
                     />
                   </TableHead>
-                  <TableHead className="text-right" style={{ color: 'var(--theme-text)' }}>رمز المادة</TableHead>
-                  <TableHead className="text-right" style={{ color: 'var(--theme-text)' }}>اسم المادة</TableHead>
-                  <TableHead className="text-right" style={{ color: 'var(--theme-text)' }}>الكمية</TableHead>
-                  <TableHead className="text-right" style={{ color: 'var(--theme-text)' }}>الوحدة</TableHead>
-                  <TableHead className="text-right" style={{ color: 'var(--theme-text)' }}>سعر البيع (IQD)</TableHead>
-                  <TableHead className="text-right" style={{ color: 'var(--theme-text)' }}>سعر البيع (USD)</TableHead>
-                  <TableHead className="text-right" style={{ color: 'var(--theme-text)' }}>تاريخ الإضافة</TableHead>
-                  <TableHead className="text-center w-[100px]" style={{ color: 'var(--theme-text)' }}>إجراءات</TableHead>
+                  <TableHead className="text-right" style={{ color: 'var(--theme-text)' }}>{t("materialCode", currentLanguage.code)}</TableHead>
+                  <TableHead className="text-right" style={{ color: 'var(--theme-text)' }}>{t("materialName", currentLanguage.code)}</TableHead>
+                  <TableHead className="text-right" style={{ color: 'var(--theme-text)' }}>{t("quantity", currentLanguage.code)}</TableHead>
+                  <TableHead className="text-right" style={{ color: 'var(--theme-text)' }}>{t("unit", currentLanguage.code)}</TableHead>
+                  <TableHead className="text-right" style={{ color: 'var(--theme-text)' }}>{t("sellPrice", currentLanguage.code)} ({t("iqd", currentLanguage.code)})</TableHead>
+                  <TableHead className="text-right" style={{ color: 'var(--theme-text)' }}>{t("sellPrice", currentLanguage.code)} ({t("usd", currentLanguage.code)})</TableHead>
+                  <TableHead className="text-right" style={{ color: 'var(--theme-text)' }}>{t("addedDate", currentLanguage.code)}</TableHead>
+                  <TableHead className="text-center w-[100px]" style={{ color: 'var(--theme-text)' }}>{t("actions", currentLanguage.code)}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -451,7 +486,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                   <TableCell className="text-center" style={{ color: 'var(--theme-text)' }}>-</TableCell>
                   <TableCell className="text-right">
                     <Input
-                      placeholder="رمز المادة"
+                      placeholder={t("materialCode", currentLanguage.code)}
                       value={newRowData.productcode}
                       onChange={(e) => updateNewRowField("productcode", e.target.value)}
                       className="h-8"
@@ -460,7 +495,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                   </TableCell>
                   <TableCell className="text-right">
                     <Input
-                      placeholder="اسم المادة"
+                      placeholder={t("materialName", currentLanguage.code)}
                       value={newRowData.productname}
                       onChange={(e) => updateNewRowField("productname", e.target.value)}
                       className="h-8"
@@ -469,7 +504,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                   <TableCell className="text-right">
                     <Input
                       type="number"
-                      placeholder="الكمية"
+                      placeholder={t("quantity", currentLanguage.code)}
                       value={newRowData.quantity || ""}
                       onChange={(e) => updateNewRowField("quantity", parseFloat(e.target.value) || 0)}
                       className="h-8"
@@ -481,12 +516,12 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                       onValueChange={(value) => updateNewRowField("unit", value)}
                     >
                       <SelectTrigger className="h-8">
-                        <SelectValue placeholder="اختر الوحدة" />
+                        <SelectValue placeholder={t("selectUnit", currentLanguage.code)} />
                       </SelectTrigger>
                       <SelectContent>
                         {UNIT_OPTIONS.map((unit) => (
-                          <SelectItem key={unit} value={unit}>
-                            {unit}
+                          <SelectItem key={unit.value} value={unit.value}>
+                            {t(unit.labelKey, currentLanguage.code)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -495,7 +530,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                   <TableCell className="text-right">
                     <Input
                       type="number"
-                      placeholder="السعر IQD"
+                      placeholder={t("priceIQDPlaceholder", currentLanguage.code)}
                       value={newRowData.sellpriceiqd || ""}
                       onChange={(e) => updateNewRowField("sellpriceiqd", parseFloat(e.target.value) || 0)}
                       onKeyPress={handlePriceKeyPress}
@@ -505,7 +540,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                   <TableCell className="text-right">
                     <Input
                       type="number"
-                      placeholder="السعر USD"
+                      placeholder={t("priceUSDPlaceholder", currentLanguage.code)}
                       value={newRowData.sellpriceusd || ""}
                       onChange={(e) => updateNewRowField("sellpriceusd", parseFloat(e.target.value) || 0)}
                       onKeyPress={handlePriceKeyPress}
@@ -513,7 +548,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                     />
                   </TableCell>
                   <TableCell className="text-right text-muted-foreground text-sm">
-                    سيضاف تلقائياً
+                    {t("autoAdded", currentLanguage.code)}
                   </TableCell>
                   <TableCell className="text-center">
                     <Button
@@ -521,7 +556,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                       variant="ghost"
                       className="h-8 w-8 text-green-600"
                       onClick={handleSaveNewRow}
-                      title="حفظ (Enter)"
+                      title={t("saveEnterHint", currentLanguage.code)}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -532,7 +567,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                 {paginatedInventory.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                      {searchQuery ? "لا توجد نتائج للبحث" : "لا توجد مواد في المخزن"}
+                      {searchQuery ? t("noSearchResults", currentLanguage.code) : t("noItemsInStore", currentLanguage.code)}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -621,18 +656,18 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                               onValueChange={(value) => updateEditedField(item.id, "unit", value)}
                             >
                               <SelectTrigger className="h-8">
-                                <SelectValue placeholder="اختر الوحدة" />
+                                <SelectValue placeholder={t("selectUnit", currentLanguage.code)} />
                               </SelectTrigger>
                               <SelectContent>
                                 {UNIT_OPTIONS.map((unit) => (
-                                  <SelectItem key={unit} value={unit}>
-                                    {unit}
+                                  <SelectItem key={unit.value} value={unit.value}>
+                                    {t(unit.labelKey, currentLanguage.code)}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           ) : (
-                            item.unit
+                            formatUnit(item.unit ?? "")
                           )}
                         </TableCell>
                         
@@ -646,7 +681,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                               className="h-8"
                             />
                           ) : (
-                            item.sellpriceiqd.toLocaleString()
+                            formatNumber(item.sellpriceiqd)
                           )}
                         </TableCell>
                         
@@ -660,13 +695,13 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                               className="h-8"
                             />
                           ) : (
-                            item.sellpriceusd.toLocaleString()
+                            formatNumber(item.sellpriceusd)
                           )}
                         </TableCell>
                         
                         {}
                         <TableCell className="text-right text-sm">
-                          {new Date(item.createdat).toLocaleDateString("en-GB")}
+                          {formatDate(item.createdat)}
                         </TableCell>
                         
                         {}
@@ -721,7 +756,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                   onClick={() => setCurrentPage(1)}
                   disabled={currentPage === 1}
                 >
-                  الأولى
+                  {t("first", currentLanguage.code)}
                 </Button>
                 <Button
                   variant="outline"
@@ -729,7 +764,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                   onClick={() => setCurrentPage(currentPage - 1)}
                   disabled={currentPage === 1}
                 >
-                  السابقة
+                  {t("previous", currentLanguage.code)}
                 </Button>
                 
                 <div className="flex gap-1">
@@ -765,7 +800,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                   onClick={() => setCurrentPage(currentPage + 1)}
                   disabled={currentPage === totalPages}
                 >
-                  التالية
+                  {t("next", currentLanguage.code)}
                 </Button>
                 <Button
                   variant="outline"
@@ -773,7 +808,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                   onClick={() => setCurrentPage(totalPages)}
                   disabled={currentPage === totalPages}
                 >
-                  الأخيرة
+                  {t("last", currentLanguage.code)}
                 </Button>
               </div>
             )}
@@ -782,14 +817,14 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
             <div className="flex justify-between items-center">
               <Button onClick={handleRefresh} variant="outline" className="gap-2">
                 <RefreshCw className="h-4 w-4" />
-                تحديث الجدول
+                {t("refreshTable", currentLanguage.code)}
               </Button>
               <div className="flex gap-4 text-sm text-muted-foreground">
                 <span>
-                  عرض {startIndex + 1} - {Math.min(endIndex, filteredInventory.length)} من {filteredInventory.length}
+                  {t("showing", currentLanguage.code)} {startIndex + 1} - {Math.min(endIndex, filteredInventory.length)} {t("of", currentLanguage.code)} {filteredInventory.length}
                 </span>
                 <span className="font-semibold">
-                  سعر الصرف: {exchangeRate.toLocaleString()} IQD = 1 USD
+                  {t("exchangeRate", currentLanguage.code)}: {formatNumber(exchangeRate)} {t("iqd", currentLanguage.code)} = 1 {t("usd", currentLanguage.code)}
                 </span>
               </div>
             </div>
@@ -801,21 +836,21 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تأكيد الحذف</DialogTitle>
+            <DialogTitle>{t("deleteConfirmationTitle", currentLanguage.code)}</DialogTitle>
             <DialogDescription>
               {selectedItems.length === 1 
-                ? "هل أنت متأكد من حذف هذه المادة؟" 
-                : `هل أنت متأكد من حذف ${selectedItems.length} مادة؟`
+                ? t("confirmDeleteThisItem", currentLanguage.code)
+                : `${t("confirmDeleteItemsPrefix", currentLanguage.code)} ${selectedItems.length} ${t("materials", currentLanguage.code)}؟`
               }
-              {" "}هذا الإجراء لا يمكن التراجع عنه.
+              {" "}{t("cannotBeUndone", currentLanguage.code)}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
-              إلغاء
+              {t("cancel", currentLanguage.code)}
             </Button>
             <Button variant="destructive" onClick={confirmDelete}>
-              حذف {selectedItems.length > 1 && `(${selectedItems.length})`}
+              {t("delete", currentLanguage.code)} {selectedItems.length > 1 && `(${selectedItems.length})`}
             </Button>
           </DialogFooter>
         </DialogContent>

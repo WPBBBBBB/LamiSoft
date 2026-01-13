@@ -62,7 +62,7 @@ type WeatherErrorResponse = {
   attempts?: Array<{ status?: unknown; endpoint?: unknown; body?: unknown }>
 }
 
-function formatDay(dateIso: string) {
+function formatDay(dateIso: string, lang: string) {
   const date = new Date(dateIso)
   const today = new Date()
   
@@ -71,7 +71,7 @@ function formatDay(dateIso: string) {
     date.getMonth() === today.getMonth() &&
     date.getFullYear() === today.getFullYear()
   ) {
-    return "اليوم"
+    return t("today", lang)
   }
   
   const day = date.getDate()
@@ -79,13 +79,16 @@ function formatDay(dateIso: string) {
   return `${day}/${month}`
 }
 
-function formatHourlyTime(timeIso: string) {
+function formatHourlyTime(timeIso: string, lang: string) {
   const date = new Date(timeIso)
   const hours = date.getHours()
   const minutes = date.getMinutes()
   
-  // تنسيق 12 ساعة مع صباحاً/مساءً
-  const period = hours >= 12 ? 'م' : 'ص'
+  const normalized = (lang || "ar").toLowerCase().split(/[-_]/)[0]
+  const period =
+    normalized === "en" ? (hours >= 12 ? "PM" : "AM") :
+    normalized === "ku" ? (hours >= 12 ? "د.ن" : "پ.ن") :
+    (hours >= 12 ? "م" : "ص")
   const hours12 = hours % 12 || 12
   const minutesStr = minutes > 0 ? `:${minutes.toString().padStart(2, '0')}` : ''
   
@@ -178,7 +181,7 @@ export function WeatherDialog() {
       
       setSearchResults(locations)
     } catch {
-      toast.error("فشل البحث عن الموقع")
+      toast.error(t("failedToSearchLocation", currentLanguage.code))
     } finally {
       setSearchLoading(false)
     }
@@ -261,7 +264,7 @@ export function WeatherDialog() {
     
     const event = new CustomEvent('add-weather-widget', { detail: widgetData })
     window.dispatchEvent(event)
-    toast.success(`تم إضافة ${location.name} إلى الصفحة الرئيسية`)
+    toast.success(`${t("addedToHome", currentLanguage.code)} ${location.name}`)
   }
 
   const loadWeatherForLocation = async (lat: number, lon: number) => {
@@ -274,13 +277,13 @@ export function WeatherDialog() {
       const url = `/api/weather?lat=${lat}&lon=${lon}`
       const res = await fetch(url, { cache: "no-store" })
       if (!res.ok) {
-        throw new Error("فشل جلب بيانات الطقس")
+        throw new Error(t("failedToLoadWeather", currentLanguage.code))
       }
 
       const json = (await res.json()) as WeatherResponse
       setData(json)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "حدث خطأ")
+      setError(err instanceof Error ? err.message : t("errorOccurred", currentLanguage.code))
     } finally {
       setLoading(false)
     }
@@ -313,11 +316,11 @@ export function WeatherDialog() {
       const res = await fetch(url, { cache: "no-store" })
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as WeatherErrorResponse
-        const base = body?.error ? String(body.error) : "فشل جلب بيانات الطقس"
+        const base = body?.error ? String(body.error) : t("failedToLoadWeather", currentLanguage.code)
         const attempts = Array.isArray(body?.attempts) ? body.attempts : null
 
         const extra = attempts
-          ? `\n\nتفاصيل الاتصال:\n${attempts
+          ? `\n\n${t("connectionDetails", currentLanguage.code)}:\n${attempts
               .slice(0, 3)
               .map((a) => {
                 const endpoint = String(a.endpoint || "").split("?")[0]
@@ -531,7 +534,7 @@ export function WeatherDialog() {
                     e.stopPropagation()
                     createWidget(loc)
                   }}
-                  title="اسحب لإنشاء ويدجت على الشاشة الرئيسية، أو انقر مرتين"
+                  title={t("weatherDragHint", currentLanguage.code)}
                 >
                   <GripVertical className="h-4 w-4 text-muted-foreground" />
                 </div>
@@ -557,7 +560,7 @@ export function WeatherDialog() {
         {locationStatus === "requesting" && (
           <Card className="mt-4 p-4 text-right">
             <div className="text-sm text-muted-foreground">
-              جاري طلب الوصول إلى موقعك...
+              {t("requestingLocationAccess", currentLanguage.code)}
             </div>
           </Card>
         )}
@@ -565,7 +568,7 @@ export function WeatherDialog() {
         {locationStatus === "denied" && (
           <Card className="mt-4 p-4 text-right border-orange-500/50">
             <div className="text-sm text-orange-600 dark:text-orange-400">
-              تم رفض الوصول إلى الموقع. سيتم استخدام الموقع الافتراضي (بغداد).
+              {t("locationDeniedFallback", currentLanguage.code)}
             </div>
           </Card>
         )}
@@ -576,7 +579,7 @@ export function WeatherDialog() {
           </Card>
         ) : !data ? (
           <Card className="mt-4 p-4 text-right">
-            <div className="text-sm text-muted-foreground">جاري التحميل...</div>
+            <div className="text-sm text-muted-foreground">{t("loading", currentLanguage.code)}</div>
           </Card>
         ) : (
           <div className="mt-4 space-y-4">
@@ -584,26 +587,26 @@ export function WeatherDialog() {
             <Card className="p-4">
               <div className="flex flex-col gap-2 text-right">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">اليوم</div>
+                  <div className="text-sm text-muted-foreground">{t("today", currentLanguage.code)}</div>
                   <div className="text-base font-semibold">{data.current.description || ""}</div>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div className="flex items-center justify-between rounded-md border bg-background/60 p-2">
-                    <span className="text-xs text-muted-foreground">الحرارة</span>
+                    <span className="text-xs text-muted-foreground">{t("temperature", currentLanguage.code)}</span>
                     <span className="flex items-center gap-2">
                       <Thermometer className="h-4 w-4 text-red-500" />
                       <span className="font-semibold">{data.current.temp}°</span>
                     </span>
                   </div>
                   <div className="flex items-center justify-between rounded-md border bg-background/60 p-2">
-                    <span className="text-xs text-muted-foreground">الرطوبة</span>
+                    <span className="text-xs text-muted-foreground">{t("humidity", currentLanguage.code)}</span>
                     <span className="flex items-center gap-2">
                       <Droplets className="h-4 w-4 text-blue-500" />
                       <span className="font-semibold">{data.current.humidity}%</span>
                     </span>
                   </div>
                   <div className="flex items-center justify-between rounded-md border bg-background/60 p-2">
-                    <span className="text-xs text-muted-foreground">الرياح</span>
+                    <span className="text-xs text-muted-foreground">{t("wind", currentLanguage.code)}</span>
                     <span className="flex items-center gap-2">
                       <Wind className="h-4 w-4 text-green-500" />
                       <span className="font-semibold">{data.current.windSpeed}</span>
@@ -623,7 +626,7 @@ export function WeatherDialog() {
                 <div className="flex gap-3 overflow-x-auto pb-2">
                   {data.hourly.map((h, i) => (
                     <Card key={i} className="shrink-0 p-3 min-w-20">
-                      <div className="text-xs text-muted-foreground text-center mb-1">{formatHourlyTime(h.time)}</div>
+                      <div className="text-xs text-muted-foreground text-center mb-1">{formatHourlyTime(h.time, currentLanguage.code)}</div>
                       <div className="text-center font-semibold mb-1">{h.temp}°</div>
                       <div className="text-xs text-muted-foreground text-center">{h.humidity}%</div>
                     </Card>
@@ -639,7 +642,7 @@ export function WeatherDialog() {
               {data.daily.slice(0, 5).map((d) => (
                 <Card key={d.date} className="p-3" dir="ltr">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm font-semibold">{formatDay(d.date)}</div>
+                    <div className="text-sm font-semibold">{formatDay(d.date, currentLanguage.code)}</div>
                     <div className="text-xs text-muted-foreground">{d.description}</div>
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-2 text-sm">

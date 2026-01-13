@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { t } from "@/lib/translations"
+import { useSettings } from "@/components/providers/settings-provider"
 import {
   Dialog,
   DialogContent,
@@ -23,6 +25,7 @@ interface ExchangeRateModalProps {
 }
 
 export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps) {
+  const { currentLanguage } = useSettings()
   const [rate, setRate] = useState<string>("")
   const [currentRate, setCurrentRate] = useState<number>(1350)
   const [isLoading, setIsLoading] = useState(false)
@@ -56,7 +59,7 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
       setCurrentRate(currentRate)
       setRate(currentRate.toString())
     } catch (error) {
-      toast.error("فشل تحميل سعر الصرف")
+      toast.error(t("failedToLoadExchangeRate", currentLanguage.code))
     } finally {
       setIsLoading(false)
     }
@@ -74,7 +77,7 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
         throw new Error(data.error || 'Failed to fetch rate')
       }
     } catch (error) {
-      toast.error("فشل تحميل سعر الصرف اليومي")
+      toast.error(t("failedToLoadDailyExchangeRate", currentLanguage.code))
     } finally {
       setLoadingTodayRate(false)
     }
@@ -86,7 +89,7 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
       setHistory(data)
       setShowHistory(true)
     } catch (error) {
-      toast.error("فشل تحميل السجل")
+      toast.error(t("failedToLoadExchangeRateHistory", currentLanguage.code))
     }
   }
 
@@ -100,10 +103,10 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
       await updateExchangeRate(roundedRate, currentUsername, currentUsername)
       setCurrentRate(roundedRate)
       setRate(roundedRate.toString())
-      toast.success("تم تحديث سعر الصرف من السعر اليومي")
+      toast.success(t("exchangeRateUpdatedFromDaily", currentLanguage.code))
       await loadHistory()
     } catch (error) {
-      toast.error("فشل تحديث سعر الصرف")
+      toast.error(t("failedToUpdateExchangeRate", currentLanguage.code))
     } finally {
       setIsSaving(false)
     }
@@ -113,7 +116,7 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
     const numRate = parseFloat(rate)
     
     if (isNaN(numRate) || numRate <= 0) {
-      toast.error("يرجى إدخال سعر صحيح")
+      toast.error(t("enterValidRate", currentLanguage.code))
       return
     }
 
@@ -121,10 +124,10 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
       setIsSaving(true)
       await updateExchangeRate(numRate, currentUsername, currentUsername)
       setCurrentRate(numRate)
-      toast.success("تم تحديث سعر الصرف بنجاح")
+      toast.success(t("exchangeRateUpdatedSuccessfully", currentLanguage.code))
       onOpenChange(false)
     } catch (error) {
-      toast.error("فشل تحديث سعر الصرف")
+      toast.error(t("failedToUpdateExchangeRate", currentLanguage.code))
     } finally {
       setIsSaving(false)
     }
@@ -143,9 +146,9 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
         setIsSaving(true)
         await updateExchangeRate(numRate, currentUsername, currentUsername)
         setCurrentRate(numRate)
-        toast.success("تم تحديث سعر الصرف")
+        toast.success(t("exchangeRateUpdated", currentLanguage.code))
       } catch (error) {
-        toast.error("فشل التحديث")
+        toast.error(t("updateFailed", currentLanguage.code))
         setRate(currentRate.toString())
       } finally {
         setIsSaving(false)
@@ -153,16 +156,29 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
     }
   }
 
+  function getLocaleFromLanguage(code: string) {
+    const normalized = (code || "en").toLowerCase().split(/[-_]/)[0]
+    if (normalized === "ar") return "ar-IQ"
+    if (normalized === "ku") return "ckb-IQ"
+    return "en-US"
+  }
+
   function formatDate(dateString: string) {
     const date = new Date(dateString)
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    })
+    const locale = getLocaleFromLanguage(currentLanguage.code)
+    const options: Intl.DateTimeFormatOptions = {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }
+    try {
+      return date.toLocaleString(locale, options)
+    } catch {
+      return date.toLocaleString("en-US", options)
+    }
   }
 
   return (
@@ -171,36 +187,36 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
-            تعديل سعر الصرف
+            {t("editExchangeRateTitle", currentLanguage.code)}
           </DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
           <div className="py-8 text-center text-muted-foreground">
-            جاري التحميل...
+            {t("loading", currentLanguage.code)}
           </div>
         ) : (
           <div className="space-y-6">
             <Card className="p-4 bg-muted/50">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">السعر الحالي</span>
+                <span className="text-sm text-muted-foreground">{t("currentPrice", currentLanguage.code)}</span>
                 <Badge variant="secondary" className="gap-1">
                   <TrendingUp className="h-3 w-3" />
-                  فعّال
+                  {t("active", currentLanguage.code)}
                 </Badge>
               </div>
               <div className="text-2xl font-bold" style={{ color: "var(--theme-text)" }}>
                 {Math.round(currentRate).toLocaleString('en-US')} IQD
               </div>
               <div className="text-xs text-muted-foreground mt-1">
-                مقابل 1 دولار أمريكي
+                {t("perOneUSD", currentLanguage.code)}
               </div>
             </Card>
 
             {loadingTodayRate ? (
               <Card className="p-4 bg-blue-500/10 border-blue-500/20">
                 <div className="text-center text-sm text-muted-foreground">
-                  جاري تحميل سعر الصرف اليومي...
+                  {t("loadingDailyExchangeRate", currentLanguage.code)}
                 </div>
               </Card>
             ) : todayRate ? (
@@ -208,7 +224,7 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="text-sm text-muted-foreground mb-1">
-                      سعر الصرف لليوم هو:
+                      {t("todayExchangeRateIs", currentLanguage.code)}
                     </div>
                     <div className="text-xl font-bold" style={{ color: "var(--theme-text)" }}>
                       {Math.round(todayRate).toLocaleString('en-US')} IQD
@@ -221,14 +237,16 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
                     size="sm"
                     className="gap-2"
                   >
-                    {Math.round(todayRate) === currentRate ? "محدّث" : "هل تود التحديث؟"}
+                    {Math.round(todayRate) === currentRate
+                      ? t("upToDate", currentLanguage.code)
+                      : t("wantToUpdate", currentLanguage.code)}
                   </Button>
                 </div>
               </Card>
             ) : null}
 
             <div className="space-y-2">
-              <Label htmlFor="rate">السعر الجديد (دينار عراقي)</Label>
+              <Label htmlFor="rate">{t("newExchangeRateLabel", currentLanguage.code)}</Label>
               <Input
                 id="rate"
                 type="number"
@@ -236,12 +254,12 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
                 value={rate}
                 onChange={(e) => setRate(e.target.value)}
                 onBlur={handleBlur}
-                placeholder="مثال: 1350"
+                placeholder={t("exchangeRateExamplePlaceholder", currentLanguage.code)}
                 disabled={isSaving}
                 className="text-lg font-mono"
               />
               <p className="text-xs text-muted-foreground">
-                سيتم حفظ السعر تلقائياً عند مغادرة الحقل
+                {t("autoSaveOnBlurHint", currentLanguage.code)}
               </p>
             </div>
 
@@ -250,7 +268,7 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
                 <div className="flex items-center justify-between">
                   <Label className="flex items-center gap-2">
                     <History className="h-4 w-4" />
-                    سجل التغييرات
+                    {t("changeHistory", currentLanguage.code)}
                   </Label>
                   <Button
                     variant="ghost"
@@ -288,7 +306,7 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
                 onClick={loadHistory}
               >
                 <History className="h-4 w-4" />
-                عرض السجل
+                {t("showHistory", currentLanguage.code)}
               </Button>
             )}
           </div>
@@ -300,7 +318,7 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
             onClick={() => onOpenChange(false)}
             disabled={isSaving}
           >
-            إغلاق
+            {t("close", currentLanguage.code)}
           </Button>
         </DialogFooter>
       </DialogContent>

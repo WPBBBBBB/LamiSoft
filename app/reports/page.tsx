@@ -1516,18 +1516,18 @@ const handleExportSalesProfitReport = async () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir={currentLanguage.direction}>
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 gap-1">
-          <TabsTrigger value="sales">{t('sales', currentLanguage.code)}</TabsTrigger>
-          <TabsTrigger value="purchases">{t('purchases', currentLanguage.code)}</TabsTrigger>
-          <TabsTrigger value="cash">{t('cashBox', currentLanguage.code)}</TabsTrigger>
+          <TabsTrigger value="sales">{t('salesListsTab', currentLanguage.code)}</TabsTrigger>
+          <TabsTrigger value="purchases">{t('purchaseListsTab', currentLanguage.code)}</TabsTrigger>
+          <TabsTrigger value="cash">{t('paymentsTab', currentLanguage.code)}</TabsTrigger>
           {/* عرض قائمة النقل المخزني للمدير ولموظف العادي الذي لديه الصلاحية */}
           {(currentUser?.permission_type === 'مدير' || 
             (currentUser?.permission_type === 'موظف' && currentUser?.permissions?.view_store_transfer)) && (
-            <TabsTrigger value="transfer">{t('storeTransfer', currentLanguage.code)}</TabsTrigger>
+            <TabsTrigger value="transfer">{t('storeTransfersTab', currentLanguage.code)}</TabsTrigger>
           )}
           {/* عرض تبويب التقارير فقط للمدير أو المحاسب الذي لديه صلاحية */}
           {(currentUser?.permission_type === 'مدير' || 
             (currentUser?.permission_type === 'محاسب' && currentUser?.permissions?.view_reports)) && (
-            <TabsTrigger value="reports">{t('reports', currentLanguage.code)}</TabsTrigger>
+            <TabsTrigger value="reports">{t('reportsTab', currentLanguage.code)}</TabsTrigger>
           )}
         </TabsList>
 

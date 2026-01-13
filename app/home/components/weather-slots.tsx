@@ -133,7 +133,7 @@ export function WeatherSlots() {
         setSelectedSlot(-1)
         loadWeather(currentLocation.lat, currentLocation.lon)
       } else {
-        toast.error("لم يتم تحديد الموقع الحالي")
+        toast.error(t('locationNotFound', currentLanguage.code))
       }
     } else {
       const slot = slots[index]
