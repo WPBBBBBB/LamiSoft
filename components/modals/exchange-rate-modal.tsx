@@ -18,6 +18,7 @@ import { DollarSign, TrendingUp, History, X } from "lucide-react"
 import { getCurrentExchangeRate, updateExchangeRate, getExchangeRateHistory, type ExchangeRate } from "@/lib/exchange-rate-operations"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
+import { useAuth } from "@/contexts/auth-context"
 
 interface ExchangeRateModalProps {
   open: boolean
@@ -26,6 +27,7 @@ interface ExchangeRateModalProps {
 
 export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps) {
   const { currentLanguage } = useSettings()
+  const { currentUser } = useAuth()
   const [rate, setRate] = useState<string>("")
   const [currentRate, setCurrentRate] = useState<number>(1350)
   const [isLoading, setIsLoading] = useState(false)
@@ -34,21 +36,17 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
   const [history, setHistory] = useState<ExchangeRate[]>([])
   const [todayRate, setTodayRate] = useState<number | null>(null)
   const [loadingTodayRate, setLoadingTodayRate] = useState(false)
-  const [currentUsername, setCurrentUsername] = useState<string>("user")
+
+  const getUpdater = () => {
+    const username = currentUser?.username || "user"
+    const fullName = currentUser?.full_name || username
+    return { username, fullName }
+  }
 
   useEffect(() => {
     if (open) {
       loadCurrentRate()
       loadTodayRate()
-      
-      try {
-        const savedUser = localStorage.getItem('currentUser')
-        if (savedUser) {
-          const user = JSON.parse(savedUser)
-          setCurrentUsername(user.full_name || user.fullName || user.name || user.username || "user")
-        }
-      } catch (error) {
-        }
     }
   }, [open])
 
@@ -100,7 +98,8 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
     
     try {
       setIsSaving(true)
-      await updateExchangeRate(roundedRate, currentUsername, currentUsername)
+      const updater = getUpdater()
+      await updateExchangeRate(roundedRate, updater.username, updater.fullName)
       setCurrentRate(roundedRate)
       setRate(roundedRate.toString())
       toast.success(t("exchangeRateUpdatedFromDaily", currentLanguage.code))
@@ -122,7 +121,8 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
 
     try {
       setIsSaving(true)
-      await updateExchangeRate(numRate, currentUsername, currentUsername)
+      const updater = getUpdater()
+      await updateExchangeRate(numRate, updater.username, updater.fullName)
       setCurrentRate(numRate)
       toast.success(t("exchangeRateUpdatedSuccessfully", currentLanguage.code))
       onOpenChange(false)
@@ -144,7 +144,8 @@ export function ExchangeRateModal({ open, onOpenChange }: ExchangeRateModalProps
     if (numRate !== currentRate) {
       try {
         setIsSaving(true)
-        await updateExchangeRate(numRate, currentUsername, currentUsername)
+        const updater = getUpdater()
+        await updateExchangeRate(numRate, updater.username, updater.fullName)
         setCurrentRate(numRate)
         toast.success(t("exchangeRateUpdated", currentLanguage.code))
       } catch (error) {

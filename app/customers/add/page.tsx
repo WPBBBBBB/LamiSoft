@@ -52,25 +52,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-const formSchema = z.object({
-  customer_name: z.string().min(2, { message: "الاسم يجب أن يكون حرفين على الأقل" }),
-  type: z.enum(["زبون", "مجهز", "موظف"]),
-  phone_number: z.string()
-    .refine((val) => !val || val.length === 11, {
-      message: "رقم الهاتف يجب أن يكون 11 رقماً بالضبط"
-    })
-    .refine((val) => !val || val.startsWith("07"), {
-      message: "رقم الهاتف يجب أن يبدأ بـ 07"
-    })
-    .optional(),
-  address: z.string().optional(),
-  notes: z.string().optional(),
-  initial_balance_iqd: z.string().optional(),
-  initial_balance_usd: z.string().optional(),
-})
+import { t } from "@/lib/translations"
+import { useSettings } from "@/components/providers/settings-provider"
 
 export default function AddCustomerPage() {
   const router = useRouter()
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
   const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -79,6 +67,28 @@ export default function AddCustomerPage() {
   const [searchAddress, setSearchAddress] = useState("")
   const [addressCount, setAddressCount] = useState<number | null>(null)
   const searchInputRef = React.useRef<HTMLInputElement>(null)
+
+  const formSchema = React.useMemo(
+    () =>
+      z.object({
+        customer_name: z.string().min(2, { message: t("nameMin2Chars", lang) }),
+        type: z.enum(["زبون", "مجهز", "موظف"]),
+        phone_number: z
+          .string()
+          .refine((val) => !val || val.length === 11, {
+            message: t("phoneMustBe11Digits", lang),
+          })
+          .refine((val) => !val || val.startsWith("07"), {
+            message: t("invalidPhoneFormat", lang),
+          })
+          .optional(),
+        address: z.string().optional(),
+        notes: z.string().optional(),
+        initial_balance_iqd: z.string().optional(),
+        initial_balance_usd: z.string().optional(),
+      }),
+    [lang]
+  )
 
   const type = searchParams.get('type') as "زبون" | "مجهز" | "موظف" | null
   const returnTo = searchParams.get('returnTo')
@@ -180,7 +190,7 @@ export default function AddCustomerPage() {
         // Silent fail
       }
 
-      toast.success("تم إضافة الزبون بنجاح")
+      toast.success(t("customerAddedSuccess", lang))
       
       if (returnTo) {
         router.push(`${returnTo}?newSupplierId=${newCustomer.id}`)
@@ -189,7 +199,7 @@ export default function AddCustomerPage() {
         router.refresh()
       }
     } catch {
-      toast.error("حدث خطأ أثناء إضافة الزبون")
+      toast.error(t("customerAddError", lang))
     } finally {
       setIsLoading(false)
     }
@@ -202,17 +212,17 @@ export default function AddCustomerPage() {
         <div className="mb-6 flex items-start justify-between gap-4">
           <div className="flex-1">
             <h1 className="text-3xl font-bold" style={{ color: "var(--theme-text)" }}>
-              إضافة زبون جديد
+              {t("addNewCustomerTitle", lang)}
             </h1>
             <p className="text-muted-foreground mt-1">
-              أدخل معلومات الزبون الجديد
+              {t("addNewCustomerDescription", lang)}
             </p>
           </div>
           <Button
             variant="outline"
             size="icon"
             onClick={() => router.back()}
-            title="رجوع"
+            title={t("back", lang)}
             className="shrink-0"
           >
             <ArrowRight className="h-5 w-5" />
@@ -224,12 +234,12 @@ export default function AddCustomerPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {}
               <div className="space-y-2">
-                <FormLabel>صورة العميل (اختياري)</FormLabel>
+                <FormLabel>{t("customerImageOptionalLabel", lang)}</FormLabel>
                 {imagePreview ? (
                   <div className="relative inline-block">
                     <Image
                       src={imagePreview}
-                      alt="Preview"
+                      alt={t("uploadImage", lang)}
                       width={128}
                       height={128}
                       className="w-32 h-32 object-cover rounded-lg border"
@@ -262,7 +272,7 @@ export default function AddCustomerPage() {
                       >
                         <span>
                           <Upload className="mr-2 h-4 w-4" />
-                          رفع صورة
+                          {t("uploadPhoto", lang)}
                         </span>
                       </Button>
                     </label>
@@ -275,9 +285,9 @@ export default function AddCustomerPage() {
                 name="customer_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>اسم الزبون *</FormLabel>
+                    <FormLabel>{t("customerNameLabel", lang)} *</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="أدخل اسم الزبون" />
+                      <Input {...field} placeholder={t("enterCustomerName", lang)} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -289,17 +299,17 @@ export default function AddCustomerPage() {
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>النوع *</FormLabel>
+                    <FormLabel>{t("type", lang)} *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="اختر النوع" />
+                          <SelectValue placeholder={t("selectTypePlaceholder", lang)} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="زبون">زبون</SelectItem>
-                        <SelectItem value="مجهز">مجهز</SelectItem>
-                        <SelectItem value="موظف">موظف</SelectItem>
+                        <SelectItem value="زبون">{t("customerTypeCustomer", lang)}</SelectItem>
+                        <SelectItem value="مجهز">{t("customerTypeSupplier", lang)}</SelectItem>
+                        <SelectItem value="موظف">{t("customerTypeEmployee", lang)}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -312,7 +322,9 @@ export default function AddCustomerPage() {
                 name="phone_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>رقم الهاتف (اختياري)</FormLabel>
+                    <FormLabel>
+                      {t("phoneNumber", lang)} ({t("optional", lang)})
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -331,7 +343,9 @@ export default function AddCustomerPage() {
                 name="address"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>العنوان (اختياري)</FormLabel>
+                    <FormLabel>
+                      {t("address", lang)} ({t("optional", lang)})
+                    </FormLabel>
                     <Popover open={openAddress} onOpenChange={setOpenAddress}>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -343,7 +357,7 @@ export default function AddCustomerPage() {
                               !field.value && "text-muted-foreground"
                             )}
                           >
-                            {field.value || "اختر العنوان"}
+                            {field.value || t("selectAddress", lang)}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </FormControl>
@@ -352,12 +366,12 @@ export default function AddCustomerPage() {
                         <Command>
                           <CommandInput
                             ref={searchInputRef}
-                            placeholder="ابحث عن العنوان..."
+                            placeholder={t("searchAddressPlaceholder", lang)}
                             value={searchAddress}
                             onValueChange={setSearchAddress}
                           />
                           <CommandList>
-                            <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                            <CommandEmpty>{t("noResults", lang)}</CommandEmpty>
                             <CommandGroup>
                               {iraqLocations
                                 .filter((location) =>
@@ -394,11 +408,11 @@ export default function AddCustomerPage() {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <p className="text-sm text-muted-foreground cursor-help">
-                              يوجد {addressCount} زبون في هذا العنوان
+                              {t("customersAtAddress", lang).replace("{count}", String(addressCount))}
                             </p>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>عدد الزبائن المسجلين في نفس العنوان</p>
+                            <p>{t("customersAtAddressHint", lang)}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -413,11 +427,13 @@ export default function AddCustomerPage() {
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>ملاحظات (اختياري)</FormLabel>
+                    <FormLabel>
+                      {t("notes", lang)} ({t("optional", lang)})
+                    </FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
-                        placeholder="أدخل أي ملاحظات إضافية"
+                        placeholder={t("enterAdditionalNotes", lang)}
                         className="min-h-[100px]"
                       />
                     </FormControl>
@@ -433,10 +449,10 @@ export default function AddCustomerPage() {
                   onClick={() => router.back()}
                   disabled={isLoading}
                 >
-                  إلغاء
+                  {t("cancel", lang)}
                 </Button>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "جاري الإضافة..." : "إضافة الزبون"}
+                  {isLoading ? t("addingCustomer", lang) : t("addCustomerButton", lang)}
                 </Button>
               </div>
             </form>
