@@ -34,6 +34,19 @@ function buildSessionCookieHeader(token: string, maxAge: number, secure: boolean
 
 export async function POST(request: NextRequest) {
   try {
+    if (process.env.NODE_ENV === "production") {
+      const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
+      if (!secret) {
+        logSecurityEvent("error", "login_misconfigured", {
+          reason: "missing_auth_secret",
+        })
+        return NextResponse.json(
+          { success: false, error: "خطأ في إعدادات الخادم (AUTH_SECRET)" },
+          { status: 500 }
+        )
+      }
+    }
+
     const body = (await request.json()) as {
       username?: string
       password?: string
@@ -61,6 +74,7 @@ export async function POST(request: NextRequest) {
         ip: body.ipAddress || null,
         userAgent: request.headers.get("user-agent") || null,
         error: result.error || null,
+        hasSupabaseEnv: !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       })
       return NextResponse.json({ success: false, error: result.error || "فشل تسجيل الدخول" }, { status: 401 })
     }

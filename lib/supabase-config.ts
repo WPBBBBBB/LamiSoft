@@ -7,6 +7,19 @@ export interface SupabaseConfig {
 }
 
 export function getSupabaseConfig(): SupabaseConfig {
+  const isServer = typeof window === 'undefined'
+  const isProd = process.env.NODE_ENV === 'production'
+
+  // In production, server-side code (API routes) must use env-provided Supabase config.
+  // Falling back to hard-coded defaults can point auth to the wrong DB and make login fail.
+  if (isServer && isProd) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!url || !anon) {
+      throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_ANON_KEY in production')
+    }
+  }
+
   const fallbackConfig: SupabaseConfig = {
     supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jpupsfzitqvdrbwzlvnk.supabase.co',
     supabaseAnonKey:
