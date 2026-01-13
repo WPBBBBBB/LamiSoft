@@ -179,6 +179,11 @@ export function proxy(request: NextRequest) {
     return next
   }
 
+  // Optional: disable CSP entirely (useful if you want a clean browser console in production).
+  if (process.env.DISABLE_CSP === "true") {
+    return NextResponse.next()
+  }
+
   // 2) CSP with per-request nonce for pages (fixes unsafe CSP without using 'unsafe-inline' in script-src)
   const nonce = toBase64(crypto.randomUUID())
   const cspHeader = buildCspHeader(nonce)

@@ -51,24 +51,60 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   
   // Audio context for sounds
   const audioContextRef = useRef<AudioContext | null>(null)
+  const hasUserGestureRef = useRef(false)
 
-  // Initialize Audio Context
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
+  const ensureAudioContext = useCallback(async (): Promise<AudioContext | null> => {
+    if (typeof window === 'undefined') return null
+    if (!hasUserGestureRef.current) return null
+
+    if (!audioContextRef.current) {
       const AudioContextClass = window.AudioContext || (window as unknown as typeof AudioContext)
       audioContextRef.current = new AudioContextClass()
     }
+
+    try {
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume()
+      }
+    } catch {
+      // Ignore: browser may still require a gesture depending on context.
+    }
+
+    return audioContextRef.current
+  }, [])
+
+  // Only enable audio after a real user interaction to avoid autoplay warnings.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const onFirstGesture = () => {
+      hasUserGestureRef.current = true
+      window.removeEventListener('pointerdown', onFirstGesture)
+      window.removeEventListener('keydown', onFirstGesture)
+      // Lazily create on gesture so later notifications can play without warnings.
+      void ensureAudioContext()
+    }
+
+    window.addEventListener('pointerdown', onFirstGesture, { once: true })
+    window.addEventListener('keydown', onFirstGesture, { once: true })
+
     return () => {
+      window.removeEventListener('pointerdown', onFirstGesture)
+      window.removeEventListener('keydown', onFirstGesture)
       audioContextRef.current?.close()
     }
-  }, [])
+  }, [ensureAudioContext])
 
   // Play notification sound
   const playNotificationSound = useCallback((type: Notification['type']) => {
-    if (!soundEnabled || !audioContextRef.current) return
+    if (!soundEnabled) return
 
     // Create different sounds for different notification types
     const ctx = audioContextRef.current
+    if (!ctx) {
+      void ensureAudioContext()
+      return
+    }
     const oscillator = ctx.createOscillator()
     const gainNode = ctx.createGain()
 
@@ -121,7 +157,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         oscillator.start(ctx.currentTime)
         oscillator.stop(ctx.currentTime + 0.2)
     }
-  }, [soundEnabled])
+  }, [soundEnabled, ensureAudioContext])
 
   // Load settings
   const loadSettings = useCallback(async () => {
