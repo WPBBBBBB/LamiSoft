@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { ReportLayout } from "@/components/reports/report-layout"
@@ -44,12 +43,11 @@ function PurchasesReportContent() {
           const rawData = localStorage.getItem(storageKey)
           if (rawData) {
             const parsedData = JSON.parse(rawData)
-            setReportData(parsedData)
+            setReportData(parsedData);
             
-            // Clean up localStorage after a short delay
             setTimeout(() => {
               localStorage.removeItem(storageKey)
-            }, 5000)
+            }, 5000);
             return
           }
         }

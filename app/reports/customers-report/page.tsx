@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -97,7 +96,6 @@ export default function CustomersReportPage() {
         <Button onClick={handleClear} variant="outline">تفريغ البيانات</Button>
       </div>
 
-      {/* ورقة A4 */}
       <div className="bg-white text-black rounded-md border print:border-0">
         <div className="p-6" style={{ minHeight: "297mm" }}>
           <div className="flex items-start justify-between">
@@ -157,7 +155,6 @@ export default function CustomersReportPage() {
           </div>
         </div>
       </div>
-
       <style jsx global>{`
         @media print {
           @page {
@@ -171,5 +168,5 @@ export default function CustomersReportPage() {
         }
       `}</style>
     </div>
-  )
+  );
 }

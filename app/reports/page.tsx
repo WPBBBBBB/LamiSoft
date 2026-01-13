@@ -1,5 +1,4 @@
-﻿"use client"
-
+﻿"use client";
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -84,10 +83,7 @@ import { t } from "@/lib/translations"
 import { useSettings } from "@/components/providers/settings-provider"
 import { useAuth } from "@/contexts/auth-context"
 import { useDebounce, useLocalStorage } from "@/lib/hooks"
-import { getCustomersWithBalances } from "@/lib/supabase-operations"
-
-// const CUSTOMERS_REPORT_STORAGE_PREFIX = "customersReportPayload:" // Removed
-// const CUSTOMERS_REPORT_LATEST_TOKEN_KEY = "customersReportLatestToken" // Removed
+import { getCustomersWithBalances } from "@/lib/supabase-operations";
 
 export default function ReportsPage() {
   const router = useRouter()
@@ -362,7 +358,6 @@ export default function ReportsPage() {
       }
 
       if (result.success) {
-        // تسجيل العمليات في سجل النظام
         for (const sale of salesToDelete) {
           const total = sale.totalsaleiqd || sale.totalsaleusd
           const currency = sale.totalsaleiqd ? 'IQD' : 'USD'
@@ -385,7 +380,6 @@ export default function ReportsPage() {
           )
         }
         
-        // رسالة تأكيد مفصلة
         if (selectedSales.length === 1 && 'restoredAmount' in result && result.restoredAmount) {
           const { iqd, usd } = result.restoredAmount
           let message = `✅ تم حذف قائمة البيع رقم ${'saleNumber' in result ? result.saleNumber : ''} بنجاح`
@@ -594,7 +588,6 @@ export default function ReportsPage() {
       }
 
       if (result.success) {
-        // تسجيل العمليات في سجل النظام
         for (const purchase of purchasesToDelete) {
           const total = purchase.totalpurchaseiqd || purchase.totalpurchaseusd
           const currency = purchase.totalpurchaseiqd ? 'IQD' : 'USD'
@@ -617,7 +610,6 @@ export default function ReportsPage() {
           )
         }
         
-        // رسالة تأكيد مفصلة
         if (selectedPurchases.length === 1 && 'restoredAmount' in result && result.restoredAmount) {
           const { iqd, usd } = result.restoredAmount
           let message = `✅ تم حذف قائمة الشراء رقم ${'purchaseNumber' in result ? result.purchaseNumber : ''} بنجاح`
@@ -874,10 +866,9 @@ export default function ReportsPage() {
 
   const handleExportCustomersReport = async () => {
     try {
-      toast.loading("جاري تحميل بيانات الزبائن...")
+      toast.loading("جاري تحميل بيانات الزبائن...");
       
-      // جلب بيانات الزبائن
-      const customersData = await getCustomersWithBalances()
+      const customersData = await getCustomersWithBalances();
       
       if (!customersData || customersData.length === 0) {
         toast.dismiss()
@@ -907,27 +898,24 @@ export default function ReportsPage() {
         count: reportItems.length
       }
 
-      const jsonString = JSON.stringify(payload)
+      const jsonString = JSON.stringify(payload);
       
-      // Use LocalStorage for reliability with large datasets
-      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const storageKey = `customersReportPayload:${token}`
       localStorage.setItem(storageKey, jsonString)
 
       toast.dismiss()
-      toast.success("تم فتح تقرير الزبائن")
+      toast.success("تم فتح تقرير الزبائن");
 
-      // Direct open, matching inventory report behavior
-      window.location.href = `/report/customers?token=${token}&back=/reports`
+      window.location.href = `/report/customers?token=${token}&back=/reports`;
       
-      // تسجيل العملية
       await logAction(
         "تصدير",
         `تصدير تقرير الزبائن - عدد الزبائن: ${customersData.length}`,
         "التقارير",
         undefined,
         { customersCount: customersData.length }
-      )
+      );
     } catch (error) {
       console.error("خطأ في تصدير التقرير:", error)
       toast.dismiss()
@@ -977,16 +965,15 @@ export default function ReportsPage() {
       toast.dismiss()
       toast.success("تم فتح تقرير المخازن")
 
-      window.location.href = `/report/stores?token=${token}&back=/reports`
+      window.location.href = `/report/stores?token=${token}&back=/reports`;
       
-      // تسجيل العملية
       await logAction(
         "تصدير",
         `تصدير تقرير المخازن - عدد المخازن: ${storesData.length}`,
         "التقارير",
         undefined,
         { storesCount: storesData.length }
-      )
+      );
     } catch (error) {
       console.error("خطأ في تصدير التقرير:", error)
       toast.dismiss()
@@ -1036,16 +1023,15 @@ export default function ReportsPage() {
       toast.dismiss()
       toast.success("تم فتح تقرير النقل المخزني")
 
-      window.location.href = `/report/store-transfers?token=${token}&back=/reports`
+      window.location.href = `/report/store-transfers?token=${token}&back=/reports`;
       
-      // تسجيل العملية
       await logAction(
         "تصدير",
         `تصدير تقرير النقل المخزني - عدد الحركات: ${transfersData.length}`,
         "التقارير",
         undefined,
         { transfersCount: transfersData.length }
-      )
+      );
     } catch (error) {
       console.error("خطأ في تصدير التقرير:", error)
       toast.dismiss()
@@ -1098,16 +1084,15 @@ export default function ReportsPage() {
       toast.dismiss()
       toast.success("تم فتح تقرير الصندوق")
 
-      window.location.href = `/report/payments?token=${token}&back=/reports`
+      window.location.href = `/report/payments?token=${token}&back=/reports`;
       
-      // تسجيل العملية
       await logAction(
         "تصدير",
         `تصدير تقرير الصندوق - عدد الحركات: ${result.data.length}`,
         "التقارير",
         undefined,
         { paymentsCount: result.data.length }
-      )
+      );
     } catch (error) {
       console.error("خطأ في تصدير التقرير:", error)
       toast.dismiss()
@@ -1162,16 +1147,15 @@ export default function ReportsPage() {
       toast.dismiss()
       toast.success("تم فتح تقرير المشتريات")
 
-      window.location.href = `/report/purchases?token=${token}&back=/reports`
+      window.location.href = `/report/purchases?token=${token}&back=/reports`;
       
-      // تسجيل العملية
       await logAction(
         "تصدير",
         `تصدير تقرير المشتريات الرئيسية - عدد القوائم: ${purchasesData.length}`,
         "الارباح والتقارير",
         undefined,
         { purchasesCount: purchasesData.length }
-      )
+      );
     } catch (error) {
       console.error("خطأ في تصدير التقرير:", error)
       toast.dismiss()
@@ -1430,8 +1414,7 @@ const handleExportSalesProfitReport = async () => {
       const generatedBy = currentUser?.full_name || currentUser?.username || "غير معروف"
       
       const reportItems = salesData.map(item => {
-        // Ensure we always have numeric values even if DB fields are null or missing
-        const finalIQD = Number(item.finaltotaliqd || item.totalsaleiqd || 0)
+        const finalIQD = Number(item.finaltotaliqd || item.totalsaleiqd || 0);
         const finalUSD = Number(item.finaltotalusd || item.totalsaleusd || 0)
         
         return {
@@ -1467,16 +1450,15 @@ const handleExportSalesProfitReport = async () => {
       toast.dismiss()
       toast.success("تم فتح تقرير المبيعات")
 
-      window.location.href = `/report/sales?token=${token}&back=/reports`
+      window.location.href = `/report/sales?token=${token}&back=/reports`;
       
-      // تسجيل العملية
       await logAction(
         "تصدير",
         `تصدير تقرير المبيعات الرئيسية - عدد القوائم: ${salesData.length}`,
         "الارباح والتقارير",
         undefined,
         { salesCount: salesData.length }
-      )
+      );
     } catch (error) {
       console.error("خطأ في تصدير التقرير:", error)
       toast.dismiss()
@@ -1543,18 +1525,17 @@ const handleExportSalesProfitReport = async () => {
           {t('manageSalesList', currentLanguage.code)}
         </p>
       </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir={currentLanguage.direction}>
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 gap-1">
           <TabsTrigger value="sales">{t('salesListsTab', currentLanguage.code)}</TabsTrigger>
           <TabsTrigger value="purchases">{t('purchaseListsTab', currentLanguage.code)}</TabsTrigger>
           <TabsTrigger value="cash">{t('paymentsTab', currentLanguage.code)}</TabsTrigger>
-          {/* عرض قائمة النقل المخزني للمدير ولموظف العادي الذي لديه الصلاحية */}
+
           {(currentUser?.permission_type === 'مدير' || 
             (currentUser?.permission_type === 'موظف' && currentUser?.permissions?.view_store_transfer)) && (
             <TabsTrigger value="transfer">{t('storeTransfersTab', currentLanguage.code)}</TabsTrigger>
           )}
-          {/* عرض تبويب التقارير فقط للمدير أو المحاسب الذي لديه صلاحية */}
+
           {(currentUser?.permission_type === 'مدير' || 
             (currentUser?.permission_type === 'محاسب' && currentUser?.permissions?.view_reports)) && (
             <TabsTrigger value="reports">{t('reportsTab', currentLanguage.code)}</TabsTrigger>
@@ -1568,7 +1549,7 @@ const handleExportSalesProfitReport = async () => {
               <CardDescription>{t('manageSalesList', currentLanguage.code)}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {}
+
               <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={() => router.push("/sales/add")}
@@ -1634,7 +1615,6 @@ const handleExportSalesProfitReport = async () => {
                 </Button>
               </div>
 
-              {}
               <div className="flex flex-wrap gap-2 items-center">
                 <Button variant="outline" className="gap-2">
                   <FileText className="h-4 w-4" />
@@ -1668,7 +1648,6 @@ const handleExportSalesProfitReport = async () => {
                 </Button>
               </div>
 
-              {}
               <div className="border rounded-lg overflow-auto" style={{ maxHeight: "1200px", width: "100%" }}>
                 {loading ? (
                   <div className="flex items-center justify-center py-20">
@@ -1756,7 +1735,6 @@ const handleExportSalesProfitReport = async () => {
                       </TableBody>
                     </Table>
 
-                    {}
                     {totalPages > 1 && (
                       <div className="flex items-center justify-between px-4 py-3 border-t">
                         <div className="text-sm text-muted-foreground">
@@ -1793,7 +1771,6 @@ const handleExportSalesProfitReport = async () => {
                 )}
               </div>
 
-              {}
               {selectedSales.length > 0 && (
                 <div className="text-sm text-muted-foreground">
                   {formatSelectedCount("selectedSalesCount", selectedSales.length)}
@@ -1810,9 +1787,9 @@ const handleExportSalesProfitReport = async () => {
               <CardDescription>{t("managePurchasesList", currentLanguage.code)}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {}
+
               <div className="flex flex-wrap gap-2">
-                {/* عرض أزرار الإضافة والتعديل والحذف فقط للمدير أو الموظف الذي لديه صلاحية */}
+
                 {(currentUser?.permission_type === 'مدير' || 
                   (currentUser?.permission_type === 'موظف' && currentUser?.permissions?.add_purchase)) && (
                   <>
@@ -1853,7 +1830,6 @@ const handleExportSalesProfitReport = async () => {
                     </Button>
                   </>
                 )}
-
                 <Button
                   onClick={handleViewPurchase}
                   variant="outline"
@@ -1865,7 +1841,6 @@ const handleExportSalesProfitReport = async () => {
                 </Button>
               </div>
 
-              {}
               <div className="flex flex-wrap gap-2 items-center">
                 <Button variant="outline" className="gap-2">
                   <FileText className="h-4 w-4" />
@@ -1899,7 +1874,6 @@ const handleExportSalesProfitReport = async () => {
                 </Button>
               </div>
 
-              {}
               <div className="border rounded-lg overflow-auto w-full" style={{ maxHeight: "1200px" }}>
                 {purchasesLoading ? (
                   <div className="flex items-center justify-center py-20">
@@ -1910,7 +1884,7 @@ const handleExportSalesProfitReport = async () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          {/* عرض عمود الاختيار فقط للمدير والمحاسب أو الموظف الذي لديه صلاحية */}
+
                           {(currentUser?.permission_type === 'مدير' ||
                             (currentUser?.permission_type === 'موظف' && currentUser?.permissions?.add_purchase)) && (
                             <TableHead className="w-[60px] text-center">
@@ -1948,7 +1922,7 @@ const handleExportSalesProfitReport = async () => {
                         ) : (
                           currentPurchases.map((purchase, index) => (
                             <TableRow key={purchase.id}>
-                              {/* عرض عمود الاختيار فقط للمدير والمحاسب أو الموظف الذي لديه صلاحية */}
+
                               {(currentUser?.permission_type === 'مدير' ||
                                 (currentUser?.permission_type === 'موظف' && currentUser?.permissions?.add_purchase)) && (
                                 <TableCell className="text-center">
@@ -2020,7 +1994,6 @@ const handleExportSalesProfitReport = async () => {
                       </TableBody>
                     </Table>
 
-                    {}
                     {purchasesTotalPages > 1 && (
                       <div className="flex items-center justify-between px-4 py-3 border-t">
                         <div className="text-sm text-muted-foreground">
@@ -2057,7 +2030,6 @@ const handleExportSalesProfitReport = async () => {
                 )}
               </div>
 
-              {}
               {selectedPurchases.length > 0 && (
                 <div className="text-sm text-muted-foreground">
                   {formatSelectedCount("selectedPurchasesCount", selectedPurchases.length)}
@@ -2074,7 +2046,7 @@ const handleExportSalesProfitReport = async () => {
               <CardDescription>{t("manageCashMovements", currentLanguage.code)}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {}
+
               <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={() => setPaymentModalOpen(true)}
@@ -2108,7 +2080,6 @@ const handleExportSalesProfitReport = async () => {
                 </Button>
               </div>
 
-              {}
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
@@ -2129,7 +2100,6 @@ const handleExportSalesProfitReport = async () => {
                 )}
               </div>
 
-              {}
               <div className="border rounded-lg" style={{ maxHeight: "1200px", overflow: "auto" }}>
                 {paymentsLoading ? (
                   <div className="flex items-center justify-center py-8">
@@ -2226,7 +2196,6 @@ const handleExportSalesProfitReport = async () => {
                       </TableBody>
                     </Table>
 
-                    {}
                     {paymentsTotalPages > 1 && (
                       <div className="flex items-center justify-between px-4 py-3 border-t">
                         <div className="text-sm text-muted-foreground">
@@ -2263,7 +2232,6 @@ const handleExportSalesProfitReport = async () => {
                 )}
               </div>
 
-              {}
               {selectedPayments.length > 0 && (
                 <div className="text-sm text-muted-foreground">
                   {formatSelectedCount("selectedPaymentsCount", selectedPayments.length)}
@@ -2280,9 +2248,9 @@ const handleExportSalesProfitReport = async () => {
               <CardDescription>{t("manageStoreTransfers", currentLanguage.code)}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {}
+
               <div className="flex flex-wrap gap-2">
-                {/* عرض أزرار الإضافة والحذف فقط للمدير أو الموظف الذي لديه صلاحية */}
+
                 {(currentUser?.permission_type === 'مدير' || 
                   (currentUser?.permission_type === 'موظف' && currentUser?.permissions?.view_store_transfer)) && (
                   <>
@@ -2308,7 +2276,6 @@ const handleExportSalesProfitReport = async () => {
                     </Button>
                   </>
                 )}
-
                 <Button
                   onClick={handleViewTransfer}
                   variant="outline"
@@ -2320,7 +2287,6 @@ const handleExportSalesProfitReport = async () => {
                 </Button>
               </div>
 
-              {}
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
@@ -2341,7 +2307,6 @@ const handleExportSalesProfitReport = async () => {
                 )}
               </div>
 
-              {}
               <div className="border rounded-lg" style={{ maxHeight: "1200px", overflow: "auto" }}>
                 {transfersLoading ? (
                   <div className="flex items-center justify-center py-8">
@@ -2434,7 +2399,6 @@ const handleExportSalesProfitReport = async () => {
                       </TableBody>
                     </Table>
 
-                    {}
                     {transfersTotalPages > 1 && (
                       <div className="flex items-center justify-between px-4 py-3 border-t">
                         <div className="text-sm text-muted-foreground">
@@ -2471,7 +2435,6 @@ const handleExportSalesProfitReport = async () => {
                 )}
               </div>
 
-              {}
               {selectedTransfers.length > 0 && (
                 <div className="text-sm text-muted-foreground">
                   {formatSelectedCount("selectedTransfersCount", selectedTransfers.length)}
@@ -2493,7 +2456,7 @@ const handleExportSalesProfitReport = async () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* زر تقرير المبيعات */}
+
                 <Button
                   onClick={handleExportSalesReport}
                   variant="outline"
@@ -2532,7 +2495,6 @@ const handleExportSalesProfitReport = async () => {
                   </div>
                 </Button>
 
-                {/* زر تقرير المشتريات */}
                 <Button
                   onClick={handleExportPurchasesReport}
                   variant="outline"
@@ -2571,8 +2533,6 @@ const handleExportSalesProfitReport = async () => {
                   </div>
                 </Button>
 
-
-                {/* زر تقرير النقل المخزني */}
                 <Button
                   onClick={handleExportStoreTransfersReport}
                   variant="outline"
@@ -2611,7 +2571,6 @@ const handleExportSalesProfitReport = async () => {
                   </div>
                 </Button>
 
-                {/* زر تقرير الزبائن */}
                 <Button
                   onClick={handleExportCustomersReport}
                   variant="outline"
@@ -2650,7 +2609,6 @@ const handleExportSalesProfitReport = async () => {
                   </div>
                 </Button>
 
-                {/* زر تقرير المخازن */}
                 <Button
                   onClick={handleExportStoresReport}
                   variant="outline"
@@ -2689,7 +2647,6 @@ const handleExportSalesProfitReport = async () => {
                   </div>
                 </Button>
 
-                {/* زر تقرير الصرفيات */}
                 <Button
                   onClick={handleExportPaymentsReport}
                   variant="outline"
@@ -2728,7 +2685,6 @@ const handleExportSalesProfitReport = async () => {
                   </div>
                 </Button>
 
-                {/* زر تقرير المصاريف الشامل */}
                 <Button
                   onClick={handleExportExpensesReport}
                   variant="outline"
@@ -2767,7 +2723,6 @@ const handleExportSalesProfitReport = async () => {
                   </div>
                 </Button>
 
-                {/* زر تقرير أرصدة المواد */}
                 <Button
                   onClick={handleExportMaterialsBalanceReport}
                   variant="outline"
@@ -2806,7 +2761,6 @@ const handleExportSalesProfitReport = async () => {
                   </div>
                 </Button>
 
-                {/* زر تقرير أرباح المبيعات */}
                 <Button
                   onClick={handleExportSalesProfitReport}
                   variant="outline"
@@ -2845,13 +2799,12 @@ const handleExportSalesProfitReport = async () => {
                   </div>
                 </Button>
 
-                {/* زر تقرير إدارة الواتساب */}
                 <Button
                   onClick={handleExportWhatsappReport}
                   variant="outline"
                   className="h-28 flex flex-row-reverse items-center justify-between px-6 hover:shadow-lg transition-all group relative overflow-hidden"
                   style={{
-                    borderColor: "#25D366", // WhatsApp Green
+                    borderColor: "#25D366",
                     borderWidth: "2px",
                   }}
                 >
@@ -2889,7 +2842,6 @@ const handleExportSalesProfitReport = async () => {
         </TabsContent>
       </Tabs>
 
-      {}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
@@ -2924,7 +2876,6 @@ const handleExportSalesProfitReport = async () => {
         </DialogContent>
       </Dialog>
 
-      {}
       <Dialog open={showPurchasesDeleteDialog} onOpenChange={setShowPurchasesDeleteDialog}>
         <DialogContent>
           <DialogHeader>
@@ -2959,7 +2910,6 @@ const handleExportSalesProfitReport = async () => {
         </DialogContent>
       </Dialog>
 
-      {}
       <Dialog open={showPaymentsDeleteDialog} onOpenChange={setShowPaymentsDeleteDialog}>
         <DialogContent>
           <DialogHeader>
@@ -2994,7 +2944,6 @@ const handleExportSalesProfitReport = async () => {
         </DialogContent>
       </Dialog>
 
-      {}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -3013,7 +2962,6 @@ const handleExportSalesProfitReport = async () => {
         </DialogContent>
       </Dialog>
 
-      {}
       <PaymentModal
         open={paymentModalOpen}
         onOpenChange={setPaymentModalOpen}
@@ -3023,7 +2971,6 @@ const handleExportSalesProfitReport = async () => {
         }}
       />
 
-      {}
       <Dialog open={showPaymentDetailsDialog} onOpenChange={setShowPaymentDetailsDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -3099,7 +3046,6 @@ const handleExportSalesProfitReport = async () => {
         </DialogContent>
       </Dialog>
 
-      {}
       <Dialog open={showTransfersDeleteDialog} onOpenChange={setShowTransfersDeleteDialog}>
         <DialogContent>
           <DialogHeader>
@@ -3134,7 +3080,6 @@ const handleExportSalesProfitReport = async () => {
         </DialogContent>
       </Dialog>
 
-      {}
       <Dialog open={showTransferDetailsDialog} onOpenChange={setShowTransferDetailsDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -3210,5 +3155,5 @@ const handleExportSalesProfitReport = async () => {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

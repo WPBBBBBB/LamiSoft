@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -83,20 +82,17 @@ export default function LoginPage() {
       setCaptchaCode(generateCaptcha())
     }
 
-    // Generate device fingerprint
-    const fingerprint = generateDeviceFingerprint()
-    setDeviceFingerprint(fingerprint)
+    const fingerprint = generateDeviceFingerprint();
+    setDeviceFingerprint(fingerprint);
 
-    // Check OAuth block status
     checkOAuthBlock(fingerprint).then(block => {
       if (block.isBlocked) {
         setOauthBlock(block)
         setBlockTimer(block.remainingTime)
       }
-    })
-  }, [])
+    });
+  }, []);
 
-  // Update block timer every second
   useEffect(() => {
     if (oauthBlock?.isBlocked && blockTimer > 0) {
       const interval = setInterval(() => {
@@ -111,7 +107,7 @@ export default function LoginPage() {
 
       return () => clearInterval(interval)
     }
-  }, [oauthBlock, blockTimer])
+  }, [oauthBlock, blockTimer]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -209,10 +205,9 @@ export default function LoginPage() {
     if (inFlightRef.current || isLoading) return
 
     inFlightRef.current = true
-    setIsLoading(true)
+    setIsLoading(true);
 
-    // Check if blocked
-    const block = await checkOAuthBlock(deviceFingerprint)
+    const block = await checkOAuthBlock(deviceFingerprint);
     if (block.isBlocked) {
       setOauthBlock(block)
       setBlockTimer(block.remainingTime)
@@ -258,32 +253,25 @@ export default function LoginPage() {
         finished = true
 
         if (event.data.user && typeof event.data.user === 'object') {
-          const user = event.data.user as Record<string, unknown>
+          const user = event.data.user as Record<string, unknown>;
           
-          // Close the popup first
-          authWindow.close()
+          authWindow.close();
           
-          // Wait a moment for cookies to be fully set
-          await new Promise(resolve => setTimeout(resolve, 300))
+          await new Promise(resolve => setTimeout(resolve, 300));
           
-          // Set user in context
-          login(user as never)
+          login(user as never);
           
-          // Show success message
-          toast.success(`${t('welcome', currentLanguage.code)} ${String(user.full_name || '')}!`)
+          toast.success(`${t('welcome', currentLanguage.code)} ${String(user.full_name || '')}!`);
           
-          // Wait a bit more to ensure everything is synced
-          await new Promise(resolve => setTimeout(resolve, 200))
+          await new Promise(resolve => setTimeout(resolve, 200));
           
-          // Navigate to home
-          window.location.href = '/home'
+          window.location.href = '/home';
         }
         cleanup()
       } else if (event.data.type === 'oauth-error' || event.data.type === 'oauth_login_error') {
         if (finished) return
-        finished = true
+        finished = true;
 
-        // Check if it's a block error
         if (event.data.blockInfo) {
           setOauthBlock(event.data.blockInfo)
           setBlockTimer(event.data.blockInfo.remainingTime)
@@ -338,7 +326,7 @@ export default function LoginPage() {
             <CardDescription>{t('chooseLoginMethod', currentLanguage.code)}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* OAuth Block Warning */}
+
             {oauthBlock && oauthBlock.isBlocked && (
               <Alert variant="destructive" className="mb-4">
                 <AlertCircle className="h-4 w-4" />
@@ -355,7 +343,6 @@ export default function LoginPage() {
               </Alert>
             )}
 
-            {}
             <Button
               variant="outline"
               className="w-full h-12 gap-3 text-base hover:bg-[#4285F4] hover:text-white transition-colors"
@@ -371,7 +358,6 @@ export default function LoginPage() {
               {t('loginWithGoogle', currentLanguage.code)}
             </Button>
 
-            {}
             <Button
               variant="outline"
               className="w-full h-12 gap-3 text-base hover:bg-[#00A4EF] hover:text-white transition-colors"
@@ -387,7 +373,6 @@ export default function LoginPage() {
               {t('loginWithMicrosoft', currentLanguage.code)}
             </Button>
 
-            {}
             <Button
               variant="outline"
               className="w-full h-12 gap-3 text-base hover:bg-[#24292e] hover:text-white transition-colors"
@@ -399,7 +384,6 @@ export default function LoginPage() {
               </svg>
               {t('loginWithGitHub', currentLanguage.code)}
             </Button>
-
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
@@ -408,7 +392,6 @@ export default function LoginPage() {
                 <span className="bg-background px-2 text-muted-foreground">{t('or', currentLanguage.code)}</span>
               </div>
             </div>
-
             <Button
               variant="secondary"
               className="w-full"
@@ -420,7 +403,7 @@ export default function LoginPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -450,7 +433,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {}
+
             <div className="space-y-2">
               <Label htmlFor="username">{t('username', currentLanguage.code)}</Label>
               <div className="relative">
@@ -468,7 +451,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {}
             <div className="space-y-2">
               <Label htmlFor="password">{t('password', currentLanguage.code)}</Label>
               <div className="relative">
@@ -501,7 +483,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {}
             {showCaptcha && (
               <div className="space-y-2">
                 <Label>{t('captchaCode', currentLanguage.code)}</Label>
@@ -545,7 +526,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {}
             <div className="flex items-center space-x-2 space-x-reverse">
               <Checkbox
                 id="rememberMe"
@@ -563,7 +543,6 @@ export default function LoginPage() {
               </Label>
             </div>
 
-            {}
             <Button 
               type="submit" 
               className="w-full h-11 text-base"
@@ -572,7 +551,6 @@ export default function LoginPage() {
               {isLoading ? t('loggingIn', currentLanguage.code) : t('login', currentLanguage.code)}
             </Button>
 
-            {}
             <div className="text-center text-sm">
               <Link href="/forgot-password">
                 <Button
@@ -586,7 +564,6 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            {}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
@@ -595,7 +572,6 @@ export default function LoginPage() {
                 <span className="bg-background px-2 text-muted-foreground">{t('or', currentLanguage.code)}</span>
               </div>
             </div>
-
             <Button
               type="button"
               variant="outline"
@@ -609,5 +585,5 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

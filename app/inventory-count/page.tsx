@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -45,10 +44,8 @@ interface DetailRow extends InventoryCountDetail {
   searchText: string
 }
 
-// عدد الصفوف الدنيا المحمية من الحذف
-const MINIMUM_ROWS = 6
+const MINIMUM_ROWS = 6;
 
-// دالة مساعدة لإنشاء صف فارغ
 const createEmptyRow = (countId: string = ''): DetailRow => ({
   tempId: `temp-${Date.now()}-${Math.random()}`,
   count_id: countId,
@@ -62,7 +59,7 @@ const createEmptyRow = (countId: string = ''): DetailRow => ({
   diff_value: 0,
   item_status: 'عادي',
   notes: '',
-})
+});
 
 export default function InventoryCountPage() {
   const { user: currentUser } = useAuth()
@@ -76,30 +73,26 @@ export default function InventoryCountPage() {
   const [notes, setNotes] = useState<string>("")
   const [details, setDetails] = useState<DetailRow[]>(() => 
     Array.from({ length: MINIMUM_ROWS }, () => createEmptyRow())
-  )
+  );
 
-  // Whenever the last row is filled (product selected or quantity entered), add a new empty row
   useEffect(() => {
     if (details.length === 0) {
-      // إذا تم حذف جميع الصفوف، أعد إنشاء 6 صفوف
-      setDetails(Array.from({ length: MINIMUM_ROWS }, () => createEmptyRow()))
+      setDetails(Array.from({ length: MINIMUM_ROWS }, () => createEmptyRow()));
       return
     }
     
-    // لا نضيف صفوف تلقائياً إلا إذا وصلنا للصف السادس أو تجاوزناه
     if (details.length < MINIMUM_ROWS) {
       return
     }
     
-    const last = details[details.length - 1]
-    // If last row has product or actual_qty entered, add a new row
+    const last = details[details.length - 1];
     if ((last.item_id || last.searchText.trim() || last.actual_qty) && details.length < 100) {
       setDetails([
         ...details,
         createEmptyRow(countId)
       ])
     }
-  }, [details, countId])
+  }, [details, countId]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([])
   const [searchResults, setSearchResults] = useState<InventoryItem[]>([])
   const [searchOpen, setSearchOpen] = useState<string | null>(null)
@@ -162,9 +155,8 @@ export default function InventoryCountPage() {
   }
 
   const removeRow = (tempId: string) => {
-    const index = details.findIndex(d => d.tempId === tempId)
+    const index = details.findIndex(d => d.tempId === tempId);
     
-    // منع حذف أول 6 صفوف
     if (index < MINIMUM_ROWS) {
       toast.error(t("inventoryCountCannotDeleteFirstRows", lang).replace("{count}", String(MINIMUM_ROWS)))
       return
@@ -176,9 +168,8 @@ export default function InventoryCountPage() {
   const updateRow = (tempId: string, field: keyof DetailRow, value: string | number) => {
     setDetails(details.map(row => {
       if (row.tempId === tempId) {
-        const updated = { ...row, [field]: value }
+        const updated = { ...row, [field]: value };
 
-        // If user edits the search text manually, clear the selected item to avoid mismatches.
         if (field === "searchText") {
           const nextText = String(value)
           if (updated.item_id) {
@@ -191,12 +182,10 @@ export default function InventoryCountPage() {
             updated.item_status = "عادي"
           }
 
-          // Keep display name in sync for convenience.
-          updated.item_name = nextText
+          updated.item_name = nextText;
           return updated
         }
 
-        // If item selected, update system qty and cost
         if (field === "item_id" && value) {
           const item = inventoryItems.find(i => i.id === value)
           if (item) {
@@ -207,12 +196,10 @@ export default function InventoryCountPage() {
           }
         }
 
-        // Calculate diff when actual_qty changes
         if (field === "actual_qty" || field === "item_id") {
           updated.diff_qty = updated.actual_qty - updated.system_qty
-          updated.diff_value = updated.diff_qty * updated.cost
+          updated.diff_value = updated.diff_qty * updated.cost;
           
-          // Update status based on diff
           if (updated.diff_qty > 0) {
             updated.item_status = "زيادة"
           } else if (updated.diff_qty < 0) {
@@ -283,37 +270,31 @@ export default function InventoryCountPage() {
   const handleKeyDown = (e: React.KeyboardEvent, tempId: string) => {
     if (e.key === "Enter") {
       e.preventDefault()
-      const currentIndex = details.findIndex(d => d.tempId === tempId)
+      const currentIndex = details.findIndex(d => d.tempId === tempId);
       
-      // إذا كنا في الصفوف الـ 5 الأولى (index 0-4)، انتقل للصف التالي
       if (currentIndex < MINIMUM_ROWS - 1) {
-        // التركيز على الصف التالي
         setTimeout(() => {
           const nextRow = document.querySelector(`[data-row-index="${currentIndex + 1}"] input`)
           if (nextRow instanceof HTMLElement) {
             nextRow.focus()
           }
-        }, 0)
-      }
-      // إذا كنا في الصف السادس أو ما بعده، أضف صف جديد
-      else if (currentIndex >= MINIMUM_ROWS - 1) {
+        }, 0);
+      } else if (currentIndex >= MINIMUM_ROWS - 1) {
         if (currentIndex === details.length - 1) {
-          addNewRow()
-          // التركيز على الصف الجديد
+          addNewRow();
           setTimeout(() => {
             const newRow = document.querySelector(`[data-row-index="${currentIndex + 1}"] input`)
             if (newRow instanceof HTMLElement) {
               newRow.focus()
             }
-          }, 100)
+          }, 100);
         } else {
-          // الانتقال للصف التالي الموجود
           setTimeout(() => {
             const nextRow = document.querySelector(`[data-row-index="${currentIndex + 1}"] input`)
             if (nextRow instanceof HTMLElement) {
               nextRow.focus()
             }
-          }, 0)
+          }, 0);
         }
       }
     }
@@ -385,9 +366,8 @@ export default function InventoryCountPage() {
       setCountId("")
       setNotes("")
       setDetails(Array.from({ length: MINIMUM_ROWS }, () => createEmptyRow()))
-      setSelectedStore("")
-      // إنشاء رقم قائمة جديد
-      handleGenerateCountId()
+      setSelectedStore("");
+      handleGenerateCountId();
     } catch (error) {
       console.error("Error approving count:", error)
       toast.error(t("inventoryCountApproveError", lang))
@@ -397,9 +377,8 @@ export default function InventoryCountPage() {
   }
 
   const openReportWindow = (data: any) => {
-      const jsonString = JSON.stringify(data)
-      // Use text encoder to handle utf-8 correctly before base64
-      const utf8Bytes = new TextEncoder().encode(jsonString)
+      const jsonString = JSON.stringify(data);
+      const utf8Bytes = new TextEncoder().encode(jsonString);
       const binaryString = String.fromCharCode(...Array.from(utf8Bytes))
       const base64Data = btoa(binaryString)
       const encodedData = encodeURIComponent(base64Data)
@@ -444,10 +423,10 @@ export default function InventoryCountPage() {
   }
 
   const handleApproveAndPrint = async () => {
-    if (!validateCount()) return
+    if (!validateCount())
+      return;
 
-    // Capture data before approval (which resets state)
-    const storeName = stores.find(s => s.id === selectedStore)?.storename || ""
+    const storeName = stores.find(s => s.id === selectedStore)?.storename || "";
     const managerName = currentUser?.full_name || ""
     const currentDetails = [...details]
     const currentCountId = countId
@@ -456,10 +435,8 @@ export default function InventoryCountPage() {
 
     setIsLoading(true)
     try {
-      // First, attempt to approve/save
-      await handleApprove()
+      await handleApprove();
       
-      // If successful, prepare report data
       const reportData = {
           countId: currentCountId,
           storeName,
@@ -477,7 +454,7 @@ export default function InventoryCountPage() {
           totalDiffQty: currentDetails.reduce((sum, d) => sum + d.diff_qty, 0),
           totalDiffValue: currentDetails.reduce((sum, d) => sum + d.diff_value, 0),
           notes: currentNotes
-      }
+      };
 
       openReportWindow(reportData)
       
@@ -488,10 +465,9 @@ export default function InventoryCountPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  };
 
-  // State for dropdown position
-  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number; width: number } | null>(null)
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number; width: number } | null>(null);
 
   const updateDropdownPosition = (element: HTMLElement) => {
     const rect = element.getBoundingClientRect()
@@ -500,13 +476,12 @@ export default function InventoryCountPage() {
       right: window.innerWidth - rect.right,
       width: rect.width
     })
-  }
+  };
 
-  // Handle scroll to update position or close
   useEffect(() => {
     const handleScroll = () => {
       if (searchOpen) {
-        setSearchOpen(null) // Close on scroll for simplicity
+        setSearchOpen(null);
       }
     }
     window.addEventListener('scroll', handleScroll, true)
@@ -515,7 +490,7 @@ export default function InventoryCountPage() {
       window.removeEventListener('scroll', handleScroll, true)
       window.removeEventListener('resize', handleScroll, true)
     }
-  }, [searchOpen])
+  }, [searchOpen]);
 
   return (
     <div className="container mx-auto p-4 sm:p-6 space-y-6">
@@ -527,7 +502,7 @@ export default function InventoryCountPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* First Row: Store, Count ID, User, Date */}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label>{t("inventoryCountFromStore", lang)}</Label>
@@ -575,7 +550,6 @@ export default function InventoryCountPage() {
             </div>
           </div>
 
-          {/* Notes Row */}
           <div className="space-y-2">
             <Label>{t("notes", lang)}</Label>
             <Textarea
@@ -586,7 +560,6 @@ export default function InventoryCountPage() {
             />
           </div>
 
-          {/* Table */}
           <div className="rounded-lg border max-h-[600px] overflow-x-auto overflow-y-auto" ref={tableRef}>
             <Table>
               <TableHeader className="sticky top-0 bg-background z-10">
@@ -745,8 +718,6 @@ export default function InventoryCountPage() {
               </TableBody>
             </Table>
           </div>
-
-
           <div className="flex flex-col md:flex-row justify-between items-center p-4 bg-muted rounded-lg border gap-4">
             <div className="flex items-center gap-3">
               <span className="text-lg font-semibold">{t("inventoryCountTotalQtyDiff", lang)}</span>
@@ -770,7 +741,6 @@ export default function InventoryCountPage() {
               </span>
             </div>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Button
               onClick={handleApprove}
@@ -803,7 +773,6 @@ export default function InventoryCountPage() {
           </div>
         </CardContent>
       </Card>
-
       {isLoading && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="bg-card p-8 rounded-lg shadow-lg flex flex-col items-center gap-4">
@@ -813,5 +782,5 @@ export default function InventoryCountPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

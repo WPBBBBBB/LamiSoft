@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
@@ -186,9 +185,7 @@ export default function AddCustomerPage() {
             phone_number: values.phone_number || "",
           }
         )
-      } catch {
-        // Silent fail
-      }
+      } catch {}
 
       toast.success(t("customerAddedSuccess", lang))
       
@@ -208,7 +205,7 @@ export default function AddCustomerPage() {
   return (
     <div className="flex-1 overflow-auto">
       <div className="container mx-auto p-6 space-y-6" style={{ maxWidth: "800px" }}>
-        {}
+
         <div className="mb-6 flex items-start justify-between gap-4">
           <div className="flex-1">
             <h1 className="text-3xl font-bold" style={{ color: "var(--theme-text)" }}>
@@ -228,11 +225,10 @@ export default function AddCustomerPage() {
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>
-
         <Card className="p-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {}
+
               <div className="space-y-2">
                 <FormLabel>{t("customerImageOptionalLabel", lang)}</FormLabel>
                 {imagePreview ? (
@@ -279,7 +275,6 @@ export default function AddCustomerPage() {
                   </div>
                 )}
               </div>
-
               <FormField
                 control={form.control}
                 name="customer_name"
@@ -293,7 +288,6 @@ export default function AddCustomerPage() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="type"
@@ -316,7 +310,6 @@ export default function AddCustomerPage() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="phone_number"
@@ -337,7 +330,6 @@ export default function AddCustomerPage() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="address"
@@ -421,7 +413,6 @@ export default function AddCustomerPage() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="notes"
@@ -441,7 +432,6 @@ export default function AddCustomerPage() {
                   </FormItem>
                 )}
               />
-
               <div className="flex justify-end gap-4">
                 <Button
                   type="button"
@@ -460,5 +450,5 @@ export default function AddCustomerPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { ReportLayout } from "@/components/reports/report-layout"
@@ -45,8 +44,7 @@ export default function StoresReportPage() {
            }
         }
         
-        // Backward compatibility for small data if needed, though we use token now
-        const dataParam = searchParams.get("s")
+        const dataParam = searchParams.get("s");
         if (dataParam) {
           const decodedData = decodeURIComponent(dataParam)
           const binaryString = atob(decodedData)

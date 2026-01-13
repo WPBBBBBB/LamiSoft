@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { t } from "@/lib/translations"
@@ -110,33 +109,30 @@ export default function DatabaseSettingsPage() {
     setBackupTime(time)
     
     try {
-      const { supabase } = await import("@/lib/supabase")
+      const { supabase } = await import("@/lib/supabase");
       
-      // Update the backup_settings table directly
       const { error: updateError } = await supabase
         .from("backup_settings")
         .update({ 
           backup_time: time + ":00",
           updated_at: new Date().toISOString()
         })
-        .eq("id", 1)
+        .eq("id", 1);
 
       if (updateError) {
         toast.error("فشل في تحديث وقت النسخ الاحتياطي: " + updateError.message)
         return
       }
 
-      // Verify the saved value
       const { data: verifyData } = await supabase
         .from("backup_settings")
         .select("backup_time, updated_at")
         .eq("id", 1)
-        .single()
+        .single();
       
       if (verifyData) {
         }
 
-      // Also update the cron job if the RPC exists
       try {
         await supabase.rpc("update_backup_time", {
           new_time: time + ":00"
@@ -154,22 +150,20 @@ export default function DatabaseSettingsPage() {
     setIsLoading(true)
     
     try {
-      const { supabase } = await import("@/lib/supabase")
+      const { supabase } = await import("@/lib/supabase");
       
-      // Update the backup_settings table directly
       const { error: updateError } = await supabase
         .from("backup_settings")
         .update({ 
           auto_backup_enabled: enabled,
           updated_at: new Date().toISOString()
         })
-        .eq("id", 1)
+        .eq("id", 1);
 
       if (updateError) {
         throw updateError
       }
 
-      // Also try to update cron job if RPC exists
       try {
         await supabase.rpc("toggle_auto_backup", {
           enabled
@@ -212,9 +206,8 @@ export default function DatabaseSettingsPage() {
         supabase.from("users").select("*"),
         supabase.from("user_permissions").select("*"),
         supabase.from("expenses").select("*"),
-      ])
+      ]);
 
-      // تسجيل عدد السجلات
       const recordCounts = {
         tb_salesmain: salesMain.data?.length || 0,
         tb_salesdetails: salesDetails.data?.length || 0,
@@ -228,7 +221,7 @@ export default function DatabaseSettingsPage() {
         users: users.data?.length || 0,
         user_permissions: userPermissions.data?.length || 0,
         expenses: expenses.data?.length || 0,
-      }
+      };
 
       const totalRecords = Object.values(recordCounts).reduce((sum, count) => sum + count, 0)
       const backup = {
@@ -416,10 +409,10 @@ export default function DatabaseSettingsPage() {
         .delete()
         .in("id", Array.from(selectedBackupIds))
 
-      if (error) throw error
+      if (error)
+        throw error;
 
-      // Update the list
-      setAutoBackups(prev => prev.filter(b => !selectedBackupIds.has(b.id)))
+      setAutoBackups(prev => prev.filter(b => !selectedBackupIds.has(b.id)));
       setSelectedBackupIds(new Set())
       
       toast.success(t('backupsDeletedSuccessfully', currentLanguage.code))
@@ -495,9 +488,7 @@ export default function DatabaseSettingsPage() {
                 .delete()
                 .gte('id', '00000000-0000-0000-0000-000000000000')
               
-              if (deleteError) {
-                // تجاهل خطأ الحذف
-              }
+              if (deleteError) {}
               
               const batchSize = 50
               
@@ -513,16 +504,12 @@ export default function DatabaseSettingsPage() {
                       .from(tableName)
                       .insert([record])
                     
-                    if (singleError) {
-                      // تجاهل الخطأ
-                    }
+                    if (singleError) {}
                   }
                 }
               }
             }
-          } catch {
-            // تجاهل الخطأ
-          }
+          } catch {}
         }
       })
 
@@ -546,292 +533,285 @@ export default function DatabaseSettingsPage() {
 
   return (
     <PermissionGuard requiredRole="مدير">
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{t('databaseSettings', currentLanguage.code)}</h1>
-        <p className="text-muted-foreground mt-2">{t('manageBackupAndRestore', currentLanguage.code)}</p>
-      </div>
-
-      <Card className="p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Database className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold">{t('backupAndRestore', currentLanguage.code)}</h2>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">{t('databaseSettings', currentLanguage.code)}</h1>
+          <p className="text-muted-foreground mt-2">{t('manageBackupAndRestore', currentLanguage.code)}</p>
         </div>
-        <p className="text-muted-foreground mb-4">{t('createOrRestoreBackup', currentLanguage.code)}</p>
-        <div className="flex gap-3">
-          <Button onClick={handleManualBackup} disabled={isLoading}>
-            <Download className="h-4 w-4 ml-2" />
-            {t('createBackupNow', currentLanguage.code)}
-          </Button>
-          <Button variant="outline" onClick={handleRestore} disabled={isLoading}>
-            <Upload className="h-4 w-4 ml-2" />
-            {t('restoreBackup', currentLanguage.code)}
-          </Button>
-        </div>
-      </Card>
-
-      {}
-      <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('chooseRestoreSource', currentLanguage.code)}</DialogTitle>
-            <DialogDescription>
-              {t('chooseBackupSource', currentLanguage.code)}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-3 py-4">
-            <Button onClick={handleRestoreFromDevice} className="w-full justify-start h-auto py-4">
-              <HardDrive className="h-5 w-5 ml-3" />
-              <div className="text-right">
-                <div className="font-semibold">{t('restoreFromDevice', currentLanguage.code)}</div>
-                <div className="text-sm text-muted-foreground">{t('uploadBackupFile', currentLanguage.code)}</div>
-              </div>
+        <Card className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Database className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">{t('backupAndRestore', currentLanguage.code)}</h2>
+          </div>
+          <p className="text-muted-foreground mb-4">{t('createOrRestoreBackup', currentLanguage.code)}</p>
+          <div className="flex gap-3">
+            <Button onClick={handleManualBackup} disabled={isLoading}>
+              <Download className="h-4 w-4 ml-2" />
+              {t('createBackupNow', currentLanguage.code)}
             </Button>
-            <Button onClick={handleRestoreFromAutoBackups} variant="outline" className="w-full justify-start h-auto py-4">
-              <Cloud className="h-5 w-5 ml-3" />
-              <div className="text-right">
-                <div className="font-semibold">{t('restoreFromAutoBackups', currentLanguage.code)}</div>
-                <div className="text-sm text-muted-foreground">{t('viewAndRestoreAutoBackups', currentLanguage.code)}</div>
-              </div>
+            <Button variant="outline" onClick={handleRestore} disabled={isLoading}>
+              <Upload className="h-4 w-4 ml-2" />
+              {t('restoreBackup', currentLanguage.code)}
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </Card>
 
-      {}
-      <Dialog open={showAutoBackupsList} onOpenChange={setShowAutoBackupsList}>
-        <DialogContent className="max-w-5xl max-h-[85vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle className="text-right">{t('autoBackupList', currentLanguage.code)}</DialogTitle>
-            <DialogDescription className="text-right">
-              {t('selectBackupToRestore', currentLanguage.code)}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedBackupIds.size > 0 && (
-            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-              <span className="text-sm">
-                {selectedBackupIds.size} {t('selected', currentLanguage.code)}
-              </span>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={handleDeleteSelectedBackups}
-                disabled={isLoading}
-              >
-                <Trash2 className="h-4 w-4 ml-2" />
-                {t('deleteSelected', currentLanguage.code)}
+        <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{t('chooseRestoreSource', currentLanguage.code)}</DialogTitle>
+              <DialogDescription>
+                {t('chooseBackupSource', currentLanguage.code)}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-3 py-4">
+              <Button onClick={handleRestoreFromDevice} className="w-full justify-start h-auto py-4">
+                <HardDrive className="h-5 w-5 ml-3" />
+                <div className="text-right">
+                  <div className="font-semibold">{t('restoreFromDevice', currentLanguage.code)}</div>
+                  <div className="text-sm text-muted-foreground">{t('uploadBackupFile', currentLanguage.code)}</div>
+                </div>
+              </Button>
+              <Button onClick={handleRestoreFromAutoBackups} variant="outline" className="w-full justify-start h-auto py-4">
+                <Cloud className="h-5 w-5 ml-3" />
+                <div className="text-right">
+                  <div className="font-semibold">{t('restoreFromAutoBackups', currentLanguage.code)}</div>
+                  <div className="text-sm text-muted-foreground">{t('viewAndRestoreAutoBackups', currentLanguage.code)}</div>
+                </div>
               </Button>
             </div>
-          )}
+          </DialogContent>
+        </Dialog>
 
-          <div className="py-4">
-            {autoBackups.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                {t('noAutoBackupsAvailable', currentLanguage.code)}
+        <Dialog open={showAutoBackupsList} onOpenChange={setShowAutoBackupsList}>
+          <DialogContent className="max-w-5xl max-h-[85vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle className="text-right">{t('autoBackupList', currentLanguage.code)}</DialogTitle>
+              <DialogDescription className="text-right">
+                {t('selectBackupToRestore', currentLanguage.code)}
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedBackupIds.size > 0 && (
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                <span className="text-sm">
+                  {selectedBackupIds.size} {t('selected', currentLanguage.code)}
+                </span>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={handleDeleteSelectedBackups}
+                  disabled={isLoading}
+                >
+                  <Trash2 className="h-4 w-4 ml-2" />
+                  {t('deleteSelected', currentLanguage.code)}
+                </Button>
               </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right w-12">#</TableHead>
-                    <TableHead className="text-center w-12">
-                      <Checkbox
-                        checked={selectedBackupIds.size === autoBackups.length}
-                        onCheckedChange={handleToggleAllBackups}
-                      />
-                    </TableHead>
-                    <TableHead className="text-right">{t('date', currentLanguage.code)}</TableHead>
-                    <TableHead className="text-right">{t('time', currentLanguage.code)}</TableHead>
-                    <TableHead className="text-right">{t('recordsCount', currentLanguage.code)}</TableHead>
-                    <TableHead className="text-right">{t('action', currentLanguage.code)}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {autoBackups.map((backup, index) => {
-                    const date = new Date(backup.backup_date)
-                    const totalRecords = Object.values(backup.records_count || {}).reduce((a, b) => a + b, 0)
-                    
-                    return (
-                      <TableRow key={backup.id}>
-                        <TableCell className="font-medium text-right">
-                          {autoBackups.length - index}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Checkbox
-                            checked={selectedBackupIds.has(backup.id)}
-                            onCheckedChange={() => handleToggleBackupSelection(backup.id)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {date.toLocaleDateString("en-US")}
-                        </TableCell>
-                        <TableCell>
-                          {date.toLocaleTimeString("en-US")}
-                        </TableCell>
-                        <TableCell>
-                          {totalRecords} {t('record', currentLanguage.code)}
-                        </TableCell>
-                        <TableCell>
-                          <Button 
-                            size="sm" 
-                            onClick={() => handleSelectBackup(backup)}
-                            variant="outline"
-                          >
-                            {t('restore', currentLanguage.code)}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
             )}
+
+            <div className="py-4">
+              {autoBackups.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {t('noAutoBackupsAvailable', currentLanguage.code)}
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right w-12">#</TableHead>
+                      <TableHead className="text-center w-12">
+                        <Checkbox
+                          checked={selectedBackupIds.size === autoBackups.length}
+                          onCheckedChange={handleToggleAllBackups}
+                        />
+                      </TableHead>
+                      <TableHead className="text-right">{t('date', currentLanguage.code)}</TableHead>
+                      <TableHead className="text-right">{t('time', currentLanguage.code)}</TableHead>
+                      <TableHead className="text-right">{t('recordsCount', currentLanguage.code)}</TableHead>
+                      <TableHead className="text-right">{t('action', currentLanguage.code)}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {autoBackups.map((backup, index) => {
+                      const date = new Date(backup.backup_date)
+                      const totalRecords = Object.values(backup.records_count || {}).reduce((a, b) => a + b, 0)
+                      
+                      return (
+                        <TableRow key={backup.id}>
+                          <TableCell className="font-medium text-right">
+                            {autoBackups.length - index}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Checkbox
+                              checked={selectedBackupIds.has(backup.id)}
+                              onCheckedChange={() => handleToggleBackupSelection(backup.id)}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {date.toLocaleDateString("en-US")}
+                          </TableCell>
+                          <TableCell>
+                            {date.toLocaleTimeString("en-US")}
+                          </TableCell>
+                          <TableCell>
+                            {totalRecords} {t('record', currentLanguage.code)}
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleSelectBackup(backup)}
+                              variant="outline"
+                            >
+                              {t('restore', currentLanguage.code)}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog open={showConfirmRestore} onOpenChange={setShowConfirmRestore}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('confirmAction', currentLanguage.code)}</AlertDialogTitle>
+              <AlertDialogDescription className="text-right">
+                {t('willReplaceCurrentData', currentLanguage.code)}
+                <br />
+                <br />
+                <strong>{t('backupDate', currentLanguage.code)}:</strong> {selectedBackup && new Date(selectedBackup.backup_date).toLocaleString("en-US")}
+                <br />
+                <strong>{t('recordsCount', currentLanguage.code)}:</strong> {selectedBackup && Object.values(selectedBackup.records_count || {}).reduce((a, b) => a + b, 0)} {t('record', currentLanguage.code)}
+                <br />
+                <br />
+                {t('actionCannotBeUndone', currentLanguage.code)}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('cancel', currentLanguage.code)}</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmRestore} className="bg-destructive hover:bg-destructive/90">
+                {t('yesRestoreBackup', currentLanguage.code)}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={showConfirmDelete} onOpenChange={setShowConfirmDelete}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-right">{t('confirmDelete', currentLanguage.code)}</AlertDialogTitle>
+              <AlertDialogDescription className="text-right">
+                {t('areYouSureDeleteBackups', currentLanguage.code)}
+                <br />
+                <br />
+                <strong>{t('selectedCount', currentLanguage.code)}:</strong> {selectedBackupIds.size} {t('backup', currentLanguage.code)}
+                <br />
+                <br />
+                {t('actionCannotBeUndone', currentLanguage.code)}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('cancel', currentLanguage.code)}</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">
+                <Trash2 className="h-4 w-4 ml-2" />
+                {t('yesDelete', currentLanguage.code)}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+        <Card className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Clock className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">{t('autoBackupSettings', currentLanguage.code)}</h2>
           </div>
-        </DialogContent>
-      </Dialog>
+          
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-base">{t('enableAutoBackup', currentLanguage.code)}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t('autoBackupDescription', currentLanguage.code)}
+                </p>
+              </div>
+              <Switch 
+                checked={autoBackupEnabled} 
+                onCheckedChange={handleAutoBackupToggle}
+                disabled={isLoading}
+              />
+            </div>
 
-      {}
-      <AlertDialog open={showConfirmRestore} onOpenChange={setShowConfirmRestore}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('confirmAction', currentLanguage.code)}</AlertDialogTitle>
-            <AlertDialogDescription className="text-right">
-              {t('willReplaceCurrentData', currentLanguage.code)}
-              <br />
-              <br />
-              <strong>{t('backupDate', currentLanguage.code)}:</strong> {selectedBackup && new Date(selectedBackup.backup_date).toLocaleString("en-US")}
-              <br />
-              <strong>{t('recordsCount', currentLanguage.code)}:</strong> {selectedBackup && Object.values(selectedBackup.records_count || {}).reduce((a, b) => a + b, 0)} {t('record', currentLanguage.code)}
-              <br />
-              <br />
-              {t('actionCannotBeUndone', currentLanguage.code)}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('cancel', currentLanguage.code)}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmRestore} className="bg-destructive hover:bg-destructive/90">
-              {t('yesRestoreBackup', currentLanguage.code)}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {}
-      <AlertDialog open={showConfirmDelete} onOpenChange={setShowConfirmDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-right">{t('confirmDelete', currentLanguage.code)}</AlertDialogTitle>
-            <AlertDialogDescription className="text-right">
-              {t('areYouSureDeleteBackups', currentLanguage.code)}
-              <br />
-              <br />
-              <strong>{t('selectedCount', currentLanguage.code)}:</strong> {selectedBackupIds.size} {t('backup', currentLanguage.code)}
-              <br />
-              <br />
-              {t('actionCannotBeUndone', currentLanguage.code)}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('cancel', currentLanguage.code)}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">
-              <Trash2 className="h-4 w-4 ml-2" />
-              {t('yesDelete', currentLanguage.code)}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Card className="p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Clock className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold">{t('autoBackupSettings', currentLanguage.code)}</h2>
-        </div>
-        
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="text-base">{t('enableAutoBackup', currentLanguage.code)}</Label>
+            <div className="space-y-2">
+              <Label htmlFor="backup-time">{t('dailyBackupTime', currentLanguage.code)}</Label>
+              <Input
+                id="backup-time"
+                type="time"
+                value={backupTime}
+                onChange={(e) => handleBackupTimeChange(e.target.value)}
+                className="max-w-xs"
+                disabled={!autoBackupEnabled || isLoading}
+              />
               <p className="text-sm text-muted-foreground">
-                {t('autoBackupDescription', currentLanguage.code)}
+                {autoBackupEnabled 
+                  ? `${t('willCreateBackupAt', currentLanguage.code)} ${backupTime}` 
+                  : t('enableAutoBackupFirst', currentLanguage.code)}
               </p>
             </div>
-            <Switch 
-              checked={autoBackupEnabled} 
-              onCheckedChange={handleAutoBackupToggle}
-              disabled={isLoading}
-            />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="backup-time">{t('dailyBackupTime', currentLanguage.code)}</Label>
-            <Input
-              id="backup-time"
-              type="time"
-              value={backupTime}
-              onChange={(e) => handleBackupTimeChange(e.target.value)}
-              className="max-w-xs"
-              disabled={!autoBackupEnabled || isLoading}
-            />
-            <p className="text-sm text-muted-foreground">
-              {autoBackupEnabled 
-                ? `${t('willCreateBackupAt', currentLanguage.code)} ${backupTime}` 
-                : t('enableAutoBackupFirst', currentLanguage.code)}
-            </p>
-          </div>
-
-          {autoBackupEnabled && (
-            <div className="flex items-start gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
-              <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-              <div>
-                <p className="font-medium text-green-900">{t('autoBackupEnabled', currentLanguage.code)}</p>
-                <p className="text-sm text-green-700 mt-1">
-                  {t('backupsSavedAutomatically', currentLanguage.code)}
-                </p>
-                <p className="text-sm text-green-700 mt-1">
-                  {t('scheduledTime', currentLanguage.code)}: {t('everyDayAt', currentLanguage.code)} {backupTime}
-                </p>
+            {autoBackupEnabled && (
+              <div className="flex items-start gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                <div>
+                  <p className="font-medium text-green-900">{t('autoBackupEnabled', currentLanguage.code)}</p>
+                  <p className="text-sm text-green-700 mt-1">
+                    {t('backupsSavedAutomatically', currentLanguage.code)}
+                  </p>
+                  <p className="text-sm text-green-700 mt-1">
+                    {t('scheduledTime', currentLanguage.code)}: {t('everyDayAt', currentLanguage.code)} {backupTime}
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {!autoBackupEnabled && (
-            <div className="flex items-start gap-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-              <Info className="h-5 w-5 text-yellow-600 mt-0.5" />
-              <div>
-                <p className="font-medium text-yellow-900">{t('autoBackupDisabled', currentLanguage.code)}</p>
-                <p className="text-sm text-yellow-700 mt-1">
-                  {t('enableSwitchAbove', currentLanguage.code)}
-                </p>
+            {!autoBackupEnabled && (
+              <div className="flex items-start gap-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <Info className="h-5 w-5 text-yellow-600 mt-0.5" />
+                <div>
+                  <p className="font-medium text-yellow-900">{t('autoBackupDisabled', currentLanguage.code)}</p>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    {t('enableSwitchAbove', currentLanguage.code)}
+                  </p>
+                </div>
               </div>
+            )}
+          </div>
+        </Card>
+        <Card className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Info className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-semibold">{t('connectionInfo', currentLanguage.code)}</h2>
+          </div>
+          <p className="text-muted-foreground mb-6">{t('currentDatabaseInfo', currentLanguage.code)}</p>
+
+          <div className="grid gap-4">
+            <div className="flex justify-between items-center py-3 border-b">
+              <span className="text-sm font-medium text-muted-foreground">{t('lastManualBackup', currentLanguage.code)}</span>
+              <span className="text-sm font-semibold">{dbInfo.lastBackup}</span>
             </div>
-          )}
-        </div>
-      </Card>
-
-      <Card className="p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Info className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold">{t('connectionInfo', currentLanguage.code)}</h2>
-        </div>
-        <p className="text-muted-foreground mb-6">{t('currentDatabaseInfo', currentLanguage.code)}</p>
-
-        <div className="grid gap-4">
-          <div className="flex justify-between items-center py-3 border-b">
-            <span className="text-sm font-medium text-muted-foreground">{t('lastManualBackup', currentLanguage.code)}</span>
-            <span className="text-sm font-semibold">{dbInfo.lastBackup}</span>
+            <div className="flex justify-between items-center py-3 border-b">
+              <span className="text-sm font-medium text-muted-foreground">{t('lastRestoreOperation', currentLanguage.code)}</span>
+              <span className="text-sm font-semibold">{dbInfo.lastRestore}</span>
+            </div>
+            <div className="flex justify-between items-center py-3">
+              <span className="text-sm font-medium text-muted-foreground">{t('lastAutoBackupOperation', currentLanguage.code)}</span>
+              <span className="text-sm font-semibold">{dbInfo.lastAutoBackup}</span>
+            </div>
           </div>
-          <div className="flex justify-between items-center py-3 border-b">
-            <span className="text-sm font-medium text-muted-foreground">{t('lastRestoreOperation', currentLanguage.code)}</span>
-            <span className="text-sm font-semibold">{dbInfo.lastRestore}</span>
-          </div>
-          <div className="flex justify-between items-center py-3">
-            <span className="text-sm font-medium text-muted-foreground">{t('lastAutoBackupOperation', currentLanguage.code)}</span>
-            <span className="text-sm font-semibold">{dbInfo.lastAutoBackup}</span>
-          </div>
-        </div>
-      </Card>
-    </div>
+        </Card>
+      </div>
     </PermissionGuard>
-  )
+  );
 }

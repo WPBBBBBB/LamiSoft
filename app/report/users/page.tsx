@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { ReportLayout } from "@/components/reports/report-layout"

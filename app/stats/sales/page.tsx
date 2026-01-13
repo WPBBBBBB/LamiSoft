@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { PermissionGuard } from "@/components/permission-guard"
 
 import { useEffect } from "react"

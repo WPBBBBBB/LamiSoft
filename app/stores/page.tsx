@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -267,9 +266,8 @@ export default function StoresPage() {
             </p>
           </div>
         </div>
-
         <Card className="p-6">
-          {}
+
           <div className="flex flex-wrap gap-3 mb-6">
             <Button onClick={handleAddClick} className="gap-2">
               <Plus className="h-4 w-4 theme-success" />
@@ -301,7 +299,6 @@ export default function StoresPage() {
             </Button>
           </div>
 
-          {}
           <div className="flex gap-2 mb-6">
             <div className="relative flex-1">
               <Search className="absolute right-3 top-3 h-4 w-4 theme-icon" />
@@ -319,7 +316,6 @@ export default function StoresPage() {
             )}
           </div>
 
-          {}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
             {filteredStores.map((store) => (
               <Card
@@ -333,19 +329,17 @@ export default function StoresPage() {
                 onDoubleClick={() => handleStoreDoubleClick(store)}
               >
                 <CardContent className="p-4 text-center">
-                  {}
+
                   <div className="mb-3 flex justify-center">
                     <div className="bg-primary/10 p-4 rounded-lg">
                       <Warehouse className="h-12 w-12 theme-info" />
                     </div>
                   </div>
 
-                  {}
                   <h3 className="text-lg font-semibold mb-2" style={{ color: "var(--theme-text)" }}>
                     {store.storename}
                   </h3>
 
-                  {}
                   {store.storekeeper && (
                     <div className="flex items-center justify-center gap-2 mb-1 text-sm text-muted-foreground">
                       <User className="h-4 w-4 theme-icon" />
@@ -353,7 +347,6 @@ export default function StoresPage() {
                     </div>
                   )}
 
-                  {}
                   {store.location && (
                     <div className="flex items-center justify-center gap-2 mb-1 text-sm text-muted-foreground">
                       <MapPin className="h-4 w-4 theme-icon" />
@@ -361,7 +354,6 @@ export default function StoresPage() {
                     </div>
                   )}
 
-                  {}
                   {store.phonenumber && (
                     <div className="flex items-center justify-center gap-2 mb-2 text-sm text-muted-foreground">
                       <Phone className="h-4 w-4 theme-icon" />
@@ -369,7 +361,6 @@ export default function StoresPage() {
                     </div>
                   )}
 
-                  {}
                   <Badge variant={store.isactive ? "default" : "secondary"}>
                     {store.isactive ? t('active', currentLanguage.code) : t('inactive', currentLanguage.code)}
                   </Badge>
@@ -378,7 +369,6 @@ export default function StoresPage() {
             ))}
           </div>
 
-          {}
           <div className="text-center text-sm text-muted-foreground pt-4 border-t">
             <span className="font-semibold">{t('totalStoresCount', currentLanguage.code)}:</span>{" "}
             <span style={{ color: "var(--theme-text)" }} className="font-bold">
@@ -387,7 +377,6 @@ export default function StoresPage() {
           </div>
         </Card>
 
-        {}
         <Dialog open={addEditModalOpen} onOpenChange={setAddEditModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -470,26 +459,25 @@ export default function StoresPage() {
         </DialogContent>
       </Dialog>
 
-      {}
-      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('confirmDelete', currentLanguage.code)}</DialogTitle>
-            <DialogDescription>
-              {t('deleteStoreConfirm', currentLanguage.code)}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
-              {t('cancel', currentLanguage.code)}
-            </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
-              {t('delete', currentLanguage.code)}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('confirmDelete', currentLanguage.code)}</DialogTitle>
+              <DialogDescription>
+                {t('deleteStoreConfirm', currentLanguage.code)}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
+                {t('cancel', currentLanguage.code)}
+              </Button>
+              <Button variant="destructive" onClick={confirmDelete}>
+                {t('delete', currentLanguage.code)}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
-  )
+  );
 }

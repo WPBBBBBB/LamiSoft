@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -151,9 +150,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
     try {
       const rate = await getCurrentExchangeRate()
       setExchangeRate(rate)
-    } catch {
-      // Silent fail
-    }
+    } catch {}
   }
 
   const filteredInventory = inventory.filter((item) =>
@@ -341,7 +338,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       setSelectedItems([])
       loadStoreData()
     } catch (error: unknown) {
-      // معالجة أخطاء قيود المفاتيح الأجنبية
       if (error && typeof error === 'object' && 'message' in error) {
         const err = error as { message?: string; code?: string }
         if (err.message?.includes('foreign key') || err.code === '23503') {
@@ -389,7 +385,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
   return (
     <div className="flex-1 overflow-auto">
       <div className="container mx-auto p-6 space-y-6">
-        {}
+
         <div className="flex items-center gap-4 mb-6">
           <Button
             variant="outline"
@@ -400,7 +396,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
             رجوع
           </Button>
         </div>
-
         <div className="mb-6 flex items-start justify-between gap-4">
           <div className="flex-1">
             <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
@@ -412,9 +407,8 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
             </p>
           </div>
         </div>
-
         <Card className="p-6">
-          {}
+
           <div className="flex flex-wrap gap-3 mb-6">
             <Button
               onClick={handleDeleteClick}
@@ -427,7 +421,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
             </Button>
           </div>
 
-          {}
           <div className="flex gap-2 mb-6">
             <Button variant="outline" size="icon">
               <FileText className="h-4 w-4" />
@@ -451,7 +444,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
             </Button>
           </div>
 
-          {}
           <div className="rounded-lg border overflow-hidden mb-6">
             <Table>
               <TableHeader>
@@ -480,7 +472,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {}
+
                 <TableRow className="sticky top-0 z-10" style={{ backgroundColor: 'var(--theme-surface)', opacity: 0.95, color: 'var(--theme-text)' }}>
                   <TableCell className="text-center" style={{ color: 'var(--theme-text)' }}>✨</TableCell>
                   <TableCell className="text-center" style={{ color: 'var(--theme-text)' }}>-</TableCell>
@@ -563,7 +555,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                   </TableCell>
                 </TableRow>
 
-                {}
                 {paginatedInventory.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
@@ -605,8 +596,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                             }}
                           />
                         </TableCell>
-                        
-                        {}
+
                         <TableCell className="text-right font-medium">
                           {isEditing && editData ? (
                             <Input
@@ -618,8 +608,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                             item.productcode
                           )}
                         </TableCell>
-                        
-                        {}
+
                         <TableCell className="text-right">
                           {isEditing && editData ? (
                             <Input
@@ -631,8 +620,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                             item.productname
                           )}
                         </TableCell>
-                        
-                        {}
+
                         <TableCell className="text-right">
                           {isEditing && editData ? (
                             <Input
@@ -647,8 +635,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                             </span>
                           )}
                         </TableCell>
-                        
-                        {}
+
                         <TableCell className="text-right">
                           {isEditing && editData ? (
                             <Select
@@ -670,8 +657,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                             formatUnit(item.unit ?? "")
                           )}
                         </TableCell>
-                        
-                        {}
+
                         <TableCell className="text-right">
                           {isEditing && editData ? (
                             <Input
@@ -684,8 +670,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                             formatNumber(item.sellpriceiqd)
                           )}
                         </TableCell>
-                        
-                        {}
+
                         <TableCell className="text-right">
                           {isEditing && editData ? (
                             <Input
@@ -698,13 +683,11 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                             formatNumber(item.sellpriceusd)
                           )}
                         </TableCell>
-                        
-                        {}
+
                         <TableCell className="text-right text-sm">
                           {formatDate(item.createdat)}
                         </TableCell>
-                        
-                        {}
+
                         <TableCell className="text-center">
                           {isEditing ? (
                             <div className="flex gap-1 justify-center">
@@ -738,16 +721,15 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                           )}
                         </TableCell>
                       </TableRow>
-                    )
+                    );
                   })
                 )}
               </TableBody>
             </Table>
           </div>
 
-          {}
           <div className="flex flex-col gap-4 pt-4 border-t">
-            {}
+
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-2">
                 <Button
@@ -812,8 +794,7 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
                 </Button>
               </div>
             )}
-            
-            {}
+
             <div className="flex justify-between items-center">
               <Button onClick={handleRefresh} variant="outline" className="gap-2">
                 <RefreshCw className="h-4 w-4" />
@@ -832,7 +813,6 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
         </Card>
       </div>
 
-      {}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent>
           <DialogHeader>
@@ -856,5 +836,5 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

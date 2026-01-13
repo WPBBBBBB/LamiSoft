@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useRef, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSettings } from "@/components/providers/settings-provider"
@@ -149,7 +148,7 @@ export default function EditMessagePage() {
 
   return (
     <div className="h-full p-6">
-      {}
+
       <div className="mb-6 flex items-center gap-4">
         <Button
           variant="outline"
@@ -167,9 +166,8 @@ export default function EditMessagePage() {
           </p>
         </div>
       </div>
-
       <div className="space-y-6">
-        {}
+
         <Card className="p-6">
           <div className="space-y-2">
             <Label htmlFor="messageTitle" className="text-base font-semibold">
@@ -185,9 +183,8 @@ export default function EditMessagePage() {
           </div>
         </Card>
 
-        {}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {}
+
           <Card className="lg:col-span-2 p-6">
             <div className="space-y-2">
               <Label htmlFor="messageBody" className="text-base font-semibold">
@@ -208,7 +205,6 @@ export default function EditMessagePage() {
             </div>
           </Card>
 
-          {}
           <Card className="p-6">
             <h3 className="text-base font-semibold mb-3">{t("whatsappAvailableVariables", lang)}</h3>
             <p className="text-xs text-muted-foreground mb-4">
@@ -238,7 +234,6 @@ export default function EditMessagePage() {
           </Card>
         </div>
 
-        {}
         <Card className="p-6 bg-muted/50">
           <h3 className="text-base font-semibold mb-4">{t("whatsappMessagePreview", lang)}</h3>
           <div className="space-y-3">
@@ -253,7 +248,6 @@ export default function EditMessagePage() {
           </div>
         </Card>
 
-        {}
         <div className="flex gap-3 justify-end">
           <Button
             variant="outline"
@@ -271,5 +265,5 @@ export default function EditMessagePage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

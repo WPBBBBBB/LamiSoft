@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useSettings } from "@/components/providers/settings-provider"

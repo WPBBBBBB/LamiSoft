@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createPortal } from "react-dom"
@@ -71,9 +70,9 @@ export default function SaleAddPage() {
   const [salestoreid, setSaleStoreId] = useState("")
   const [datetime, setDateTime] = useState("")
   const [details, setDetails] = useState("")
-  const [barcode, setBarcode] = useState("") // الباركود المحفوظ
+  const [barcode, setBarcode] = useState("");
 
-  const [customerid, setCustomerId] = useState("")
+  const [customerid, setCustomerId] = useState("");
   const [customername, setCustomerName] = useState("")
   const [customerBalanceIQD, setCustomerBalanceIQD] = useState(0)
   const [customerBalanceUSD, setCustomerBalanceUSD] = useState(0)
@@ -134,8 +133,7 @@ export default function SaleAddPage() {
       loadEditData(editId)
     } else {
       generateSaleNumber().then((saleNumber) => {
-        // ??????? ??? ??????? ???????
-        setBarcode(saleNumber)
+        setBarcode(saleNumber);
       })
       const now = new Date()
       setDateTime(now.toISOString().slice(0, 16))
@@ -147,15 +145,13 @@ export default function SaleAddPage() {
     if (salestoreid) {
       loadInventory(salestoreid)
     }
-  }, [salestoreid])
+  }, [salestoreid]);
 
-  // ????? ???????? ????? ????? ??? ??????? ?? ???? ???????
   useEffect(() => {
     if (!isEditMode && numberofsale) {
-      // ??????? ??? ??????? ???????
-      setBarcode(numberofsale)
+      setBarcode(numberofsale);
     }
-  }, [numberofsale, isEditMode])
+  }, [numberofsale, isEditMode]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -243,9 +239,9 @@ export default function SaleAddPage() {
       setSaleStoreId(saleData.salestoreid)
       setDateTime(new Date(saleData.datetime).toISOString().slice(0, 16))
       setDetails(saleData.details || "")
-      setBarcode(saleData.barcode || "") // ????? ???????? ???????
+      setBarcode(saleData.barcode || "");
       
-      setCustomerId(saleData.customerid)
+      setCustomerId(saleData.customerid);
       setCustomerName(saleData.customername)
       setSearchCustomer("")
       
@@ -257,9 +253,7 @@ export default function SaleAddPage() {
           setCustomerBalanceIQD(customerData.balanceiqd ?? 0)
           setCustomerBalanceUSD(customerData.balanceusd ?? 0)
         }
-      } catch {
-        // Silent fail
-      }
+      } catch {}
       
       setDiscountEnabled(saleData.discountenabled)
       setDiscountCurrency(saleData.discountcurrency || "دينار")
@@ -314,26 +308,23 @@ export default function SaleAddPage() {
 
   const handleCreateNewCustomer = async (customerName: string) => {
     try {
-      // إنشاء زبون جديد
       const newCustomer = await createCustomer({
         customer_name: customerName.trim(),
         type: 'زبون',
         balanceiqd: 0,
         balanceusd: 0,
-      })
+      });
       
-      // ????? ?????? ??????? ???????
       const customerData: Customer = {
         id: newCustomer.id,
         customer_name: newCustomer.customer_name,
         type: newCustomer.type,
         balanceiqd: newCustomer.balanceiqd ?? 0,
         balanceusd: newCustomer.balanceusd ?? 0,
-      }
-      setCustomers([customerData, ...customers])
+      };
+      setCustomers([customerData, ...customers]);
       
-      // ????? ?????? ??????
-      setCustomerId(newCustomer.id)
+      setCustomerId(newCustomer.id);
       setCustomerName(newCustomer.customer_name)
       setCustomerBalanceIQD(0)
       setCustomerBalanceUSD(0)
@@ -368,8 +359,7 @@ export default function SaleAddPage() {
   
   const updateSuggestionPosition = (inputRef: React.RefObject<HTMLInputElement | null>) => {
     if (inputRef.current) {
-      // Position calculation (currently not used but kept for future use)
-      inputRef.current.getBoundingClientRect()
+      inputRef.current.getBoundingClientRect();
     }
   }
 
@@ -609,7 +599,7 @@ export default function SaleAddPage() {
     try {
       const saleMain: SaleMain = {
         numberofsale,
-        barcode, // ????? ???????? ??????? ??????
+        barcode,
         salestoreid,
         customerid,
         customername,
@@ -789,13 +779,12 @@ export default function SaleAddPage() {
       amountReceivedUSD: hasAmountReceived ? amountReceivedUSD : 0,
       datetime: datetime || new Date().toISOString(),
       saleNumber: numberofsale,
-      barcode: barcode || numberofsale, // ??????? ??? ??????? ???
-      previousBalanceIQD:
-        paytype === "آجل"
-          ? isExistingSale
-            ? (customerBalanceIQD ?? 0) - Math.max(0, afterDiscountIQD - receivedIQD)
-            : (customerBalanceIQD ?? 0)
-          : (customerBalanceIQD ?? 0),
+      barcode: barcode || numberofsale,
+      previousBalanceIQD: paytype === "آجل"
+        ? isExistingSale
+          ? (customerBalanceIQD ?? 0) - Math.max(0, afterDiscountIQD - receivedIQD)
+          : (customerBalanceIQD ?? 0)
+        : (customerBalanceIQD ?? 0),
       nextBalanceIQD:
         paytype === "آجل"
           ? isExistingSale
@@ -826,269 +815,84 @@ export default function SaleAddPage() {
 
   return (
     <>
-    {isSaving && (
-      <div
-        className="fixed inset-0 z-9999 flex items-center justify-center bg-background/80 backdrop-blur-sm"
-        aria-busy="true"
-        role="status"
-      >
-        <div className="flex items-center gap-3 rounded-lg border bg-background px-4 py-3 shadow">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span className="text-sm">{t("savingSaleList", lang)}</span>
-        </div>
-      </div>
-    )}
-    <div className="container mx-auto p-6 space-y-6">
-      {}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowRight className="h-5 w-5 theme-icon" />
-          </Button>
-          <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
-            {isViewMode ? t("viewSale", lang) : isEditMode ? t("editSale", lang) : t("addSaleList", lang)}
-          </h1>
-        </div>
-        {loadingEditData && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>{t("loadingSaleData", lang)}</span>
-          </div>
-        )}
-      </div>
-
-      {}
-      <Card className="p-6">
-        {}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          {}
-          <div className="space-y-2">
-            <Label htmlFor="numberofsale">{t("saleNumberAuto", lang)}</Label>
-            <Input
-              id="numberofsale"
-              value={numberofsale}
-              readOnly
-              className="bg-muted font-semibold"
-              placeholder="S-00001"
-            />
-          </div>
-
-          {}
-          <div className="space-y-2">
-            <Label>{t("priceType", lang)}</Label>
-            <Select value={pricetype} onValueChange={(v: "جملة" | "مفرد") => setPriceType(v)} disabled={isViewMode}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="مفرد">{t("retail", lang)}</SelectItem>
-                <SelectItem value="جملة">{t("wholesale", lang)}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {}
-          <div className="space-y-2">
-            <Label>{t("paymentType", lang)}</Label>
-            <Select value={paytype} onValueChange={(v: "نقدي" | "آجل") => setPayType(v)} disabled={isViewMode}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="نقدي">{t("cash", lang)}</SelectItem>
-                <SelectItem value="آجل">{t("credit", lang)}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {}
-          <div className="space-y-2">
-            <Label>{t("currency", lang)}</Label>
-            <Select
-              value={currencyType}
-              onValueChange={(v: "دينار" | "دولار") => setCurrencyType(v)}
-              disabled={isViewMode}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="دينار">{t("dinar", lang)}</SelectItem>
-                <SelectItem value="دولار">{t("dollar", lang)}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {}
-          <div className="space-y-2">
-            <Label>{t("exchangeRate", lang)}</Label>
-            <div className="flex items-center h-10 px-3 rounded-md border bg-muted">
-              <span className="font-semibold text-lg">{exchangeRate.toLocaleString()}</span>
-            </div>
+      {isSaving && (
+        <div
+          className="fixed inset-0 z-9999 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+          aria-busy="true"
+          role="status"
+        >
+          <div className="flex items-center gap-3 rounded-lg border bg-background px-4 py-3 shadow">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span className="text-sm">{t("savingSaleList", lang)}</span>
           </div>
         </div>
+      )}
+      <div className="container mx-auto p-6 space-y-6">
 
-        {}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
-          {}
-          <div className="space-y-2 md:col-span-3">
-            <Label>{t("customerNameLabel", lang)}</Label>
-            <div className="relative" ref={customerDropdownRef}>
-              <Input
-                placeholder={t("searchForCustomer", lang)}
-                value={searchCustomer || customername || ""}
-                onChange={(e) => {
-                  setSearchCustomer(e.target.value)
-                  setCustomerSelectOpen(true)
-                  if (!e.target.value) {
-                    setCustomerId("")
-                    setCustomerName("")
-                    setCustomerBalanceIQD(0)
-                    setCustomerBalanceUSD(0)
-                  }
-                }}
-                onFocus={() => setCustomerSelectOpen(true)}
-                onKeyDown={async (e) => {
-                  if (e.key === "Enter" && searchCustomer) {
-                    const filteredCustomers = customers.filter((customer) =>
-                      customer.customer_name.toLowerCase().includes(searchCustomer.toLowerCase())
-                    )
-                    
-                    if (filteredCustomers.length === 0) {
-                      // إضافة الزبون مباشرة بدون فتح صفحة
-                      e.preventDefault()
-                      await handleCreateNewCustomer(searchCustomer)
-                    } else if (filteredCustomers.length === 1) {
-                      // إذا كان هناك زبون واحد فقط مطابق، اختاره مباشرة
-                      e.preventDefault()
-                      handleCustomerChange(filteredCustomers[0].id)
-                      setSearchCustomer("")
-                      setCustomerSelectOpen(false)
-                    }
-                  }
-                }}
-                disabled={isViewMode}
-              />
-              {customerSelectOpen && (
-                <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-[300px] overflow-y-auto">
-                  {(() => {
-                    const filteredCustomers = customers.filter((customer) =>
-                      customer.customer_name.toLowerCase().includes((searchCustomer || "").toLowerCase())
-                    )
-                    
-                    if (filteredCustomers.length === 0) {
-                      return (
-                        <div className="px-3 py-3 text-center space-y-1">
-                          <div className="text-sm text-muted-foreground">
-                            {t("saleCustomerNotFound", lang)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {t("salePressEnterToAddCustomer", lang).split("{key}")[0]}
-                            <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Enter</kbd>
-                            {t("salePressEnterToAddCustomer", lang).split("{key}")[1]}
-                          </div>
-                        </div>
-                      )
-                    }
-                    
-                    return filteredCustomers.map((customer) => (
-                      <div
-                        key={customer.id}
-                        onMouseDown={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          handleCustomerChange(customer.id)
-                          setCustomerSelectOpen(false)
-                          setSearchCustomer("")
-                        }}
-                        className="px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                      >
-                        {customer.customer_name}
-                      </div>
-                    ))
-                  })()}
-                </div>
-              )}
-            </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => router.back()}>
+              <ArrowRight className="h-5 w-5 theme-icon" />
+            </Button>
+            <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
+              {isViewMode ? t("viewSale", lang) : isEditMode ? t("editSale", lang) : t("addSaleList", lang)}
+            </h1>
           </div>
-
-          {}
-          <div className="space-y-2 md:col-span-2">
-            <Label className="font-semibold text-blue-600 dark:text-blue-400">
-              {t("previousBalanceIQD", lang)}
-            </Label>
-            <div className="flex items-center h-10 px-3 rounded-md border bg-muted">
-              <span className="font-semibold text-lg">
-                {customerBalanceIQD.toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          {}
-          <div className="space-y-2 md:col-span-2">
-            <Label className="font-semibold text-green-600 dark:text-green-400">
-              {t("previousBalanceUSD", lang)}
-            </Label>
-            <div className="flex items-center h-10 px-3 rounded-md border bg-muted">
-              <span className="font-semibold text-lg">
-                {customerBalanceUSD.toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          {}
-          <div className="space-y-2 md:col-span-3">
-            <Label>{t("store", lang)}</Label>
-            <Select value={salestoreid} onValueChange={setSaleStoreId} disabled={isViewMode}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("selectStore", lang)} />
-              </SelectTrigger>
-              <SelectContent>
-                {stores.map((store) => (
-                  <SelectItem key={store.id} value={store.id}>
-                    {store.storename}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {}
-          {paytype === "آجل" && (
-            <div className="space-y-2 flex items-end">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="hasAmountReceived"
-                  checked={hasAmountReceived}
-                  onCheckedChange={(checked) => {
-                    setHasAmountReceived(!!checked)
-                    if (!checked) {
-                      setAmountReceivedIQD(0)
-                      setAmountReceivedUSD(0)
-                    }
-                  }}
-                  disabled={isViewMode}
-                />
-                <Label htmlFor="hasAmountReceived" className="cursor-pointer">
-                  {t("amountReceived", lang)}
-                </Label>
-              </div>
+          {loadingEditData && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>{t("loadingSaleData", lang)}</span>
             </div>
           )}
         </div>
 
-        {}
-        {hasAmountReceived && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 rounded-lg bg-accent/50">
+        <Card className="p-6">
+
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+
             <div className="space-y-2">
-              <Label>{t("amountReceivedCurrency", lang)}</Label>
+              <Label htmlFor="numberofsale">{t("saleNumberAuto", lang)}</Label>
+              <Input
+                id="numberofsale"
+                value={numberofsale}
+                readOnly
+                className="bg-muted font-semibold"
+                placeholder="S-00001"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("priceType", lang)}</Label>
+              <Select value={pricetype} onValueChange={(v: "جملة" | "مفرد") => setPriceType(v)} disabled={isViewMode}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="مفرد">{t("retail", lang)}</SelectItem>
+                  <SelectItem value="جملة">{t("wholesale", lang)}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("paymentType", lang)}</Label>
+              <Select value={paytype} onValueChange={(v: "نقدي" | "آجل") => setPayType(v)} disabled={isViewMode}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="نقدي">{t("cash", lang)}</SelectItem>
+                  <SelectItem value="آجل">{t("credit", lang)}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("currency", lang)}</Label>
               <Select
-                value={amountCurrency}
-                onValueChange={(v: "دينار" | "دولار") => {
-                  setAmountCurrency(v)
-                  setAmountReceivedIQD(0)
-                  setAmountReceivedUSD(0)
-                }}
+                value={currencyType}
+                onValueChange={(v: "دينار" | "دولار") => setCurrencyType(v)}
+                disabled={isViewMode}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -1101,73 +905,165 @@ export default function SaleAddPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>{t("amountReceived", lang)}</Label>
-              <Input
-                type="number"
-                value={
-                  amountCurrency === "دينار" ? amountReceivedIQD : amountReceivedUSD
-                }
-                onChange={(e) => handleAmountReceivedChange(parseFloat(e.target.value) || 0)}
-                placeholder="0"
-              />
+              <Label>{t("exchangeRate", lang)}</Label>
+              <div className="flex items-center h-10 px-3 rounded-md border bg-muted">
+                <span className="font-semibold text-lg">{exchangeRate.toLocaleString()}</span>
+              </div>
             </div>
           </div>
-        )}
 
-        {}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="space-y-2">
-            <Label>{t("dateTime", lang)}</Label>
-            <Input
-              type="datetime-local"
-              value={datetime}
-              onChange={(e) => setDateTime(e.target.value)}
-              readOnly={isViewMode}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+
+            <div className="space-y-2 md:col-span-3">
+              <Label>{t("customerNameLabel", lang)}</Label>
+              <div className="relative" ref={customerDropdownRef}>
+                <Input
+                  placeholder={t("searchForCustomer", lang)}
+                  value={searchCustomer || customername || ""}
+                  onChange={(e) => {
+                    setSearchCustomer(e.target.value)
+                    setCustomerSelectOpen(true)
+                    if (!e.target.value) {
+                      setCustomerId("")
+                      setCustomerName("")
+                      setCustomerBalanceIQD(0)
+                      setCustomerBalanceUSD(0)
+                    }
+                  }}
+                  onFocus={() => setCustomerSelectOpen(true)}
+                  onKeyDown={async (e) => {
+                    if (e.key === "Enter" && searchCustomer) {
+                      const filteredCustomers = customers.filter((customer) =>
+                        customer.customer_name.toLowerCase().includes(searchCustomer.toLowerCase())
+                      )
+                      
+                      if (filteredCustomers.length === 0) {
+                        e.preventDefault();
+                        await handleCreateNewCustomer(searchCustomer)
+                      } else if (filteredCustomers.length === 1) {
+                        e.preventDefault();
+                        handleCustomerChange(filteredCustomers[0].id)
+                        setSearchCustomer("")
+                        setCustomerSelectOpen(false)
+                      }
+                    }
+                  }}
+                  disabled={isViewMode}
+                />
+                {customerSelectOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-[300px] overflow-y-auto">
+                    {(() => {
+                      const filteredCustomers = customers.filter((customer) =>
+                        customer.customer_name.toLowerCase().includes((searchCustomer || "").toLowerCase())
+                      )
+                      
+                      if (filteredCustomers.length === 0) {
+                        return (
+                          <div className="px-3 py-3 text-center space-y-1">
+                            <div className="text-sm text-muted-foreground">
+                              {t("saleCustomerNotFound", lang)}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {t("salePressEnterToAddCustomer", lang).split("{key}")[0]}
+                              <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Enter</kbd>
+                              {t("salePressEnterToAddCustomer", lang).split("{key}")[1]}
+                            </div>
+                          </div>
+                        )
+                      }
+                      
+                      return filteredCustomers.map((customer) => (
+                        <div
+                          key={customer.id}
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            handleCustomerChange(customer.id)
+                            setCustomerSelectOpen(false)
+                            setSearchCustomer("")
+                          }}
+                          className="px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                        >
+                          {customer.customer_name}
+                        </div>
+                      ))
+                    })()}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label className="font-semibold text-blue-600 dark:text-blue-400">
+                {t("previousBalanceIQD", lang)}
+              </Label>
+              <div className="flex items-center h-10 px-3 rounded-md border bg-muted">
+                <span className="font-semibold text-lg">
+                  {customerBalanceIQD.toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label className="font-semibold text-green-600 dark:text-green-400">
+                {t("previousBalanceUSD", lang)}
+              </Label>
+              <div className="flex items-center h-10 px-3 rounded-md border bg-muted">
+                <span className="font-semibold text-lg">
+                  {customerBalanceUSD.toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2 md:col-span-3">
+              <Label>{t("store", lang)}</Label>
+              <Select value={salestoreid} onValueChange={setSaleStoreId} disabled={isViewMode}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("selectStore", lang)} />
+                </SelectTrigger>
+                <SelectContent>
+                  {stores.map((store) => (
+                    <SelectItem key={store.id} value={store.id}>
+                      {store.storename}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {paytype === "آجل" && (
+              <div className="space-y-2 flex items-end">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="hasAmountReceived"
+                    checked={hasAmountReceived}
+                    onCheckedChange={(checked) => {
+                      setHasAmountReceived(!!checked)
+                      if (!checked) {
+                        setAmountReceivedIQD(0)
+                        setAmountReceivedUSD(0)
+                      }
+                    }}
+                    disabled={isViewMode}
+                  />
+                  <Label htmlFor="hasAmountReceived" className="cursor-pointer">
+                    {t("amountReceived", lang)}
+                  </Label>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="space-y-2 md:col-span-3">
-            <Label>{t("notes", lang)}</Label>
-            <Textarea
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-              placeholder={t("additionalNotes", lang)}
-              rows={2}
-              readOnly={isViewMode}
-            />
-          </div>
-        </div>
-
-        {}
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Checkbox
-              id="discountEnabled"
-              checked={discountEnabled}
-              onCheckedChange={(checked) => {
-                setDiscountEnabled(!!checked)
-                if (!checked) {
-                  setDiscountIQD(0)
-                  setDiscountUSD(0)
-                }
-              }}
-              disabled={isViewMode}
-            />
-            <Label htmlFor="discountEnabled" className="cursor-pointer font-semibold">
-              {t("enableDiscount", lang)}
-            </Label>
-          </div>
-
-          {discountEnabled && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-lg bg-accent/50">
+          {hasAmountReceived && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 rounded-lg bg-accent/50">
               <div className="space-y-2">
-                <Label>{t("discountCurrency", lang)}</Label>
+                <Label>{t("amountReceivedCurrency", lang)}</Label>
                 <Select
-                  value={discountCurrency}
+                  value={amountCurrency}
                   onValueChange={(v: "دينار" | "دولار") => {
-                    setDiscountCurrency(v)
-                    setDiscountIQD(0)
-                    setDiscountUSD(0)
+                    setAmountCurrency(v)
+                    setAmountReceivedIQD(0)
+                    setAmountReceivedUSD(0)
                   }}
                 >
                   <SelectTrigger>
@@ -1181,627 +1077,695 @@ export default function SaleAddPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>{t("discountAmount", lang)}</Label>
+                <Label>{t("amountReceived", lang)}</Label>
                 <Input
                   type="number"
-                  value={discountCurrency === "دينار" ? discountIQD : discountUSD}
-                  min={0}
-                  onChange={(e) => handleDiscountChange(e.target.value)}
+                  value={
+                    amountCurrency === "دينار" ? amountReceivedIQD : amountReceivedUSD
+                  }
+                  onChange={(e) => handleAmountReceivedChange(parseFloat(e.target.value) || 0)}
                   placeholder="0"
                 />
               </div>
             </div>
           )}
-        </div>
 
-        {}
-        <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: "var(--theme-surface)", borderLeft: "4px solid var(--theme-primary)" }}>
-          <div className="flex flex-wrap items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium" style={{ color: "var(--theme-text)" }}>{t("itemsCount", lang)}:</span>
-              <span className="font-bold text-lg" style={{ color: "var(--theme-text)" }}>{totalProductsCount}</span>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="space-y-2">
+              <Label>{t("dateTime", lang)}</Label>
+              <Input
+                type="datetime-local"
+                value={datetime}
+                onChange={(e) => setDateTime(e.target.value)}
+                readOnly={isViewMode}
+              />
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("totalIQD", lang)}:</span>
-              <span className="font-bold text-lg text-green-600 dark:text-green-400">
-                {totalSaleIQD.toLocaleString()}
-              </span>
+            <div className="space-y-2 md:col-span-3">
+              <Label>{t("notes", lang)}</Label>
+              <Textarea
+                value={details}
+                onChange={(e) => setDetails(e.target.value)}
+                placeholder={t("additionalNotes", lang)}
+                rows={2}
+                readOnly={isViewMode}
+              />
             </div>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("totalUSD", lang)}:</span>
-              <span className="font-bold text-lg text-blue-600 dark:text-blue-400">
-                {totalSaleUSD.toLocaleString()}
-              </span>
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Checkbox
+                id="discountEnabled"
+                checked={discountEnabled}
+                onCheckedChange={(checked) => {
+                  setDiscountEnabled(!!checked)
+                  if (!checked) {
+                    setDiscountIQD(0)
+                    setDiscountUSD(0)
+                  }
+                }}
+                disabled={isViewMode}
+              />
+              <Label htmlFor="discountEnabled" className="cursor-pointer font-semibold">
+                {t("enableDiscount", lang)}
+              </Label>
             </div>
 
             {discountEnabled && (
-              <>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("afterDiscountIQD", lang)}:</span>
-                  <span className="font-bold text-lg text-purple-600 dark:text-purple-400">
-                    {afterDiscountIQD.toLocaleString()}
-                  </span>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-lg bg-accent/50">
+                <div className="space-y-2">
+                  <Label>{t("discountCurrency", lang)}</Label>
+                  <Select
+                    value={discountCurrency}
+                    onValueChange={(v: "دينار" | "دولار") => {
+                      setDiscountCurrency(v)
+                      setDiscountIQD(0)
+                      setDiscountUSD(0)
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="دينار">{t("dinar", lang)}</SelectItem>
+                      <SelectItem value="دولار">{t("dollar", lang)}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("afterDiscountUSD", lang)}:</span>
-                  <span className="font-bold text-lg text-purple-600 dark:text-purple-400">
-                    {afterDiscountUSD.toLocaleString()}
-                  </span>
+                <div className="space-y-2">
+                  <Label>{t("discountAmount", lang)}</Label>
+                  <Input
+                    type="number"
+                    value={discountCurrency === "دينار" ? discountIQD : discountUSD}
+                    min={0}
+                    onChange={(e) => handleDiscountChange(e.target.value)}
+                    placeholder="0"
+                  />
                 </div>
-              </>
-            )}
-
-            {hasAmountReceived && (
-              <>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("receivedIQD", lang)}:</span>
-                  <span className="font-bold text-lg" style={{ color: "var(--theme-text)" }}>{amountReceivedIQD.toLocaleString()}</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("receivedUSD", lang)}:</span>
-                  <span className="font-bold text-lg" style={{ color: "var(--theme-text)" }}>{amountReceivedUSD.toLocaleString()}</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("remainingIQD", lang)}:</span>
-                  <span className="font-bold text-lg text-orange-600 dark:text-orange-400">
-                    {finalTotalIQD.toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("remainingUSD", lang)}:</span>
-                  <span className="font-bold text-lg text-orange-600 dark:text-orange-400">
-                    {finalTotalUSD.toLocaleString()}
-                  </span>
-                </div>
-              </>
+              </div>
             )}
           </div>
-        </div>
 
-        <div className="mt-6 space-y-2">
-         
-          
-          
-          <div className="rounded-lg border overflow-auto w-full" style={{ maxHeight: "1200px" }}>
-          <Table>
-            <TableHeader>
-              <TableRow
-                style={{
-                  background: "linear-gradient(to right, var(--theme-surface), var(--theme-accent))",
-                }}
-              >
-                <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>#</TableHead>
-                <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>{t("delete", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("productCode", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("productName", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("quantity", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("saleRetailPriceIQD", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("saleRetailPriceUSD", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("totalIQD", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("totalUSD", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("notes", lang)}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-            {}
-            {!isViewMode && (
-            <TableRow style={{ backgroundColor: "var(--theme-accent)", opacity: 0.9 }}>
-              <TableCell className="text-center font-bold" style={{ color: "var(--theme-text)" }}>
-                {t("new", lang)}
-              </TableCell>
-                <TableCell className="text-center">
-                  <Plus className="h-5 w-5 theme-success mx-auto" />
-                </TableCell>
-                <TableCell>
-                  <div style={{ minWidth: '120px', width: '120px', position: 'relative' }}>
-                    <Input
-                      ref={codeInputRef}
-                      value={productSearchCode}
-                      onChange={(e) => handleProductSearchCodeChange(e.target.value)}
-                      onFocus={() => {
-                        setShowSuggestions(true)
-                        updateSuggestionPosition(codeInputRef)
-                      }}
-                      placeholder={t("productCode", lang)}
-                      className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
-                    />
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div style={{ minWidth: '150px', width: '150px', position: 'relative' }}>
-                    <Input
-                      ref={nameInputRef}
-                      value={productSearchName}
-                      onChange={(e) => handleProductSearchNameChange(e.target.value)}
-                      onFocus={() => {
-                        setShowSuggestions(true)
-                        updateSuggestionPosition(nameInputRef)
-                      }}
-                      placeholder={t("productName", lang)}
-                      className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
-                    />
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={newItem.quantity || ""}
-                    onChange={(e) =>
-                      updateNewItem("quantity", parseFloat(e.target.value) || 0)
-                    }
-                    onKeyPress={(e) => handleNewItemKeyPress(e)}
-                    placeholder="0"
-                    className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={newItem.unitpriceiqd || ""}
-                    onChange={(e) =>
-                      updateNewItem("unitpriceiqd", parseFloat(e.target.value) || 0)
-                    }
-                    onKeyPress={(e) => handleNewItemKeyPress(e)}
-                    placeholder="0"
-                    className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={newItem.unitpriceusd || ""}
-                    onChange={(e) =>
-                      updateNewItem("unitpriceusd", parseFloat(e.target.value) || 0)
-                    }
-                    onKeyPress={(e) => handleNewItemKeyPress(e)}
-                    placeholder="0"
-                    className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={newItem.totalpriceiqd.toFixed(2)}
-                    readOnly
-                    className="h-8 bg-muted text-foreground"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={newItem.totalpriceusd.toFixed(2)}
-                    readOnly
-                    className="h-8 bg-muted text-foreground"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    value={newItem.notes}
-                    onChange={(e) => updateNewItem("notes", e.target.value)}
-                    onKeyPress={(e) => handleNewItemKeyPress(e)}
-                    placeholder={t("notes", lang)}
-                    className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
-                  />
-                </TableCell>
-              </TableRow>
-            )}
+          <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: "var(--theme-surface)", borderLeft: "4px solid var(--theme-primary)" }}>
+            <div className="flex flex-wrap items-center justify-between gap-6">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium" style={{ color: "var(--theme-text)" }}>{t("itemsCount", lang)}:</span>
+                <span className="font-bold text-lg" style={{ color: "var(--theme-text)" }}>{totalProductsCount}</span>
+              </div>
 
-              {}
-              {products.map((product, index) => (
-                <TableRow key={product.tempId} className="bg-background">
-                  <TableCell className="text-center text-foreground">{index + 1}</TableCell>
-                  <TableCell className="text-center">
-                    {!isViewMode && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => deleteProduct(product.tempId)}
-                        className="h-8 w-8 hover:bg-red-50 dark:hover:bg-red-950"
-                      >
-                        <Trash2 className="h-4 w-4 theme-danger" />
-                      </Button>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Input
-                        value={product.productcode}
-                        readOnly
-                        className="flex-1 h-8 bg-muted text-center text-foreground"
-                        title={product.productcode}
-                      />
-                      {product.productcode.length > 10 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => setViewingNote(product.productcode)}
-                        >
-                          <Eye className="h-4 w-4 theme-info" />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Input
-                        value={product.productname}
-                        readOnly
-                        className="flex-1 h-8 bg-muted text-foreground"
-                        title={product.productname}
-                      />
-                      {product.productname.length > 15 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => setViewingNote(product.productname)}
-                        >
-                          <Eye className="h-4 w-4 theme-info" />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      value={product.quantity}
-                      onChange={(e) =>
-                        updateProduct(
-                          product.tempId,
-                          "quantity",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      placeholder="0"
-                      className="h-8 text-foreground"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      value={product.unitpriceiqd}
-                      onChange={(e) =>
-                        updateProduct(
-                          product.tempId,
-                          "unitpriceiqd",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      placeholder="0"
-                      className="h-8 text-foreground"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      value={product.unitpriceusd}
-                      onChange={(e) =>
-                        updateProduct(
-                          product.tempId,
-                          "unitpriceusd",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      placeholder="0"
-                      className="h-8 text-foreground"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      value={product.totalpriceiqd.toFixed(2)}
-                      readOnly
-                      className="h-8 bg-muted text-foreground"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      value={product.totalpriceusd.toFixed(2)}
-                      readOnly
-                      className="h-8 bg-muted text-foreground"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Input
-                        value={product.notes}
-                        onChange={(e) =>
-                          updateProduct(product.tempId, "notes", e.target.value)
-                        }
-                        placeholder={t("notes", lang)}
-                        className="flex-1 h-8 text-foreground"
-                        title={product.notes}
-                      />
-                      {product.notes && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => setViewingNote(product.notes || "")}
-                        >
-                          <Eye className="h-4 w-4 theme-info" />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          </div>
-        </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("totalIQD", lang)}:</span>
+                <span className="font-bold text-lg text-green-600 dark:text-green-400">
+                  {totalSaleIQD.toLocaleString()}
+                </span>
+              </div>
 
-        {}
-        {!isViewMode && (
-          <div className="mt-6 flex gap-3 flex-wrap">
-            <Button
-              onClick={handleSaveSale}
-              disabled={isSaving}
-              size="lg"
-              className="flex-1 md:flex-initial"
-              style={{ backgroundColor: "var(--theme-primary)", color: "white" }}
-            >
-              {isSaving ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("totalUSD", lang)}:</span>
+                <span className="font-bold text-lg text-blue-600 dark:text-blue-400">
+                  {totalSaleUSD.toLocaleString()}
+                </span>
+              </div>
+
+              {discountEnabled && (
                 <>
-                  <Loader2 className="h-5 w-5 ml-2 animate-spin theme-icon" />
-                  {t("saving", lang)}
-                </>
-              ) : (
-                <>
-                  <Save className="h-5 w-5 ml-2 theme-success" />
-                  {isEditMode ? t("updateSaleList", lang) : t("addSaleList", lang)}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("afterDiscountIQD", lang)}:</span>
+                    <span className="font-bold text-lg text-purple-600 dark:text-purple-400">
+                      {afterDiscountIQD.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("afterDiscountUSD", lang)}:</span>
+                    <span className="font-bold text-lg text-purple-600 dark:text-purple-400">
+                      {afterDiscountUSD.toLocaleString()}
+                    </span>
+                  </div>
                 </>
               )}
-            </Button>
 
-            <Button
-              onClick={handlePrintInvoice}
-              disabled={isSaving || products.length === 0}
-              size="lg"
-              variant="outline"
-              className="flex-1 md:flex-initial"
-            >
-              <Printer className="h-5 w-5 ml-2" />
-              {t("printInvoice", lang)}
-            </Button>
-          </div>
-        )}
-        
-        {}
-        {isViewMode && (
-          <div className="mt-6">
-            <Button
-              onClick={handlePrintInvoice}
-              size="lg"
-              className="w-full md:w-auto"
-            >
-              <Printer className="h-5 w-5 ml-2" />
-              {t("printInvoice", lang)}
-            </Button>
-          </div>
-        )}
-      </Card>
+              {hasAmountReceived && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("receivedIQD", lang)}:</span>
+                    <span className="font-bold text-lg" style={{ color: "var(--theme-text)" }}>{amountReceivedIQD.toLocaleString()}</span>
+                  </div>
 
-      {}
-      <Dialog open={viewingNote !== null} onOpenChange={(open) => !open && setViewingNote(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("details", lang)}</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="whitespace-pre-wrap">{viewingNote}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("receivedUSD", lang)}:</span>
+                    <span className="font-bold text-lg" style={{ color: "var(--theme-text)" }}>{amountReceivedUSD.toLocaleString()}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("remainingIQD", lang)}:</span>
+                    <span className="font-bold text-lg text-orange-600 dark:text-orange-400">
+                      {finalTotalIQD.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm" style={{ color: "var(--theme-text)" }}>{t("remainingUSD", lang)}:</span>
+                    <span className="font-bold text-lg text-orange-600 dark:text-orange-400">
+                      {finalTotalUSD.toLocaleString()}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-          <DialogFooter>
-            <Button onClick={() => setViewingNote(null)}>{t("close", lang)}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-    
-    {}
-    {isMounted && showSuggestions && filteredInventory.length > 0 && createPortal(
-      <div 
-        data-suggestions="true"
-        style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          zIndex: 9999999,
-          width: '90vw',
-          maxWidth: '1000px',
-          maxHeight: '80vh',
-          overflowY: 'auto',
-          backgroundColor: 'var(--theme-background)',
-          border: '5px solid var(--theme-primary)',
-          borderRadius: '16px',
-          boxShadow: '0 25px 80px rgba(0, 0, 0, 0.5)',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {}
-        <div style={{
-          padding: '16px 20px',
-          background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))',
-          color: 'var(--theme-background)',
-          fontWeight: 'bold',
-          fontSize: '20px',
-          textAlign: 'center',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <span>{t("availableSuggestions", lang).replace("{count}", String(filteredInventory.length))}</span>
-          <button
-            onClick={() => setShowSuggestions(false)}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'var(--theme-background)',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            ✕ {t("close", lang)}
-          </button>
-        </div>
-        
-        {}
-        <div style={{ maxHeight: 'calc(80vh - 140px)', overflowY: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-              <tr style={{ 
-                background: 'linear-gradient(to right, var(--theme-surface), var(--theme-accent))',
-                borderBottom: '2px solid var(--theme-primary)'
-              }}>
-                <th style={{ 
-                  padding: '14px 16px', 
-                  textAlign: 'right', 
-                  fontWeight: 'bold',
-                  color: 'var(--theme-text)',
-                  fontSize: '15px'
-                }}>{t("productCode", lang)}</th>
-                <th style={{ 
-                  padding: '14px 16px', 
-                  textAlign: 'right', 
-                  fontWeight: 'bold',
-                  color: 'var(--theme-text)',
-                  fontSize: '15px'
-                }}>{t("productName", lang)}</th>
-                <th style={{ 
-                  padding: '14px 16px', 
-                  textAlign: 'center', 
-                  fontWeight: 'bold',
-                  color: 'var(--theme-text)',
-                  fontSize: '15px'
-                }}>{t("priceIQDShort", lang)}</th>
-                <th style={{ 
-                  padding: '14px 16px', 
-                  textAlign: 'center', 
-                  fontWeight: 'bold',
-                  color: 'var(--theme-text)',
-                  fontSize: '15px'
-                }}>{t("priceUSDShort", lang)}</th>
-                <th style={{ 
-                  padding: '14px 16px', 
-                  textAlign: 'center', 
-                  fontWeight: 'bold',
-                  color: 'var(--theme-text)',
-                  fontSize: '15px'
-                }}>{t("availableQuantity", lang)}</th>
-              </tr>
-            </thead>
-            <tbody>
-            {filteredInventory.slice(0, 20).map((item, index) => (
-              <tr
-                key={item.id}
-                style={{
-                  backgroundColor: index % 2 === 0 ? 'var(--theme-background)' : 'var(--theme-surface)',
-                  cursor: 'pointer',
-                  borderBottom: '1px solid var(--theme-border)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--theme-accent)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'var(--theme-background)' : 'var(--theme-surface)'
-                }}
-                onMouseDown={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  selectProduct(item)
-                }}
+          <div className="mt-6 space-y-2">
+           
+            
+            
+            <div className="rounded-lg border overflow-auto w-full" style={{ maxHeight: "1200px" }}>
+            <Table>
+              <TableHeader>
+                <TableRow
+                  style={{
+                    background: "linear-gradient(to right, var(--theme-surface), var(--theme-accent))",
+                  }}
+                >
+                  <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>#</TableHead>
+                  <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>{t("delete", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("productCode", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("productName", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("quantity", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("saleRetailPriceIQD", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("saleRetailPriceUSD", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("totalIQD", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("totalUSD", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("notes", lang)}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+
+                {!isViewMode && (
+                <TableRow style={{ backgroundColor: "var(--theme-accent)", opacity: 0.9 }}>
+                  <TableCell className="text-center font-bold" style={{ color: "var(--theme-text)" }}>
+                    {t("new", lang)}
+                  </TableCell>
+                    <TableCell className="text-center">
+                      <Plus className="h-5 w-5 theme-success mx-auto" />
+                    </TableCell>
+                    <TableCell>
+                      <div style={{ minWidth: '120px', width: '120px', position: 'relative' }}>
+                        <Input
+                          ref={codeInputRef}
+                          value={productSearchCode}
+                          onChange={(e) => handleProductSearchCodeChange(e.target.value)}
+                          onFocus={() => {
+                            setShowSuggestions(true)
+                            updateSuggestionPosition(codeInputRef)
+                          }}
+                          placeholder={t("productCode", lang)}
+                          className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div style={{ minWidth: '150px', width: '150px', position: 'relative' }}>
+                        <Input
+                          ref={nameInputRef}
+                          value={productSearchName}
+                          onChange={(e) => handleProductSearchNameChange(e.target.value)}
+                          onFocus={() => {
+                            setShowSuggestions(true)
+                            updateSuggestionPosition(nameInputRef)
+                          }}
+                          placeholder={t("productName", lang)}
+                          className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={newItem.quantity || ""}
+                        onChange={(e) =>
+                          updateNewItem("quantity", parseFloat(e.target.value) || 0)
+                        }
+                        onKeyPress={(e) => handleNewItemKeyPress(e)}
+                        placeholder="0"
+                        className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={newItem.unitpriceiqd || ""}
+                        onChange={(e) =>
+                          updateNewItem("unitpriceiqd", parseFloat(e.target.value) || 0)
+                        }
+                        onKeyPress={(e) => handleNewItemKeyPress(e)}
+                        placeholder="0"
+                        className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={newItem.unitpriceusd || ""}
+                        onChange={(e) =>
+                          updateNewItem("unitpriceusd", parseFloat(e.target.value) || 0)
+                        }
+                        onKeyPress={(e) => handleNewItemKeyPress(e)}
+                        placeholder="0"
+                        className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={newItem.totalpriceiqd.toFixed(2)}
+                        readOnly
+                        className="h-8 bg-muted text-foreground"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={newItem.totalpriceusd.toFixed(2)}
+                        readOnly
+                        className="h-8 bg-muted text-foreground"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={newItem.notes}
+                        onChange={(e) => updateNewItem("notes", e.target.value)}
+                        onKeyPress={(e) => handleNewItemKeyPress(e)}
+                        placeholder={t("notes", lang)}
+                        className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
+                      />
+                    </TableCell>
+                  </TableRow>
+                )}
+
+                {products.map((product, index) => (
+                  <TableRow key={product.tempId} className="bg-background">
+                    <TableCell className="text-center text-foreground">{index + 1}</TableCell>
+                    <TableCell className="text-center">
+                      {!isViewMode && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteProduct(product.tempId)}
+                          className="h-8 w-8 hover:bg-red-50 dark:hover:bg-red-950"
+                        >
+                          <Trash2 className="h-4 w-4 theme-danger" />
+                        </Button>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Input
+                          value={product.productcode}
+                          readOnly
+                          className="flex-1 h-8 bg-muted text-center text-foreground"
+                          title={product.productcode}
+                        />
+                        {product.productcode.length > 10 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setViewingNote(product.productcode)}
+                          >
+                            <Eye className="h-4 w-4 theme-info" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Input
+                          value={product.productname}
+                          readOnly
+                          className="flex-1 h-8 bg-muted text-foreground"
+                          title={product.productname}
+                        />
+                        {product.productname.length > 15 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setViewingNote(product.productname)}
+                          >
+                            <Eye className="h-4 w-4 theme-info" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={product.quantity}
+                        onChange={(e) =>
+                          updateProduct(
+                            product.tempId,
+                            "quantity",
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
+                        placeholder="0"
+                        className="h-8 text-foreground"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={product.unitpriceiqd}
+                        onChange={(e) =>
+                          updateProduct(
+                            product.tempId,
+                            "unitpriceiqd",
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
+                        placeholder="0"
+                        className="h-8 text-foreground"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={product.unitpriceusd}
+                        onChange={(e) =>
+                          updateProduct(
+                            product.tempId,
+                            "unitpriceusd",
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
+                        placeholder="0"
+                        className="h-8 text-foreground"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={product.totalpriceiqd.toFixed(2)}
+                        readOnly
+                        className="h-8 bg-muted text-foreground"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={product.totalpriceusd.toFixed(2)}
+                        readOnly
+                        className="h-8 bg-muted text-foreground"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Input
+                          value={product.notes}
+                          onChange={(e) =>
+                            updateProduct(product.tempId, "notes", e.target.value)
+                          }
+                          placeholder={t("notes", lang)}
+                          className="flex-1 h-8 text-foreground"
+                          title={product.notes}
+                        />
+                        {product.notes && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setViewingNote(product.notes || "")}
+                          >
+                            <Eye className="h-4 w-4 theme-info" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            </div>
+          </div>
+
+          {!isViewMode && (
+            <div className="mt-6 flex gap-3 flex-wrap">
+              <Button
+                onClick={handleSaveSale}
+                disabled={isSaving}
+                size="lg"
+                className="flex-1 md:flex-initial"
+                style={{ backgroundColor: "var(--theme-primary)", color: "white" }}
               >
-                <td style={{ 
-                  padding: '12px 16px', 
-                  fontWeight: 'bold', 
-                  color: 'var(--theme-primary)',
-                  fontSize: '14px'
-                }}>
-                  {item.productcode}
-                </td>
-                <td style={{ 
-                  padding: '12px 16px', 
-                  color: 'var(--theme-text)',
-                  fontSize: '14px'
-                }}>
-                  {item.productname}
-                </td>
-                <td style={{ 
-                  padding: '12px 16px', 
-                  textAlign: 'center',
-                  color: '#16a34a',
-                  fontWeight: '600',
-                  fontSize: '14px'
-                }}>
-                  {item.sellpriceiqd?.toLocaleString() || 0}
-                </td>
-                <td style={{ 
-                  padding: '12px 16px', 
-                  textAlign: 'center',
-                  color: '#2563eb',
-                  fontWeight: '600',
-                  fontSize: '14px'
-                }}>
-                  {item.sellpriceusd?.toLocaleString() || 0}
-                </td>
-                <td style={{ 
-                  padding: '12px 16px', 
-                  textAlign: 'center',
-                  color: '#ea580c',
-                  fontWeight: '600',
-                  fontSize: '14px'
-                }}>
-                  {item.quantity || 0}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
-        
-        {}
-        <div style={{ 
-          padding: '12px 20px', 
-          background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))',
-          color: 'var(--theme-background)',
-          borderTop: '2px solid var(--theme-primary)',
-          textAlign: 'center',
-          fontSize: '14px',
-          fontWeight: 'bold'
-        }}>
-          {t("suggestionsFooter", lang).replace("{count}", String(filteredInventory.length))}
-        </div>
-      </div>,
-      document.body
-    )}
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-5 w-5 ml-2 animate-spin theme-icon" />
+                    {t("saving", lang)}
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-5 w-5 ml-2 theme-success" />
+                    {isEditMode ? t("updateSaleList", lang) : t("addSaleList", lang)}
+                  </>
+                )}
+              </Button>
 
-    {}
-    {isMounted && showSuggestions && filteredInventory.length > 0 && createPortal(
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          zIndex: 9999998,
-        }}
-        onClick={() => setShowSuggestions(false)}
-      />,
-      document.body
-    )}
+              <Button
+                onClick={handlePrintInvoice}
+                disabled={isSaving || products.length === 0}
+                size="lg"
+                variant="outline"
+                className="flex-1 md:flex-initial"
+              >
+                <Printer className="h-5 w-5 ml-2" />
+                {t("printInvoice", lang)}
+              </Button>
+            </div>
+          )}
+
+          {isViewMode && (
+            <div className="mt-6">
+              <Button
+                onClick={handlePrintInvoice}
+                size="lg"
+                className="w-full md:w-auto"
+              >
+                <Printer className="h-5 w-5 ml-2" />
+                {t("printInvoice", lang)}
+              </Button>
+            </div>
+          )}
+        </Card>
+
+        <Dialog open={viewingNote !== null} onOpenChange={(open) => !open && setViewingNote(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t("details", lang)}</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="whitespace-pre-wrap">{viewingNote}</p>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setViewingNote(null)}>{t("close", lang)}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {isMounted && showSuggestions && filteredInventory.length > 0 && createPortal(
+        <div 
+          data-suggestions="true"
+          style={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 9999999,
+            width: '90vw',
+            maxWidth: '1000px',
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            backgroundColor: 'var(--theme-background)',
+            border: '5px solid var(--theme-primary)',
+            borderRadius: '16px',
+            boxShadow: '0 25px 80px rgba(0, 0, 0, 0.5)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+
+          <div style={{
+            padding: '16px 20px',
+            background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))',
+            color: 'var(--theme-background)',
+            fontWeight: 'bold',
+            fontSize: '20px',
+            textAlign: 'center',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <span>{t("availableSuggestions", lang).replace("{count}", String(filteredInventory.length))}</span>
+            <button
+              onClick={() => setShowSuggestions(false)}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                color: 'var(--theme-background)',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              ✕ {t("close", lang)}
+            </button>
+          </div>
+
+          <div style={{ maxHeight: 'calc(80vh - 140px)', overflowY: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                <tr style={{ 
+                  background: 'linear-gradient(to right, var(--theme-surface), var(--theme-accent))',
+                  borderBottom: '2px solid var(--theme-primary)'
+                }}>
+                  <th style={{ 
+                    padding: '14px 16px', 
+                    textAlign: 'right', 
+                    fontWeight: 'bold',
+                    color: 'var(--theme-text)',
+                    fontSize: '15px'
+                  }}>{t("productCode", lang)}</th>
+                  <th style={{ 
+                    padding: '14px 16px', 
+                    textAlign: 'right', 
+                    fontWeight: 'bold',
+                    color: 'var(--theme-text)',
+                    fontSize: '15px'
+                  }}>{t("productName", lang)}</th>
+                  <th style={{ 
+                    padding: '14px 16px', 
+                    textAlign: 'center', 
+                    fontWeight: 'bold',
+                    color: 'var(--theme-text)',
+                    fontSize: '15px'
+                  }}>{t("priceIQDShort", lang)}</th>
+                  <th style={{ 
+                    padding: '14px 16px', 
+                    textAlign: 'center', 
+                    fontWeight: 'bold',
+                    color: 'var(--theme-text)',
+                    fontSize: '15px'
+                  }}>{t("priceUSDShort", lang)}</th>
+                  <th style={{ 
+                    padding: '14px 16px', 
+                    textAlign: 'center', 
+                    fontWeight: 'bold',
+                    color: 'var(--theme-text)',
+                    fontSize: '15px'
+                  }}>{t("availableQuantity", lang)}</th>
+                </tr>
+              </thead>
+              <tbody>
+              {filteredInventory.slice(0, 20).map((item, index) => (
+                <tr
+                  key={item.id}
+                  style={{
+                    backgroundColor: index % 2 === 0 ? 'var(--theme-background)' : 'var(--theme-surface)',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid var(--theme-border)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--theme-accent)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'var(--theme-background)' : 'var(--theme-surface)'
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    selectProduct(item)
+                  }}
+                >
+                  <td style={{ 
+                    padding: '12px 16px', 
+                    fontWeight: 'bold', 
+                    color: 'var(--theme-primary)',
+                    fontSize: '14px'
+                  }}>
+                    {item.productcode}
+                  </td>
+                  <td style={{ 
+                    padding: '12px 16px', 
+                    color: 'var(--theme-text)',
+                    fontSize: '14px'
+                  }}>
+                    {item.productname}
+                  </td>
+                  <td style={{ 
+                    padding: '12px 16px', 
+                    textAlign: 'center',
+                    color: '#16a34a',
+                    fontWeight: '600',
+                    fontSize: '14px'
+                  }}>
+                    {item.sellpriceiqd?.toLocaleString() || 0}
+                  </td>
+                  <td style={{ 
+                    padding: '12px 16px', 
+                    textAlign: 'center',
+                    color: '#2563eb',
+                    fontWeight: '600',
+                    fontSize: '14px'
+                  }}>
+                    {item.sellpriceusd?.toLocaleString() || 0}
+                  </td>
+                  <td style={{ 
+                    padding: '12px 16px', 
+                    textAlign: 'center',
+                    color: '#ea580c',
+                    fontWeight: '600',
+                    fontSize: '14px'
+                  }}>
+                    {item.quantity || 0}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          </div>
+
+          <div style={{ 
+            padding: '12px 20px', 
+            background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))',
+            color: 'var(--theme-background)',
+            borderTop: '2px solid var(--theme-primary)',
+            textAlign: 'center',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}>
+            {t("suggestionsFooter", lang).replace("{count}", String(filteredInventory.length))}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {isMounted && showSuggestions && filteredInventory.length > 0 && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 9999998,
+          }}
+          onClick={() => setShowSuggestions(false)}
+        />,
+        document.body
+      )}
     </>
-  )
+  );
 }

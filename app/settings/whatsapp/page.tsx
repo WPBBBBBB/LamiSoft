@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect } from "react"
 import { PermissionGuard } from "@/components/permission-guard"
 import { useRouter } from "next/navigation"

@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -159,9 +158,8 @@ export default function CustomersPage() {
       setCustomerToDelete(null)
       loadCustomers()
     } catch (error: unknown) {
-      const errorMessage = (error as { message?: string })?.message || t('errorDeletingData', currentLanguage.code)
+      const errorMessage = (error as { message?: string })?.message || t('errorDeletingData', currentLanguage.code);
       
-      // رسالة مخصصة للأخطاء
       if (errorMessage.includes('قائمة بيع آجلة') || errorMessage.includes('دفعة مالية')) {
         toast.error(errorMessage, { duration: 8000 })
       } else {
@@ -201,9 +199,8 @@ export default function CustomersPage() {
       setSelectedCustomers([])
       loadCustomers()
     } catch (error: unknown) {
-      const errorMessage = (error as { message?: string })?.message || t('errorDeletingData', currentLanguage.code)
+      const errorMessage = (error as { message?: string })?.message || t('errorDeletingData', currentLanguage.code);
       
-      // رسالة مخصصة للأخطاء
       if (errorMessage.includes('تم حذف') || errorMessage.includes('لا يمكن حذف')) {
         toast.error(errorMessage, { duration: 8000 })
       } else {
@@ -229,10 +226,9 @@ export default function CustomersPage() {
     }
 
     try {
-      toast.loading("جاري تجهيز تقرير الزبائن...")
+      toast.loading("جاري تجهيز تقرير الزبائن...");
       
-      // استخدام fetch بدلاً من supabase.auth مباشرة لضمان الحصول على الجلسة الحالية
-      const userRes = await fetch("/api/auth/user").catch(() => null)
+      const userRes = await fetch("/api/auth/user").catch(() => null);
       const userData = userRes ? await userRes.json().catch(() => null) : null
       const user = userData?.data?.user
       const generatedBy = user?.user_metadata?.full_name || user?.email || "غير معروف"
@@ -273,16 +269,15 @@ export default function CustomersPage() {
       toast.dismiss()
       toast.success(autoPrint ? "جاري فتح نافذة الطباعة..." : "تم تجهيز التقرير")
 
-      window.location.href = `/report/customers?token=${token}&back=/customers${autoPrint ? '&print=true' : ''}`
+      window.location.href = `/report/customers?token=${token}&back=/customers${autoPrint ? '&print=true' : ''}`;
       
-      // محاولة تسجيل العملية ولكن عدم منع التصدير في حال الفشل
       logAction(
         "تصدير",
         `تصدير تقرير زبائن محددين - عدد الزبائن: ${reportItems.length}${autoPrint ? ' (طباعة)' : ''}`,
         "الزبائن",
         undefined,
         { customersCount: reportItems.length, autoPrint }
-      ).catch(err => console.error("Log error ignored:", err))
+      ).catch(err => console.error("Log error ignored:", err));
 
     } catch (error) {
       console.error("Error exporting report:", error)

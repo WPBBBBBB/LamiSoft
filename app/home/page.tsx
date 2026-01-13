@@ -1,5 +1,4 @@
-﻿"use client"
-
+﻿"use client";
 import { SearchBar } from "./components/search-bar"
 import { ActionButtons } from "./components/action-buttons"
 import { BackupCard } from "./components/backup-card"

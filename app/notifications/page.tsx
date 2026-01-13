@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -46,17 +45,15 @@ export default function NotificationsPage() {
     try {
       const result = await getAllNotifications(showRead)
       if (result.success) {
-        setNotifications(result.data || [])
+        setNotifications(result.data || []);
         
-        // تشغيل الأنيميشن إذا كان هناك إشعار احتفالي جديد
         const hasConfettiNotification = result.data?.some(
           (n) => metadataShowsConfetti(n.metadata) && !n.is_read
-        )
+        );
         if (hasConfettiNotification) {
-          setShowConfetti(true)
-          // تشغيل صوت احتفالي
-          const audio = new Audio('/sounds/celebration.mp3')
-          audio.play().catch(() => {}) // تجاهل الخطأ إذا لم يكن الملف موجود
+          setShowConfetti(true);
+          const audio = new Audio('/sounds/celebration.mp3');
+          audio.play().catch(() => {});
         }
       } else {
         toast.error(result.error || t("failedToFetchNotifications", currentLanguage.code))
@@ -75,12 +72,9 @@ export default function NotificationsPage() {
   const handleRefresh = async () => {
     setIsRefreshing(true)
     try {
-      // تشغيل فحص الإشعارات
-      await runChecks()
-      // تحديث الإشعارات في الـ provider (سيحدث الهيدر تلقائياً)
-      await refreshNotifications()
-      // تحديث القائمة المحلية
-      await fetchNotifications()
+      await runChecks();
+      await refreshNotifications();
+      await fetchNotifications();
     } catch (error) {
       toast.error(t("errorRefreshing", currentLanguage.code))
     } finally {
@@ -92,11 +86,9 @@ export default function NotificationsPage() {
     try {
       const result = await markNotificationAsRead(id)
       if (result.success) {
-        toast.success(t("notificationMarkedAsRead", currentLanguage.code))
-        // تحديث الـ provider (سيحدث الهيدر تلقائياً)
-        await refreshNotifications()
-        // تحديث القائمة المحلية
-        await fetchNotifications()
+        toast.success(t("notificationMarkedAsRead", currentLanguage.code));
+        await refreshNotifications();
+        await fetchNotifications();
       } else {
         toast.error(result.error || t("failedToMarkNotification", currentLanguage.code))
       }
@@ -107,10 +99,8 @@ export default function NotificationsPage() {
 
   const handleMarkAllAsRead = async () => {
     try {
-      // استخدام دالة الـ provider (سيحدث الهيدر تلقائياً)
-      await providerMarkAllAsRead()
-      // تحديث القائمة المحلية
-      await fetchNotifications()
+      await providerMarkAllAsRead();
+      await fetchNotifications();
     } catch (error) {
       toast.error(t("errorOccurred", currentLanguage.code))
     }
@@ -122,11 +112,9 @@ export default function NotificationsPage() {
     try {
       const result = await deleteNotification(id)
       if (result.success) {
-        toast.success(t("notificationDeleted", currentLanguage.code))
-        // تحديث الـ provider (سيحدث الهيدر تلقائياً)
-        await refreshNotifications()
-        // تحديث القائمة المحلية
-        await fetchNotifications()
+        toast.success(t("notificationDeleted", currentLanguage.code));
+        await refreshNotifications();
+        await fetchNotifications();
       } else {
         toast.error(result.error || t("deleteFailed", currentLanguage.code))
       }
@@ -136,7 +124,6 @@ export default function NotificationsPage() {
   }
 
   const getNotificationIcon = (type: string, metadata?: unknown) => {
-    // إشعار احتفالي (معلم الزبائن)
     if (metadataShowsConfetti(metadata)) {
       return <Trophy className="h-5 w-5 text-amber-500" />
     }
@@ -152,7 +139,6 @@ export default function NotificationsPage() {
   }
 
   const getNotificationBadge = (type: string, metadata?: unknown) => {
-    // إشعار احتفالي (معلم الزبائن)
     if (metadataShowsConfetti(metadata)) {
       return (
         <Badge className="bg-linear-to-r from-amber-400 to-yellow-500 text-white border-none">
@@ -175,10 +161,9 @@ export default function NotificationsPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* أنيميشن الأوراق الملونة */}
+
       <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
-      
-      {/* الهيدر */}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">{t("debtNotificationsTitle", currentLanguage.code)}</h1>
@@ -195,7 +180,6 @@ export default function NotificationsPage() {
         </div>
       </div>
 
-      {/* أزرار التحكم */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-center gap-3">
@@ -239,7 +223,6 @@ export default function NotificationsPage() {
         </CardContent>
       </Card>
 
-      {/* جدول الإشعارات */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -392,5 +375,5 @@ export default function NotificationsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

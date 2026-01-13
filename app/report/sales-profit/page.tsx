@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState, Suspense } from "react"
 import { ReportLayout } from "@/components/reports/report-layout"

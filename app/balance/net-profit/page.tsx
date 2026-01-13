@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -187,7 +186,6 @@ export default function NetProfitPage() {
     }
   }
 
-  // Calculate sales profit by comparing revenue and cost
   async function calculateSalesProfit(start: Date, end: Date): Promise<SalesProfit> {
     try {
       const formatSupabaseError = (err: unknown) => {
@@ -428,279 +426,269 @@ export default function NetProfitPage() {
 
   return (
     <PermissionGuard requiredPermission="view_statistics">
-    <div className="space-y-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
-          {t('netProfit', currentLanguage.code)}
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          {t('netProfitSubtitle', currentLanguage.code)}
-        </p>
-      </div>
-
-      {/* Period Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('profitStatement', currentLanguage.code)}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4 items-end">
-            <div className="flex-1 min-w-[200px]">
-              <Label htmlFor="start-date">{t('fromDate', currentLanguage.code)}</Label>
-              <Input
-                id="start-date"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <div className="flex-1 min-w-[200px]">
-              <Label htmlFor="end-date">{t('toDate', currentLanguage.code)}</Label>
-              <Input
-                id="end-date"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <Button
-              onClick={handleCustomPeriod}
-              disabled={isLoading}
-              style={{
-                backgroundColor: "var(--theme-primary)",
-                color: "white",
-              }}
-            >
-              <Calendar className="h-4 w-4 ml-2" />
-              {t('generateStatement', currentLanguage.code)}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Period Buttons */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={() => handlePeriodSelect("daily")}
-              variant={selectedPeriod === "daily" ? "default" : "outline"}
-              disabled={isLoading}
-              style={
-                selectedPeriod === "daily"
-                  ? { backgroundColor: "var(--theme-primary)", color: "white" }
-                  : {}
-              }
-            >
-              {t('dailyStatement', currentLanguage.code)}
-            </Button>
-            <Button
-              onClick={() => handlePeriodSelect("weekly")}
-              variant={selectedPeriod === "weekly" ? "default" : "outline"}
-              disabled={isLoading}
-              style={
-                selectedPeriod === "weekly"
-                  ? { backgroundColor: "var(--theme-primary)", color: "white" }
-                  : {}
-              }
-            >
-              {t('weeklyStatement', currentLanguage.code)}
-            </Button>
-            <Button
-              onClick={() => handlePeriodSelect("monthly")}
-              variant={selectedPeriod === "monthly" ? "default" : "outline"}
-              disabled={isLoading}
-              style={
-                selectedPeriod === "monthly"
-                  ? { backgroundColor: "var(--theme-primary)", color: "white" }
-                  : {}
-              }
-            >
-              {t('monthlyStatement', currentLanguage.code)}
-            </Button>
-            <Button
-              onClick={() => handlePeriodSelect("yearly")}
-              variant={selectedPeriod === "yearly" ? "default" : "outline"}
-              disabled={isLoading}
-              style={
-                selectedPeriod === "yearly"
-                  ? { backgroundColor: "var(--theme-primary)", color: "white" }
-                  : {}
-              }
-            >
-              {t('yearlyStatement', currentLanguage.code)}
-            </Button>
-            <Button
-              onClick={() => handlePeriodSelect("all")}
-              variant={selectedPeriod === "all" ? "default" : "outline"}
-              disabled={isLoading}
-              style={
-                selectedPeriod === "all"
-                  ? { backgroundColor: "var(--theme-primary)", color: "white" }
-                  : {}
-              }
-            >
-              {t('allTimeStatement', currentLanguage.code)}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Display Period */}
-      {displayPeriod && (
-        <div className="text-center p-4 bg-muted rounded-lg">
-          <p className="text-lg font-medium">
-            {t('netProfitForPeriod', currentLanguage.code)}: <span className="text-primary">{displayPeriod}</span>
+      <div className="space-y-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
+            {t('netProfit', currentLanguage.code)}
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            {t('netProfitSubtitle', currentLanguage.code)}
           </p>
         </div>
-      )}
 
-      {/* Financial Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Sales Profit Card */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('salesProfitCard', currentLanguage.code)}</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+          <CardHeader>
+            <CardTitle>{t('profitStatement', currentLanguage.code)}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(salesProfit.profit)} د.ع
+            <div className="flex flex-wrap gap-4 items-end">
+              <div className="flex-1 min-w-[200px]">
+                <Label htmlFor="start-date">{t('fromDate', currentLanguage.code)}</Label>
+                <Input
+                  id="start-date"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <Label htmlFor="end-date">{t('toDate', currentLanguage.code)}</Label>
+                <Input
+                  id="end-date"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <Button
+                onClick={handleCustomPeriod}
+                disabled={isLoading}
+                style={{
+                  backgroundColor: "var(--theme-primary)",
+                  color: "white",
+                }}
+              >
+                <Calendar className="h-4 w-4 ml-2" />
+                {t('generateStatement', currentLanguage.code)}
+              </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {t('revenue', currentLanguage.code)}: {formatCurrency(salesProfit.totalRevenue)}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {t('cost', currentLanguage.code)}: {formatCurrency(salesProfit.totalCost)}
-            </p>
           </CardContent>
         </Card>
 
-        {/* Daily Expenses Card */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('dailySpending', currentLanguage.code)}</CardTitle>
-            <Wallet className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {formatCurrency(expenses.daily)} د.ع
+          <CardContent className="pt-6">
+            <div className="flex flex-wrap gap-3">
+              <Button
+                onClick={() => handlePeriodSelect("daily")}
+                variant={selectedPeriod === "daily" ? "default" : "outline"}
+                disabled={isLoading}
+                style={
+                  selectedPeriod === "daily"
+                    ? { backgroundColor: "var(--theme-primary)", color: "white" }
+                    : {}
+                }
+              >
+                {t('dailyStatement', currentLanguage.code)}
+              </Button>
+              <Button
+                onClick={() => handlePeriodSelect("weekly")}
+                variant={selectedPeriod === "weekly" ? "default" : "outline"}
+                disabled={isLoading}
+                style={
+                  selectedPeriod === "weekly"
+                    ? { backgroundColor: "var(--theme-primary)", color: "white" }
+                    : {}
+                }
+              >
+                {t('weeklyStatement', currentLanguage.code)}
+              </Button>
+              <Button
+                onClick={() => handlePeriodSelect("monthly")}
+                variant={selectedPeriod === "monthly" ? "default" : "outline"}
+                disabled={isLoading}
+                style={
+                  selectedPeriod === "monthly"
+                    ? { backgroundColor: "var(--theme-primary)", color: "white" }
+                    : {}
+                }
+              >
+                {t('monthlyStatement', currentLanguage.code)}
+              </Button>
+              <Button
+                onClick={() => handlePeriodSelect("yearly")}
+                variant={selectedPeriod === "yearly" ? "default" : "outline"}
+                disabled={isLoading}
+                style={
+                  selectedPeriod === "yearly"
+                    ? { backgroundColor: "var(--theme-primary)", color: "white" }
+                    : {}
+                }
+              >
+                {t('yearlyStatement', currentLanguage.code)}
+              </Button>
+              <Button
+                onClick={() => handlePeriodSelect("all")}
+                variant={selectedPeriod === "all" ? "default" : "outline"}
+                disabled={isLoading}
+                style={
+                  selectedPeriod === "all"
+                    ? { backgroundColor: "var(--theme-primary)", color: "white" }
+                    : {}
+                }
+              >
+                {t('allTimeStatement', currentLanguage.code)}
+              </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {t('recurringDaily', currentLanguage.code)}
-            </p>
           </CardContent>
         </Card>
 
-        {/* Weekly Expenses Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('weeklySpending', currentLanguage.code)}</CardTitle>
-            <Wallet className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {formatCurrency(expenses.weekly)} د.ع
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {t('recurringWeekly', currentLanguage.code)}
+        {displayPeriod && (
+          <div className="text-center p-4 bg-muted rounded-lg">
+            <p className="text-lg font-medium">
+              {t('netProfitForPeriod', currentLanguage.code)}: <span className="text-primary">{displayPeriod}</span>
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        )}
 
-        {/* Monthly Expenses Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('monthlySpending', currentLanguage.code)}</CardTitle>
-            <Wallet className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
-              {formatCurrency(expenses.monthly)} د.ع
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {t('recurringMonthly', currentLanguage.code)}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
-        {/* Yearly Expenses Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('yearlySpending', currentLanguage.code)}</CardTitle>
-            <Wallet className="h-4 w-4 text-indigo-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-indigo-600">
-              {formatCurrency(expenses.yearly)} د.ع
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {t('recurringYearly', currentLanguage.code)}
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t('salesProfitCard', currentLanguage.code)}</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {formatCurrency(salesProfit.profit)} د.ع
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {t('revenue', currentLanguage.code)}: {formatCurrency(salesProfit.totalRevenue)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t('cost', currentLanguage.code)}: {formatCurrency(salesProfit.totalCost)}
+              </p>
+            </CardContent>
+          </Card>
 
-        {/* One-time Expenses Card */}
-        <Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t('dailySpending', currentLanguage.code)}</CardTitle>
+              <Wallet className="h-4 w-4 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">
+                {formatCurrency(expenses.daily)} د.ع
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {t('recurringDaily', currentLanguage.code)}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t('weeklySpending', currentLanguage.code)}</CardTitle>
+              <Wallet className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {formatCurrency(expenses.weekly)} د.ع
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {t('recurringWeekly', currentLanguage.code)}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t('monthlySpending', currentLanguage.code)}</CardTitle>
+              <Wallet className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">
+                {formatCurrency(expenses.monthly)} د.ع
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {t('recurringMonthly', currentLanguage.code)}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t('yearlySpending', currentLanguage.code)}</CardTitle>
+              <Wallet className="h-4 w-4 text-indigo-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-indigo-600">
+                {formatCurrency(expenses.yearly)} د.ع
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {t('recurringYearly', currentLanguage.code)}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t('oneTimeSpending', currentLanguage.code)}</CardTitle>
+              <AlertCircle className="h-4 w-4 text-gray-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-600">
+                {formatCurrency(expenses.once)} د.ع
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {t('nonRecurring', currentLanguage.code)}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+        <Card className="border-2" style={{ borderColor: netProfit >= 0 ? "#10b981" : "#ef4444" }}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('oneTimeSpending', currentLanguage.code)}</CardTitle>
-            <AlertCircle className="h-4 w-4 text-gray-600" />
+            <CardTitle className="text-lg font-bold">{t('netProfit', currentLanguage.code)}</CardTitle>
+            {netProfit >= 0 ? (
+              <TrendingUp className="h-6 w-6 text-green-600" />
+            ) : (
+              <TrendingDown className="h-6 w-6 text-red-600" />
+            )}
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-600">
-              {formatCurrency(expenses.once)} د.ع
+            <div
+              className={`text-4xl font-bold ${
+                netProfit >= 0 ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {formatCurrency(netProfit)} د.ع
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {t('nonRecurring', currentLanguage.code)}
-            </p>
+            <div className="mt-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{t('salesProfitCard', currentLanguage.code)}:</span>
+                <span className="font-medium text-green-600">
+                  +{formatCurrency(salesProfit.profit)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{t('totalExpenses', currentLanguage.code)}:</span>
+                <span className="font-medium text-red-600">
+                  -{formatCurrency(expenses.total)}
+                </span>
+              </div>
+              <div className="border-t pt-2 mt-2">
+                <div className="flex justify-between text-sm font-medium">
+                  <span>{t('net', currentLanguage.code)}:</span>
+                  <span className={netProfit >= 0 ? "text-green-600" : "text-red-600"}>
+                    {formatCurrency(netProfit)}
+                  </span>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
-
-      <Card className="border-2" style={{ borderColor: netProfit >= 0 ? "#10b981" : "#ef4444" }}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-lg font-bold">{t('netProfit', currentLanguage.code)}</CardTitle>
-          {netProfit >= 0 ? (
-            <TrendingUp className="h-6 w-6 text-green-600" />
-          ) : (
-            <TrendingDown className="h-6 w-6 text-red-600" />
-          )}
-        </CardHeader>
-        <CardContent>
-          <div
-            className={`text-4xl font-bold ${
-              netProfit >= 0 ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            {formatCurrency(netProfit)} د.ع
-          </div>
-          <div className="mt-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t('salesProfitCard', currentLanguage.code)}:</span>
-              <span className="font-medium text-green-600">
-                +{formatCurrency(salesProfit.profit)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t('totalExpenses', currentLanguage.code)}:</span>
-              <span className="font-medium text-red-600">
-                -{formatCurrency(expenses.total)}
-              </span>
-            </div>
-            <div className="border-t pt-2 mt-2">
-              <div className="flex justify-between text-sm font-medium">
-                <span>{t('net', currentLanguage.code)}:</span>
-                <span className={netProfit >= 0 ? "text-green-600" : "text-red-600"}>
-                  {formatCurrency(netProfit)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
     </PermissionGuard>
-  )
+  );
 }

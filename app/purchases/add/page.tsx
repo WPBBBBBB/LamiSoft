@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -66,7 +65,7 @@ interface ProductRow extends PurchaseProductDetail {
 function toEnglishDigits(value: string): string {
   return value
     .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
-    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
 }
 
 function normalizeDateTimeInput(raw: string): string {
@@ -74,10 +73,9 @@ function normalizeDateTimeInput(raw: string): string {
     .trim()
     .replace(/\s+/g, " ")
     .replace(" ", "T")
-    .replace(/[^0-9T:\-]/g, "")
+    .replace(/[^0-9T:\-]/g, "");
 
-  // Keep as YYYY-MM-DDTHH:mm (16 chars). If user types seconds or more, trim.
-  return normalized.length > 16 ? normalized.slice(0, 16) : normalized
+  return normalized.length > 16 ? normalized.slice(0, 16) : normalized;
 }
 
 export default function PurchaseAddPage() {
@@ -137,16 +135,15 @@ export default function PurchaseAddPage() {
   const [generatingNumber, setGeneratingNumber] = useState(false)
   const [generatingProductCode, setGeneratingProductCode] = useState(false)
   
-  const [viewingNote, setViewingNote] = useState<string | null>(null)
+  const [viewingNote, setViewingNote] = useState<string | null>(null);
   
-  // تعارضات أسعار المواد
   const [priceConflicts, setPriceConflicts] = useState<Array<{
     product: PurchaseProductDetail
     existingPriceIQD: number
     existingPriceUSD: number
     newPriceIQD: number
     newPriceUSD: number
-  }>>([])
+  }>>([]);
   const [showPriceConflictDialog, setShowPriceConflictDialog] = useState(false)
   const [priceUpdateDecisions, setPriceUpdateDecisions] = useState<Map<string, boolean>>(new Map())
 
@@ -511,13 +508,11 @@ export default function PurchaseAddPage() {
       return
     }
 
-    // التحقق من تعارض الأسعار قبل الحفظ
     if (!isEditMode) {
       const conflictsCheck = await checkProductsPriceConflicts(purchasestoreid, validProducts)
       
       if (conflictsCheck.success && conflictsCheck.conflicts.length > 0) {
-        // عرض حوار تعارض الأسعار
-        setPriceConflicts(conflictsCheck.conflicts)
+        setPriceConflicts(conflictsCheck.conflicts);
         setShowPriceConflictDialog(true)
         return
       }
@@ -550,15 +545,13 @@ export default function PurchaseAddPage() {
 
       let result
       if (isEditMode && editId) {
-        // استخدام دالة التعديل
         result = await updatePurchase(
           editId,
           purchaseMain,
           validProducts,
           purchasestoreid
-        )
+        );
       } else {
-        // استخدام دالة الإضافة مع قرارات تحديث الأسعار
         result = await createPurchase(
           purchaseMain,
           validProducts,
@@ -566,7 +559,7 @@ export default function PurchaseAddPage() {
           typeofpayment,
           currencyType,
           priceDecisions
-        )
+        );
       }
 
       if (result.success) {
@@ -628,10 +621,9 @@ export default function PurchaseAddPage() {
             )
           }
           
-          toast.success(t("purchaseSavedSuccess", lang))
+          toast.success(t("purchaseSavedSuccess", lang));
           
-          // إعادة تعيين النموذج
-          setProducts([])
+          setProducts([]);
           setNumberOfPurchase("")
           setDetails("")
           setHasAmountReceived(false)
@@ -697,925 +689,907 @@ export default function PurchaseAddPage() {
 
   return (
     <PermissionGuard requiredPermission="add_purchase">
-    {isSaving && (
-      <div
-        className="fixed inset-0 z-9999 flex items-center justify-center bg-background/80 backdrop-blur-sm"
-        aria-busy="true"
-        role="status"
-      >
-        <div className="flex items-center gap-3 rounded-lg border bg-background px-4 py-3 shadow">
-          <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="text-sm">{t("savingPurchaseList", lang)}</span>
-        </div>
-      </div>
-    )}
-    <div className="container mx-auto p-6 space-y-6">
-      {}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.back()}
-          >
-            <ArrowRight className="h-5 w-5 theme-icon" />
-          </Button>
-          <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
-            {isViewMode
-              ? t("viewPurchaseList", lang)
-              : isEditMode
-                ? t("editPurchaseList", lang)
-                : t("addPurchaseList", lang)}
-          </h1>
-        </div>
-        {loadingEditData && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>{t("loadingPurchaseData", lang)}</span>
-          </div>
-        )}
-      </div>
-
-      {}
-      <Card className="p-6" style={{ backgroundColor: "var(--theme-surface)", color: "var(--theme-text)" }}>
-        {}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          {}
-          <div className="space-y-2">
-            <Label htmlFor="numberofpurchase">{t("purchaseNumber", lang)}</Label>
-            <div className="relative">
-              <Input
-                id="numberofpurchase"
-                value={numberofpurchase}
-                onChange={(e) => setNumberOfPurchase(e.target.value)}
-                placeholder={t("purchaseNumber", lang)}
-                readOnly={isViewMode}
-                className="pr-10"
-              />
-              {!isViewMode && (
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                  onClick={generateUniquePurchaseNumber}
-                  disabled={generatingNumber}
-                  title={t("generateRandomPurchaseNumber", lang)}
-                >
-                  <RefreshCw className={cn("h-4 w-4", generatingNumber && "animate-spin")} />
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {}
-          <div className="space-y-2">
-            <Label>{t("purchaseType", lang)}</Label>
-            <Select value={typeofbuy} onValueChange={(v: "إعادة" | "محلي" | "استيراد") => setTypeOfBuy(v)} disabled={isViewMode}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="إعادة">{t("returnType", lang)}</SelectItem>
-                <SelectItem value="محلي">{t("local", lang)}</SelectItem>
-                <SelectItem value="استيراد">{t("importType", lang)}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {}
-          <div className="space-y-2">
-            <Label>{t("paymentType", lang)}</Label>
-            <Select
-              value={typeofpayment}
-              onValueChange={(v: "نقدي" | "آجل") => setTypeOfPayment(v)}
-              disabled={isViewMode}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="نقدي">{t("cash", lang)}</SelectItem>
-                <SelectItem value="آجل">{t("credit", lang)}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {}
-          <div className="space-y-2">
-            <Label>{t("currencyType", lang)}</Label>
-            <Select
-              value={currencyType}
-              onValueChange={(v: "دينار" | "دولار") => setCurrencyType(v)}
-              disabled={isViewMode}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="دينار">{t("dinar", lang)}</SelectItem>
-                <SelectItem value="دولار">{t("dollar", lang)}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>{t("store", lang)}</Label>
-            <Select value={purchasestoreid} onValueChange={setPurchaseStoreId}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("selectStore", lang)} />
-              </SelectTrigger>
-              <SelectContent>
-                {stores.map((store) => (
-                  <SelectItem key={store.id} value={store.id}>
-                    {store.storename}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {isSaving && (
+        <div
+          className="fixed inset-0 z-9999 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+          aria-busy="true"
+          role="status"
+        >
+          <div className="flex items-center gap-3 rounded-lg border bg-background px-4 py-3 shadow">
+            <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">{t("savingPurchaseList", lang)}</span>
           </div>
         </div>
+      )}
+      <div className="container mx-auto p-6 space-y-6">
 
-        {}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
-          {}
-          <div className="space-y-2 md:col-span-3">
-            <Label>{t("supplierNameLabel", lang)}</Label>
-            <div className="relative" ref={dropdownRef}>
-                <Input
-                  placeholder={t("searchForSupplier", lang)}
-                  value={searchSupplier || (supplierid ? suppliers.find(s => s.id === supplierid)?.name : "")}
-                  onChange={(e) => {
-                    setSearchSupplier(e.target.value)
-                    setSelectOpen(true)
-                    if (!e.target.value) {
-                      setSupplierId("")
-                      setNameOfSupplier("")
-                      setSupplierBalanceIQD(0)
-                      setSupplierBalanceUSD(0)
-                    }
-                  }}
-                  onFocus={() => setSelectOpen(true)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && searchSupplier) {
-                      const filteredSuppliers = suppliers.filter((supplier) =>
-                        supplier.name.toLowerCase().includes(searchSupplier.toLowerCase())
-                      )
-                      if (filteredSuppliers.length === 0) {
-                        const currentPath = window.location.pathname + window.location.search
-                        router.push(`/customers/add?type=مجهز&returnTo=${encodeURIComponent(currentPath)}&name=${encodeURIComponent(searchSupplier)}`)
-                      }
-                    }
-                  }}
-                  disabled={isViewMode}
-                />
-                {selectOpen && (
-                  <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-[300px] overflow-y-auto">
-                    {(() => {
-                      const filteredSuppliers = suppliers.filter((supplier) =>
-                        supplier.name.toLowerCase().includes(searchSupplier.toLowerCase())
-                      )
-                      
-                      if (filteredSuppliers.length === 0) {
-                        return (
-                          <div className="px-3 py-3 text-center space-y-1">
-                            <div className="text-sm text-muted-foreground">
-                              {t("purchaseSupplierNotFound", lang)}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {(() => {
-                                const text = t("purchasePressEnterToAddSupplier", lang)
-                                const parts = text.split("{key}")
-                                return (
-                                  <>
-                                    {parts[0]}
-                                    <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Enter</kbd>
-                                    {parts[1] || ""}
-                                  </>
-                                )
-                              })()}
-                            </div>
-                          </div>
-                        )
-                      }
-                      
-                      return filteredSuppliers.map((supplier) => (
-                        <div
-                          key={supplier.id}
-                          onMouseDown={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            handleSupplierChange(supplier.id)
-                            setSelectOpen(false)
-                            setSearchSupplier("")
-                          }}
-                          className="px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                        >
-                          {supplier.name}
-                        </div>
-                      ))
-                    })()}
-                  </div>
-                )}
-            </div>
-          </div>
-
-          {}
-          <div className="space-y-2 md:col-span-2">
-            <Label className="font-semibold text-blue-600 dark:text-blue-400">{t("previousBalanceIQD", lang)}</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                value={supplierBalanceIQD.toLocaleString('en-US')}
-                readOnly
-                className="ltr-numbers bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 font-bold"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2 md:col-span-2">
-            <Label className="font-semibold text-green-600 dark:text-green-400">{t("previousBalanceUSD", lang)}</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                value={supplierBalanceUSD.toLocaleString('en-US')}
-                readOnly
-                className="ltr-numbers bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 font-bold"
-              />
-            </div>
-          </div>
-
-          {}
-          {typeofpayment === "آجل" && (
-            <div className="space-y-2 md:col-span-3">
-              <div className="flex items-center space-x-2 space-x-reverse h-full">
-                <Checkbox
-                  id="hasAmountReceived"
-                  checked={hasAmountReceived}
-                  onCheckedChange={(checked) =>
-                    setHasAmountReceived(checked as boolean)
-                  }
-                  disabled={isViewMode}
-                />
-                <Label htmlFor="hasAmountReceived" className="cursor-pointer">
-                  {t("amountReceived", lang)}
-                </Label>
-              </div>
-
-              {hasAmountReceived && (
-                <div className="flex gap-2">
-                  <Select
-                    value={amountCurrency}
-                    onValueChange={(v: "دينار" | "دولار") => setAmountCurrency(v)}
-                  >
-                    <SelectTrigger className="w-[100px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="دينار">{t("dinar", lang)}</SelectItem>
-                        <SelectItem value="دولار">{t("dollar", lang)}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number"
-                    value={
-                      amountCurrency === "دينار"
-                        ? amountReceivedIQD || ""
-                        : amountReceivedUSD || ""
-                    }
-                    onChange={(e) =>
-                      handleAmountReceivedChange(parseFloat(e.target.value) || 0)
-                    }
-                    placeholder="0"
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          {}
-          <div className="space-y-2 md:col-span-2">
-            <Label>{t("exchangeRate", lang)}</Label>
-            <Input
-              value={exchangeRate.toLocaleString('en-US')}
-              readOnly
-              className="ltr-numbers bg-muted"
-            />
-          </div>
-        </div>
-
-        {}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {}
-          <div className="space-y-2">
-            <Label htmlFor="datetime">{t("dateTime", lang)}</Label>
-            <div className="relative">
-              <Input
-                id="datetime"
-                type="text"
-                inputMode="numeric"
-                placeholder="YYYY-MM-DD HH:MM"
-                value={datetime ? datetime.replace("T", " ") : ""}
-                onChange={(e) => setDateTime(normalizeDateTimeInput(e.target.value))}
-                readOnly={isViewMode}
-                dir="ltr"
-                className={cn(
-                  "ltr-numbers text-center pl-10 pr-10",
-                  isViewMode && "bg-muted"
-                )}
-              />
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none theme-icon" />
-            </div>
-          </div>
-
-          {}
-          <div className="space-y-2">
-            <Label htmlFor="details">{t("notes", lang)}</Label>
-            <Textarea
-              id="details"
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-              placeholder={`${t("additionalNotes", lang)}...`}
-              rows={2}
-              readOnly={isViewMode}
-            />
-          </div>
-        </div>
-      </Card>
-
-      {}
-      <Card className="p-6" style={{ backgroundColor: "var(--theme-surface)", color: "var(--theme-text)" }}>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold" style={{ color: "var(--theme-text)" }}>
-            {t("purchasedItemsDetails", lang)}
-          </h2>
-        </div>
-
-        <div className="rounded-lg border overflow-x-auto w-full max-h-[1200px] overflow-y-auto">
-          <Table>
-            <TableHeader>
-              <TableRow
-                style={{
-                  background: "linear-gradient(to right, var(--theme-surface), var(--theme-accent))",
-                }}
-              >
-                <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>{t("rowNumber", lang)}</TableHead>
-                <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>{t("delete", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("productCode", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("productName", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("quantity", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("unit", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("purchasePriceIQDShort", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("purchasePriceUSDShort", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("sellPriceIQDShort", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("sellPriceUSDShort", lang)}</TableHead>
-                <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("notes", lang)}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {}
-              {!isViewMode && (
-              <TableRow style={{ backgroundColor: "var(--theme-accent)", opacity: 0.9 }}>
-                <TableCell className="text-center font-bold" style={{ color: "var(--theme-text)" }}>
-                  {t("new", lang)}
-                </TableCell>
-                <TableCell className="text-center">
-                  <Plus className="h-5 w-5 theme-success mx-auto" />
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <div className="relative flex-1">
-                      <Input
-                        value={newItem.productcode1}
-                        onChange={(e) => updateNewItem("productcode1", e.target.value)}
-                        onKeyPress={(e) => handleNewItemKeyPress(e, "productcode1")}
-                        placeholder={t("productCode", lang)}
-                        className="bg-green-50 dark:bg-green-950/20 h-8 pl-7"
-                        title={newItem.productcode1}
-                      />
-                      {!isViewMode && (
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-6"
-                          onClick={generateUniqueProductCode}
-                          disabled={generatingProductCode}
-                          title={t("generateRandomProductCode", lang)}
-                        >
-                          <RefreshCw className={cn("h-3 w-3", generatingProductCode && "animate-spin")} />
-                        </Button>
-                      )}
-                    </div>
-                    {newItem.productcode1 && newItem.productcode1.length > 10 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setViewingNote(newItem.productcode1)}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Input
-                      value={newItem.nameofproduct}
-                      onChange={(e) => updateNewItem("nameofproduct", e.target.value)}
-                      onKeyPress={(e) => handleNewItemKeyPress(e, "nameofproduct")}
-                      placeholder={t("productName", lang)}
-                      className="bg-green-50 dark:bg-green-950/20 h-8 flex-1"
-                      title={newItem.nameofproduct}
-                    />
-                    {newItem.nameofproduct && newItem.nameofproduct.length > 15 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setViewingNote(newItem.nameofproduct)}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={newItem.quantity || ""}
-                    onChange={(e) => updateNewItem("quantity", parseFloat(e.target.value) || 0)}
-                    onKeyPress={(e) => handleNewItemKeyPress(e, "quantity")}
-                    placeholder="0"
-                    className="bg-green-50 dark:bg-green-950/20 h-8"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={newItem.unit}
-                    onValueChange={(v: "كارتون" | "قطعة" | "لتر" | "كغم") =>
-                      updateNewItem("unit", v)
-                    }
-                  >
-                    <SelectTrigger className="bg-green-50 dark:bg-green-950/20 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="كارتون">{t("carton", lang)}</SelectItem>
-                      <SelectItem value="قطعة">{t("piece", lang)}</SelectItem>
-                      <SelectItem value="لتر">{t("liter", lang)}</SelectItem>
-                      <SelectItem value="كغم">{t("kg", lang)}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={newItem.purchasesinglepriceiqd || ""}
-                    onChange={(e) => updateNewItem("purchasesinglepriceiqd", parseFloat(e.target.value) || 0)}
-                    onKeyPress={(e) => handleNewItemKeyPress(e, "purchasesinglepriceiqd")}
-                    placeholder="0"
-                    className="bg-green-50 dark:bg-green-950/20 h-8"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={newItem.purchasesinglepriceusd || ""}
-                    onChange={(e) => updateNewItem("purchasesinglepriceusd", parseFloat(e.target.value) || 0)}
-                    onKeyPress={(e) => handleNewItemKeyPress(e, "purchasesinglepriceusd")}
-                    placeholder="0"
-                    className="bg-green-50 dark:bg-green-950/20 h-8"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={newItem.sellsinglepriceiqd || ""}
-                    onChange={(e) => updateNewItem("sellsinglepriceiqd", parseFloat(e.target.value) || 0)}
-                    onKeyPress={(e) => handleNewItemKeyPress(e, "sellsinglepriceiqd")}
-                    placeholder="0"
-                    className="bg-green-50 dark:bg-green-950/20 h-8"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={newItem.sellsinglepriceusd || ""}
-                    onChange={(e) => updateNewItem("sellsinglepriceusd", parseFloat(e.target.value) || 0)}
-                    onKeyPress={(e) => handleNewItemKeyPress(e, "sellsinglepriceusd")}
-                    placeholder="0"
-                    className="bg-green-50 dark:bg-green-950/20 h-8"
-                  />
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Input
-                      value={newItem.details || ""}
-                      onChange={(e) => updateNewItem("details", e.target.value)}
-                      onKeyPress={(e) => handleNewItemKeyPress(e, "details")}
-                      placeholder={t("notePlaceholder", lang)}
-                      className="bg-green-50 dark:bg-green-950/20 h-8 flex-1"
-                      title={newItem.details}
-                    />
-                    {newItem.details && newItem.details.length > 15 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setViewingNote(newItem.details || "")}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-              )}
-
-              {}
-              {products.map((product, index) => (
-                  <TableRow key={product.tempId} style={{ backgroundColor: "var(--theme-background)" }}>
-                    <TableCell className="text-center" style={{ color: "var(--theme-text)" }}>
-                      {index + 1}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {!isViewMode && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeRow(product.tempId)}
-                        >
-                          <Trash2 className="h-4 w-4 theme-danger" />
-                        </Button>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Input
-                          value={product.productcode1}
-                          onChange={(e) =>
-                            updateProduct(product.tempId, "productcode1", e.target.value)
-                          }
-                          placeholder={t("productCode", lang)}
-                          className="bg-amber-50 dark:bg-amber-950/20 h-8 flex-1"
-                          title={product.productcode1}
-                        />
-                        {product.productcode1 && product.productcode1.length > 10 && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => setViewingNote(product.productcode1)}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Input
-                          value={product.nameofproduct}
-                          onChange={(e) =>
-                            updateProduct(product.tempId, "nameofproduct", e.target.value)
-                          }
-                          placeholder={t("productName", lang)}
-                          className="h-8 flex-1"
-                          title={product.nameofproduct}
-                        />
-                        {product.nameofproduct && product.nameofproduct.length > 15 && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => setViewingNote(product.nameofproduct)}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        value={product.quantity || ""}
-                        onChange={(e) =>
-                          updateProduct(
-                            product.tempId,
-                            "quantity",
-                            parseFloat(e.target.value) || 0
-                          )
-                        }
-                        placeholder="0"
-                        className="h-8"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={product.unit}
-                        onValueChange={(v: "كارتون" | "قطعة" | "لتر" | "كغم") =>
-                          updateProduct(product.tempId, "unit", v)
-                        }
-                      >
-                        <SelectTrigger className="h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="كارتون">{t("carton", lang)}</SelectItem>
-                          <SelectItem value="قطعة">{t("piece", lang)}</SelectItem>
-                          <SelectItem value="لتر">{t("liter", lang)}</SelectItem>
-                          <SelectItem value="كغم">{t("kg", lang)}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        value={product.purchasesinglepriceiqd || ""}
-                        onChange={(e) =>
-                          updateProduct(
-                            product.tempId,
-                            "purchasesinglepriceiqd",
-                            parseFloat(e.target.value) || 0
-                          )
-                        }
-                        placeholder="0"
-                        className="h-8"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        value={product.purchasesinglepriceusd || ""}
-                        onChange={(e) =>
-                          updateProduct(
-                            product.tempId,
-                            "purchasesinglepriceusd",
-                            parseFloat(e.target.value) || 0
-                          )
-                        }
-                        placeholder="0"
-                        className="h-8"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        value={product.sellsinglepriceiqd || ""}
-                        onChange={(e) =>
-                          updateProduct(
-                            product.tempId,
-                            "sellsinglepriceiqd",
-                            parseFloat(e.target.value) || 0
-                          )
-                        }
-                        placeholder="0"
-                        className="h-8"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        value={product.sellsinglepriceusd || ""}
-                        onChange={(e) =>
-                          updateProduct(
-                            product.tempId,
-                            "sellsinglepriceusd",
-                            parseFloat(e.target.value) || 0
-                          )
-                        }
-                        placeholder="0"
-                        className="h-8"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Input
-                          value={product.details}
-                          onChange={(e) =>
-                            updateProduct(product.tempId, "details", e.target.value)
-                          }
-                          placeholder={t("notes", lang)}
-                          className="flex-1 h-8"
-                          title={product.details}
-                        />
-                        {product.details && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9"
-                            onClick={() => setViewingNote(product.details || "")}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {}
-        <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: "var(--theme-accent)", color: "var(--theme-text)" }}>
-          {}
-          <div className="flex flex-wrap items-center justify-between gap-6 mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{t("itemsCount", lang)}:</span>
-              <span className="ltr-numbers font-bold text-lg">{totalProductsCount}</span>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <span className="text-sm">{t("totalIQD", lang)}:</span>
-              <span className="ltr-numbers font-bold text-lg text-green-600 dark:text-green-400">{totalPurchaseIQD.toLocaleString('en-US')}</span>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <span className="text-sm">{t("totalUSD", lang)}:</span>
-              <span className="ltr-numbers font-bold text-lg text-blue-600 dark:text-blue-400">{totalPurchaseUSD.toLocaleString('en-US')}</span>
-            </div>
-            
-            {hasAmountReceived && (
-              <>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">{t("receivedIQD", lang)}:</span>
-                  <span className="ltr-numbers font-bold text-lg">{amountReceivedIQD.toLocaleString('en-US')}</span>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">{t("receivedUSD", lang)}:</span>
-                  <span className="ltr-numbers font-bold text-lg">{amountReceivedUSD.toLocaleString('en-US')}</span>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">{t("remainingIQD", lang)}:</span>
-                  <span className="ltr-numbers font-bold text-lg text-orange-600 dark:text-orange-400">{remainingAmountIQD.toLocaleString('en-US')}</span>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">{t("remainingUSD", lang)}:</span>
-                  <span className="ltr-numbers font-bold text-lg text-orange-600 dark:text-orange-400">{remainingAmountUSD.toLocaleString('en-US')}</span>
-                </div>
-              </>
-            )}
-          </div>
-
-          {!isViewMode && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
             <Button
-              onClick={handleSavePurchase}
-              disabled={isSaving}
-              size="lg"
-              className="w-full md:w-auto"
-              style={{ backgroundColor: "var(--theme-primary)", color: "white" }}
+              variant="ghost"
+              size="icon"
+              onClick={() => router.back()}
             >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-5 w-5 ml-2 animate-spin theme-icon" />
-                  {t("saving", lang)}
-                </>
-              ) : (
-                <>
-                  <Save className="h-5 w-5 ml-2 theme-success" />
-                  {isEditMode ? t("updatePurchaseList", lang) : t("addPurchaseList", lang)}
-                </>
-              )}
+              <ArrowRight className="h-5 w-5 theme-icon" />
             </Button>
+            <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
+              {isViewMode
+                ? t("viewPurchaseList", lang)
+                : isEditMode
+                  ? t("editPurchaseList", lang)
+                  : t("addPurchaseList", lang)}
+            </h1>
+          </div>
+          {loadingEditData && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>{t("loadingPurchaseData", lang)}</span>
+            </div>
           )}
         </div>
-      </Card>
 
-      {}
-      <Dialog open={viewingNote !== null} onOpenChange={(open) => !open && setViewingNote(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("notes", lang)}</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="whitespace-pre-wrap">{viewingNote}</p>
+        <Card className="p-6" style={{ backgroundColor: "var(--theme-surface)", color: "var(--theme-text)" }}>
+
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+
+            <div className="space-y-2">
+              <Label htmlFor="numberofpurchase">{t("purchaseNumber", lang)}</Label>
+              <div className="relative">
+                <Input
+                  id="numberofpurchase"
+                  value={numberofpurchase}
+                  onChange={(e) => setNumberOfPurchase(e.target.value)}
+                  placeholder={t("purchaseNumber", lang)}
+                  readOnly={isViewMode}
+                  className="pr-10"
+                />
+                {!isViewMode && (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                    onClick={generateUniquePurchaseNumber}
+                    disabled={generatingNumber}
+                    title={t("generateRandomPurchaseNumber", lang)}
+                  >
+                    <RefreshCw className={cn("h-4 w-4", generatingNumber && "animate-spin")} />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("purchaseType", lang)}</Label>
+              <Select value={typeofbuy} onValueChange={(v: "إعادة" | "محلي" | "استيراد") => setTypeOfBuy(v)} disabled={isViewMode}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="إعادة">{t("returnType", lang)}</SelectItem>
+                  <SelectItem value="محلي">{t("local", lang)}</SelectItem>
+                  <SelectItem value="استيراد">{t("importType", lang)}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("paymentType", lang)}</Label>
+              <Select
+                value={typeofpayment}
+                onValueChange={(v: "نقدي" | "آجل") => setTypeOfPayment(v)}
+                disabled={isViewMode}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="نقدي">{t("cash", lang)}</SelectItem>
+                  <SelectItem value="آجل">{t("credit", lang)}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("currencyType", lang)}</Label>
+              <Select
+                value={currencyType}
+                onValueChange={(v: "دينار" | "دولار") => setCurrencyType(v)}
+                disabled={isViewMode}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="دينار">{t("dinar", lang)}</SelectItem>
+                  <SelectItem value="دولار">{t("dollar", lang)}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("store", lang)}</Label>
+              <Select value={purchasestoreid} onValueChange={setPurchaseStoreId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("selectStore", lang)} />
+                </SelectTrigger>
+                <SelectContent>
+                  {stores.map((store) => (
+                    <SelectItem key={store.id} value={store.id}>
+                      {store.storename}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <DialogFooter>
-            <Button onClick={() => setViewingNote(null)}>{t("close", lang)}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {/* Dialog for Price Conflicts */}
-      <Dialog open={showPriceConflictDialog} onOpenChange={setShowPriceConflictDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-orange-600">
-              {t("purchasePriceConflictTitle", lang)}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              {t("purchasePriceConflictDescription", lang)}
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
 
+            <div className="space-y-2 md:col-span-3">
+              <Label>{t("supplierNameLabel", lang)}</Label>
+              <div className="relative" ref={dropdownRef}>
+                  <Input
+                    placeholder={t("searchForSupplier", lang)}
+                    value={searchSupplier || (supplierid ? suppliers.find(s => s.id === supplierid)?.name : "")}
+                    onChange={(e) => {
+                      setSearchSupplier(e.target.value)
+                      setSelectOpen(true)
+                      if (!e.target.value) {
+                        setSupplierId("")
+                        setNameOfSupplier("")
+                        setSupplierBalanceIQD(0)
+                        setSupplierBalanceUSD(0)
+                      }
+                    }}
+                    onFocus={() => setSelectOpen(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && searchSupplier) {
+                        const filteredSuppliers = suppliers.filter((supplier) =>
+                          supplier.name.toLowerCase().includes(searchSupplier.toLowerCase())
+                        )
+                        if (filteredSuppliers.length === 0) {
+                          const currentPath = window.location.pathname + window.location.search
+                          router.push(`/customers/add?type=مجهز&returnTo=${encodeURIComponent(currentPath)}&name=${encodeURIComponent(searchSupplier)}`)
+                        }
+                      }
+                    }}
+                    disabled={isViewMode}
+                  />
+                  {selectOpen && (
+                    <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-[300px] overflow-y-auto">
+                      {(() => {
+                        const filteredSuppliers = suppliers.filter((supplier) =>
+                          supplier.name.toLowerCase().includes(searchSupplier.toLowerCase())
+                        )
+                        
+                        if (filteredSuppliers.length === 0) {
+                          return (
+                            <div className="px-3 py-3 text-center space-y-1">
+                              <div className="text-sm text-muted-foreground">
+                                {t("purchaseSupplierNotFound", lang)}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {(() => {
+                                  const text = t("purchasePressEnterToAddSupplier", lang)
+                                  const parts = text.split("{key}")
+                                  return (
+                                    <>
+                                      {parts[0]}
+                                      <kbd className="px-1.5 py-0.5 text-xs font-semibold border rounded bg-muted">Enter</kbd>
+                                      {parts[1] || ""}
+                                    </>
+                                  )
+                                })()}
+                              </div>
+                            </div>
+                          )
+                        }
+                        
+                        return filteredSuppliers.map((supplier) => (
+                          <div
+                            key={supplier.id}
+                            onMouseDown={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              handleSupplierChange(supplier.id)
+                              setSelectOpen(false)
+                              setSearchSupplier("")
+                            }}
+                            className="px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                          >
+                            {supplier.name}
+                          </div>
+                        ))
+                      })()}
+                    </div>
+                  )}
+              </div>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label className="font-semibold text-blue-600 dark:text-blue-400">{t("previousBalanceIQD", lang)}</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={supplierBalanceIQD.toLocaleString('en-US')}
+                  readOnly
+                  className="ltr-numbers bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 font-bold"
+                />
+              </div>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label className="font-semibold text-green-600 dark:text-green-400">{t("previousBalanceUSD", lang)}</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={supplierBalanceUSD.toLocaleString('en-US')}
+                  readOnly
+                  className="ltr-numbers bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 font-bold"
+                />
+              </div>
+            </div>
+
+            {typeofpayment === "آجل" && (
+              <div className="space-y-2 md:col-span-3">
+                <div className="flex items-center space-x-2 space-x-reverse h-full">
+                  <Checkbox
+                    id="hasAmountReceived"
+                    checked={hasAmountReceived}
+                    onCheckedChange={(checked) =>
+                      setHasAmountReceived(checked as boolean)
+                    }
+                    disabled={isViewMode}
+                  />
+                  <Label htmlFor="hasAmountReceived" className="cursor-pointer">
+                    {t("amountReceived", lang)}
+                  </Label>
+                </div>
+
+                {hasAmountReceived && (
+                  <div className="flex gap-2">
+                    <Select
+                      value={amountCurrency}
+                      onValueChange={(v: "دينار" | "دولار") => setAmountCurrency(v)}
+                    >
+                      <SelectTrigger className="w-[100px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="دينار">{t("dinar", lang)}</SelectItem>
+                          <SelectItem value="دولار">{t("dollar", lang)}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      value={
+                        amountCurrency === "دينار"
+                          ? amountReceivedIQD || ""
+                          : amountReceivedUSD || ""
+                      }
+                      onChange={(e) =>
+                        handleAmountReceivedChange(parseFloat(e.target.value) || 0)
+                      }
+                      placeholder="0"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-2 md:col-span-2">
+              <Label>{t("exchangeRate", lang)}</Label>
+              <Input
+                value={exchangeRate.toLocaleString('en-US')}
+                readOnly
+                className="ltr-numbers bg-muted"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <div className="space-y-2">
+              <Label htmlFor="datetime">{t("dateTime", lang)}</Label>
+              <div className="relative">
+                <Input
+                  id="datetime"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="YYYY-MM-DD HH:MM"
+                  value={datetime ? datetime.replace("T", " ") : ""}
+                  onChange={(e) => setDateTime(normalizeDateTimeInput(e.target.value))}
+                  readOnly={isViewMode}
+                  dir="ltr"
+                  className={cn(
+                    "ltr-numbers text-center pl-10 pr-10",
+                    isViewMode && "bg-muted"
+                  )}
+                />
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none theme-icon" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="details">{t("notes", lang)}</Label>
+              <Textarea
+                id="details"
+                value={details}
+                onChange={(e) => setDetails(e.target.value)}
+                placeholder={`${t("additionalNotes", lang)}...`}
+                rows={2}
+                readOnly={isViewMode}
+              />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6" style={{ backgroundColor: "var(--theme-surface)", color: "var(--theme-text)" }}>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold" style={{ color: "var(--theme-text)" }}>
+              {t("purchasedItemsDetails", lang)}
+            </h2>
+          </div>
+          <div className="rounded-lg border overflow-x-auto w-full max-h-[1200px] overflow-y-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>{t("product", lang)}</TableHead>
-                  <TableHead>{t("currentPrice", lang)}</TableHead>
-                  <TableHead>{t("newPrice", lang)}</TableHead>
-                  <TableHead>{t("difference", lang)}</TableHead>
+                <TableRow
+                  style={{
+                    background: "linear-gradient(to right, var(--theme-surface), var(--theme-accent))",
+                  }}
+                >
+                  <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>{t("rowNumber", lang)}</TableHead>
+                  <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>{t("delete", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("productCode", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("productName", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("quantity", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("unit", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("purchasePriceIQDShort", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("purchasePriceUSDShort", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("sellPriceIQDShort", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("sellPriceUSDShort", lang)}</TableHead>
+                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("notes", lang)}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {priceConflicts.map((conflict) => (
-                  <TableRow key={conflict.product.productcode1}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{conflict.product.nameofproduct}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {t("codeLabel", lang).replace("{code}", conflict.product.productcode1)}
+
+                {!isViewMode && (
+                <TableRow style={{ backgroundColor: "var(--theme-accent)", opacity: 0.9 }}>
+                  <TableCell className="text-center font-bold" style={{ color: "var(--theme-text)" }}>
+                    {t("new", lang)}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Plus className="h-5 w-5 theme-success mx-auto" />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <div className="relative flex-1">
+                        <Input
+                          value={newItem.productcode1}
+                          onChange={(e) => updateNewItem("productcode1", e.target.value)}
+                          onKeyPress={(e) => handleNewItemKeyPress(e, "productcode1")}
+                          placeholder={t("productCode", lang)}
+                          className="bg-green-50 dark:bg-green-950/20 h-8 pl-7"
+                          title={newItem.productcode1}
+                        />
+                        {!isViewMode && (
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-6"
+                            onClick={generateUniqueProductCode}
+                            disabled={generatingProductCode}
+                            title={t("generateRandomProductCode", lang)}
+                          >
+                            <RefreshCw className={cn("h-3 w-3", generatingProductCode && "animate-spin")} />
+                          </Button>
+                        )}
+                      </div>
+                      {newItem.productcode1 && newItem.productcode1.length > 10 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setViewingNote(newItem.productcode1)}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Input
+                        value={newItem.nameofproduct}
+                        onChange={(e) => updateNewItem("nameofproduct", e.target.value)}
+                        onKeyPress={(e) => handleNewItemKeyPress(e, "nameofproduct")}
+                        placeholder={t("productName", lang)}
+                        className="bg-green-50 dark:bg-green-950/20 h-8 flex-1"
+                        title={newItem.nameofproduct}
+                      />
+                      {newItem.nameofproduct && newItem.nameofproduct.length > 15 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setViewingNote(newItem.nameofproduct)}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={newItem.quantity || ""}
+                      onChange={(e) => updateNewItem("quantity", parseFloat(e.target.value) || 0)}
+                      onKeyPress={(e) => handleNewItemKeyPress(e, "quantity")}
+                      placeholder="0"
+                      className="bg-green-50 dark:bg-green-950/20 h-8"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={newItem.unit}
+                      onValueChange={(v: "كارتون" | "قطعة" | "لتر" | "كغم") =>
+                        updateNewItem("unit", v)
+                      }
+                    >
+                      <SelectTrigger className="bg-green-50 dark:bg-green-950/20 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="كارتون">{t("carton", lang)}</SelectItem>
+                        <SelectItem value="قطعة">{t("piece", lang)}</SelectItem>
+                        <SelectItem value="لتر">{t("liter", lang)}</SelectItem>
+                        <SelectItem value="كغم">{t("kg", lang)}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={newItem.purchasesinglepriceiqd || ""}
+                      onChange={(e) => updateNewItem("purchasesinglepriceiqd", parseFloat(e.target.value) || 0)}
+                      onKeyPress={(e) => handleNewItemKeyPress(e, "purchasesinglepriceiqd")}
+                      placeholder="0"
+                      className="bg-green-50 dark:bg-green-950/20 h-8"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={newItem.purchasesinglepriceusd || ""}
+                      onChange={(e) => updateNewItem("purchasesinglepriceusd", parseFloat(e.target.value) || 0)}
+                      onKeyPress={(e) => handleNewItemKeyPress(e, "purchasesinglepriceusd")}
+                      placeholder="0"
+                      className="bg-green-50 dark:bg-green-950/20 h-8"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={newItem.sellsinglepriceiqd || ""}
+                      onChange={(e) => updateNewItem("sellsinglepriceiqd", parseFloat(e.target.value) || 0)}
+                      onKeyPress={(e) => handleNewItemKeyPress(e, "sellsinglepriceiqd")}
+                      placeholder="0"
+                      className="bg-green-50 dark:bg-green-950/20 h-8"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={newItem.sellsinglepriceusd || ""}
+                      onChange={(e) => updateNewItem("sellsinglepriceusd", parseFloat(e.target.value) || 0)}
+                      onKeyPress={(e) => handleNewItemKeyPress(e, "sellsinglepriceusd")}
+                      placeholder="0"
+                      className="bg-green-50 dark:bg-green-950/20 h-8"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Input
+                        value={newItem.details || ""}
+                        onChange={(e) => updateNewItem("details", e.target.value)}
+                        onKeyPress={(e) => handleNewItemKeyPress(e, "details")}
+                        placeholder={t("notePlaceholder", lang)}
+                        className="bg-green-50 dark:bg-green-950/20 h-8 flex-1"
+                        title={newItem.details}
+                      />
+                      {newItem.details && newItem.details.length > 15 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setViewingNote(newItem.details || "")}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+                )}
+
+                {products.map((product, index) => (
+                    <TableRow key={product.tempId} style={{ backgroundColor: "var(--theme-background)" }}>
+                      <TableCell className="text-center" style={{ color: "var(--theme-text)" }}>
+                        {index + 1}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {!isViewMode && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeRow(product.tempId)}
+                          >
+                            <Trash2 className="h-4 w-4 theme-danger" />
+                          </Button>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Input
+                            value={product.productcode1}
+                            onChange={(e) =>
+                              updateProduct(product.tempId, "productcode1", e.target.value)
+                            }
+                            placeholder={t("productCode", lang)}
+                            className="bg-amber-50 dark:bg-amber-950/20 h-8 flex-1"
+                            title={product.productcode1}
+                          />
+                          {product.productcode1 && product.productcode1.length > 10 && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setViewingNote(product.productcode1)}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </Button>
+                          )}
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {conflict.existingPriceIQD > 0 && (
-                          <div className="ltr-numbers text-sm">
-                            {conflict.existingPriceIQD.toLocaleString('en-US')} {t("iqdAbbr", lang)}
-                          </div>
-                        )}
-                        {conflict.existingPriceUSD > 0 && (
-                          <div className="ltr-numbers text-sm text-green-600">
-                            ${conflict.existingPriceUSD.toLocaleString('en-US')}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {conflict.newPriceIQD > 0 && (
-                          <div className="ltr-numbers text-sm font-semibold text-blue-600">
-                            {conflict.newPriceIQD.toLocaleString('en-US')} {t("iqdAbbr", lang)}
-                          </div>
-                        )}
-                        {conflict.newPriceUSD > 0 && (
-                          <div className="ltr-numbers text-sm font-semibold text-green-600">
-                            ${conflict.newPriceUSD.toLocaleString('en-US')}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {conflict.newPriceIQD !== conflict.existingPriceIQD && (
-                          <div className={cn(
-                            "ltr-numbers text-sm font-medium",
-                            conflict.newPriceIQD > conflict.existingPriceIQD
-                              ? "text-red-600"
-                              : "text-green-600"
-                          )}>
-                            {conflict.newPriceIQD > conflict.existingPriceIQD ? "+" : ""}
-                            {(conflict.newPriceIQD - conflict.existingPriceIQD).toLocaleString('en-US')} {t("iqdAbbr", lang)}
-                          </div>
-                        )}
-                        {conflict.newPriceUSD !== conflict.existingPriceUSD && (
-                          <div className={cn(
-                            "ltr-numbers text-sm font-medium",
-                            conflict.newPriceUSD > conflict.existingPriceUSD
-                              ? "text-red-600"
-                              : "text-green-600"
-                          )}>
-                            {conflict.newPriceUSD > conflict.existingPriceUSD ? "+" : ""}
-                            ${(conflict.newPriceUSD - conflict.existingPriceUSD).toLocaleString('en-US')}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Input
+                            value={product.nameofproduct}
+                            onChange={(e) =>
+                              updateProduct(product.tempId, "nameofproduct", e.target.value)
+                            }
+                            placeholder={t("productName", lang)}
+                            className="h-8 flex-1"
+                            title={product.nameofproduct}
+                          />
+                          {product.nameofproduct && product.nameofproduct.length > 15 && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setViewingNote(product.nameofproduct)}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={product.quantity || ""}
+                          onChange={(e) =>
+                            updateProduct(
+                              product.tempId,
+                              "quantity",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          placeholder="0"
+                          className="h-8"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={product.unit}
+                          onValueChange={(v: "كارتون" | "قطعة" | "لتر" | "كغم") =>
+                            updateProduct(product.tempId, "unit", v)
+                          }
+                        >
+                          <SelectTrigger className="h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="كارتون">{t("carton", lang)}</SelectItem>
+                            <SelectItem value="قطعة">{t("piece", lang)}</SelectItem>
+                            <SelectItem value="لتر">{t("liter", lang)}</SelectItem>
+                            <SelectItem value="كغم">{t("kg", lang)}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={product.purchasesinglepriceiqd || ""}
+                          onChange={(e) =>
+                            updateProduct(
+                              product.tempId,
+                              "purchasesinglepriceiqd",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          placeholder="0"
+                          className="h-8"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={product.purchasesinglepriceusd || ""}
+                          onChange={(e) =>
+                            updateProduct(
+                              product.tempId,
+                              "purchasesinglepriceusd",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          placeholder="0"
+                          className="h-8"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={product.sellsinglepriceiqd || ""}
+                          onChange={(e) =>
+                            updateProduct(
+                              product.tempId,
+                              "sellsinglepriceiqd",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          placeholder="0"
+                          className="h-8"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={product.sellsinglepriceusd || ""}
+                          onChange={(e) =>
+                            updateProduct(
+                              product.tempId,
+                              "sellsinglepriceusd",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          placeholder="0"
+                          className="h-8"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Input
+                            value={product.details}
+                            onChange={(e) =>
+                              updateProduct(product.tempId, "details", e.target.value)
+                            }
+                            placeholder={t("notes", lang)}
+                            className="flex-1 h-8"
+                            title={product.details}
+                          />
+                          {product.details && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9"
+                              onClick={() => setViewingNote(product.details || "")}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
           </div>
 
-          <DialogFooter className="flex gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              onClick={() => handleApplyAllPriceDecisions('cancel')}
-            >
-              {t("cancel", lang)}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => handleApplyAllPriceDecisions('quantity-only')}
-            >
-              {t("updateQuantityOnly", lang)}
-            </Button>
-            <Button
-              onClick={() => handleApplyAllPriceDecisions('update-all')}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {t("updateQuantityAndPrice", lang)}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+          <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: "var(--theme-accent)", color: "var(--theme-text)" }}>
+
+            <div className="flex flex-wrap items-center justify-between gap-6 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">{t("itemsCount", lang)}:</span>
+                <span className="ltr-numbers font-bold text-lg">{totalProductsCount}</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm">{t("totalIQD", lang)}:</span>
+                <span className="ltr-numbers font-bold text-lg text-green-600 dark:text-green-400">{totalPurchaseIQD.toLocaleString('en-US')}</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm">{t("totalUSD", lang)}:</span>
+                <span className="ltr-numbers font-bold text-lg text-blue-600 dark:text-blue-400">{totalPurchaseUSD.toLocaleString('en-US')}</span>
+              </div>
+              
+              {hasAmountReceived && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{t("receivedIQD", lang)}:</span>
+                    <span className="ltr-numbers font-bold text-lg">{amountReceivedIQD.toLocaleString('en-US')}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{t("receivedUSD", lang)}:</span>
+                    <span className="ltr-numbers font-bold text-lg">{amountReceivedUSD.toLocaleString('en-US')}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{t("remainingIQD", lang)}:</span>
+                    <span className="ltr-numbers font-bold text-lg text-orange-600 dark:text-orange-400">{remainingAmountIQD.toLocaleString('en-US')}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{t("remainingUSD", lang)}:</span>
+                    <span className="ltr-numbers font-bold text-lg text-orange-600 dark:text-orange-400">{remainingAmountUSD.toLocaleString('en-US')}</span>
+                  </div>
+                </>
+              )}
+            </div>
+            {!isViewMode && (
+              <Button
+                onClick={handleSavePurchase}
+                disabled={isSaving}
+                size="lg"
+                className="w-full md:w-auto"
+                style={{ backgroundColor: "var(--theme-primary)", color: "white" }}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-5 w-5 ml-2 animate-spin theme-icon" />
+                    {t("saving", lang)}
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-5 w-5 ml-2 theme-success" />
+                    {isEditMode ? t("updatePurchaseList", lang) : t("addPurchaseList", lang)}
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        </Card>
+
+        <Dialog open={viewingNote !== null} onOpenChange={(open) => !open && setViewingNote(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t("notes", lang)}</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="whitespace-pre-wrap">{viewingNote}</p>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setViewingNote(null)}>{t("close", lang)}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showPriceConflictDialog} onOpenChange={setShowPriceConflictDialog}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-orange-600">
+                {t("purchasePriceConflictTitle", lang)}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {t("purchasePriceConflictDescription", lang)}
+              </p>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("product", lang)}</TableHead>
+                    <TableHead>{t("currentPrice", lang)}</TableHead>
+                    <TableHead>{t("newPrice", lang)}</TableHead>
+                    <TableHead>{t("difference", lang)}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {priceConflicts.map((conflict) => (
+                    <TableRow key={conflict.product.productcode1}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{conflict.product.nameofproduct}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {t("codeLabel", lang).replace("{code}", conflict.product.productcode1)}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {conflict.existingPriceIQD > 0 && (
+                            <div className="ltr-numbers text-sm">
+                              {conflict.existingPriceIQD.toLocaleString('en-US')} {t("iqdAbbr", lang)}
+                            </div>
+                          )}
+                          {conflict.existingPriceUSD > 0 && (
+                            <div className="ltr-numbers text-sm text-green-600">
+                              ${conflict.existingPriceUSD.toLocaleString('en-US')}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {conflict.newPriceIQD > 0 && (
+                            <div className="ltr-numbers text-sm font-semibold text-blue-600">
+                              {conflict.newPriceIQD.toLocaleString('en-US')} {t("iqdAbbr", lang)}
+                            </div>
+                          )}
+                          {conflict.newPriceUSD > 0 && (
+                            <div className="ltr-numbers text-sm font-semibold text-green-600">
+                              ${conflict.newPriceUSD.toLocaleString('en-US')}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {conflict.newPriceIQD !== conflict.existingPriceIQD && (
+                            <div className={cn(
+                              "ltr-numbers text-sm font-medium",
+                              conflict.newPriceIQD > conflict.existingPriceIQD
+                                ? "text-red-600"
+                                : "text-green-600"
+                            )}>
+                              {conflict.newPriceIQD > conflict.existingPriceIQD ? "+" : ""}
+                              {(conflict.newPriceIQD - conflict.existingPriceIQD).toLocaleString('en-US')} {t("iqdAbbr", lang)}
+                            </div>
+                          )}
+                          {conflict.newPriceUSD !== conflict.existingPriceUSD && (
+                            <div className={cn(
+                              "ltr-numbers text-sm font-medium",
+                              conflict.newPriceUSD > conflict.existingPriceUSD
+                                ? "text-red-600"
+                                : "text-green-600"
+                            )}>
+                              {conflict.newPriceUSD > conflict.existingPriceUSD ? "+" : ""}
+                              ${(conflict.newPriceUSD - conflict.existingPriceUSD).toLocaleString('en-US')}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <DialogFooter className="flex gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                onClick={() => handleApplyAllPriceDecisions('cancel')}
+              >
+                {t("cancel", lang)}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => handleApplyAllPriceDecisions('quantity-only')}
+              >
+                {t("updateQuantityOnly", lang)}
+              </Button>
+              <Button
+                onClick={() => handleApplyAllPriceDecisions('update-all')}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {t("updateQuantityAndPrice", lang)}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </PermissionGuard>
-  )
+  );
 }

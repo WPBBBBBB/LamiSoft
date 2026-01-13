@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Image from "next/image"
@@ -119,9 +118,7 @@ export default function EditCustomerPage() {
     if (existingImageUrl) {
       try {
         await deleteCustomerImage(existingImageUrl)
-      } catch (error) {
-        // Silent fail
-      }
+      } catch (error) {}
     }
     setImageFile(null)
     setImagePreview("")
@@ -168,9 +165,7 @@ export default function EditCustomerPage() {
             address: values.address || "",
           }
         )
-      } catch (logError) {
-        // Silent fail
-      }
+      } catch (logError) {}
 
       toast.success("تم تحديث الزبون بنجاح")
       router.push("/customers")
@@ -197,7 +192,7 @@ export default function EditCustomerPage() {
   return (
     <div className="flex-1 overflow-auto">
       <div className="container mx-auto p-6 space-y-6" style={{ maxWidth: "800px" }}>
-        {}
+
         <div className="mb-6 flex items-start justify-between gap-4">
           <div className="flex-1">
             <h1 className="text-3xl font-bold" style={{ color: "var(--theme-text)" }}>
@@ -217,11 +212,10 @@ export default function EditCustomerPage() {
             <ArrowRight className="h-5 w-5" />
           </Button>
         </div>
-
         <Card className="p-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {}
+
               <div className="space-y-2">
                 <FormLabel>صورة العميل (اختياري)</FormLabel>
                 {imagePreview ? (
@@ -268,7 +262,6 @@ export default function EditCustomerPage() {
                   </div>
                 )}
               </div>
-
               <FormField
                 control={form.control}
                 name="customer_name"
@@ -282,7 +275,6 @@ export default function EditCustomerPage() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="type"
@@ -305,7 +297,6 @@ export default function EditCustomerPage() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="phone_number"
@@ -324,7 +315,6 @@ export default function EditCustomerPage() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="address"
@@ -338,7 +328,6 @@ export default function EditCustomerPage() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="notes"
@@ -356,7 +345,6 @@ export default function EditCustomerPage() {
                   </FormItem>
                 )}
               />
-
               <div className="flex justify-end gap-4">
                 <Button
                   type="button"
@@ -375,5 +363,5 @@ export default function EditCustomerPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

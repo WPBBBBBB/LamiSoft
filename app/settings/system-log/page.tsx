@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect } from "react"
 import { PermissionGuard } from "@/components/permission-guard"
 import { useRouter } from "next/navigation"
@@ -193,347 +192,339 @@ export default function SystemLogPage() {
 
   return (
     <PermissionGuard requiredRole="مدير">
-    <div className="p-6 space-y-4">
-      {}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.back()}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl font-bold">{t("systemLog", lang)}</h1>
-      </div>
+      <div className="p-6 space-y-4">
 
-      {}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="destructive"
-          onClick={handleDeleteSelected}
-          disabled={selectedIds.length === 0}
-        >
-          <Trash2 className="h-4 w-4 ml-2" />
-          {t("systemLogDeleteSelected", lang)} ({selectedIds.length})
-        </Button>
-        <Button
-          variant="destructive"
-          onClick={() => setShowDeleteAllDialog(true)}
-        >
-          <Trash2 className="h-4 w-4 ml-2" />
-          {t("systemLogDeleteAll", lang)}
-        </Button>
-      </div>
-
-      {}
-      <div className="flex items-center gap-2">
-        <div className="flex-1">
-          <Input
-            placeholder={t("systemLogSearchPlaceholder", lang)}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          />
-        </div>
-        <Button
-          variant="ghost"
-          onClick={handleClearSearch}
-        >
-          <X className="h-4 w-4 ml-2" />
-          {t("systemLogClear", lang)}
-        </Button>
-        <Button
-          variant="default"
-          onClick={handleSearch}
-        >
-          <RefreshCw className="h-4 w-4 ml-2" />
-          {t("search", lang)}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={fetchLogs}
-        >
-          <RefreshCw className="h-4 w-4 ml-2" />
-          {t("refresh", lang)}
-        </Button>
-      </div>
-
-      {}
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[50px] text-center">{t("systemLogColumnIndex", lang)}</TableHead>
-              <TableHead className="w-[50px] text-center">
-                <Checkbox
-                  checked={selectedIds.length === logs.length && logs.length > 0}
-                  onCheckedChange={handleSelectAll}
-                />
-              </TableHead>
-              <TableHead>{t("systemLogColumnActionOwner", lang)}</TableHead>
-              <TableHead>{t("systemLogColumnActionType", lang)}</TableHead>
-              <TableHead>{t("systemLogColumnAffectedTable", lang)}</TableHead>
-              <TableHead>{t("systemLogColumnDetails", lang)}</TableHead>
-              <TableHead>{t("systemLogColumnOldValue", lang)}</TableHead>
-              <TableHead>{t("systemLogColumnEventDate", lang)}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
-                  {t("loading", lang)}
-                </TableCell>
-              </TableRow>
-            ) : logs.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
-                  {t("systemLogNoRecords", lang)}
-                </TableCell>
-              </TableRow>
-            ) : (
-              logs.map((log, index) => (
-                <TableRow key={log.id}>
-                  <TableCell className="text-center">
-                    {(currentPage - 1) * pageSize + index + 1}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Checkbox
-                      checked={selectedIds.includes(log.id)}
-                      onCheckedChange={(checked) => 
-                        handleSelectRow(log.id, checked as boolean)
-                      }
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {log.user_name && log.user_name.length > 10 ? (
-                      <div className="flex items-center gap-2">
-                        <span className="truncate max-w-20">{log.user_name}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={() => setViewingUserName(log.user_name || null)}
-                          title={t("systemLogPreview", lang)}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                        </Button>
-                      </div>
-                    ) : (
-                      log.user_name || t("unknownUser", lang)
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className="px-3 py-2 rounded bg-primary/10 text-primary text-sm">
-                      {log.action_type}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {log.ref_table && log.ref_id 
-                      ? `${log.ref_table} (ID: ${log.ref_id})`
-                      : log.ref_table || "-"
-                    }
-                  </TableCell>
-                  <TableCell>
-                    {log.description && log.description.length > 15 ? (
-                      <div className="flex items-center gap-2">
-                        <span className="truncate max-w-[100px]">{log.description}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={() => setViewingDetails(log.description || null)}
-                          title={t("systemLogPreview", lang)}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                        </Button>
-                      </div>
-                    ) : (
-                      log.description || "-"
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {log.old_value && log.old_value.length > 15 ? (
-                      <div className="flex items-center gap-2">
-                        <code className="text-xs truncate max-w-[100px]">{log.old_value}</code>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={() => setViewingOldValue(log.old_value || null)}
-                          title={t("systemLogPreview", lang)}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                        </Button>
-                      </div>
-                    ) : log.old_value ? (
-                      <code className="text-xs">{log.old_value}</code>
-                    ) : "-"}
-                  </TableCell>
-                  <TableCell dir="ltr" className="text-right">
-                    {formatDate(log.created_at)}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          {t("systemLogCount", lang)}: <span className="font-semibold">{totalCount}</span>
-        </div>
-        
         <div className="flex items-center gap-2">
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            onClick={() => goToPage(1)}
-            disabled={currentPage === 1}
+            onClick={() => router.back()}
           >
-            <ChevronsRight className="h-4 w-4" />
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-2xl font-bold">{t("systemLog", lang)}</h1>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="destructive"
+            onClick={handleDeleteSelected}
+            disabled={selectedIds.length === 0}
+          >
+            <Trash2 className="h-4 w-4 ml-2" />
+            {t("systemLogDeleteSelected", lang)} ({selectedIds.length})
           </Button>
           <Button
-            variant="outline"
-            size="icon"
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={currentPage === 1}
+            variant="destructive"
+            onClick={() => setShowDeleteAllDialog(true)}
           >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          
-          <span className="text-sm px-4">
-            {t("systemLogPage", lang)} {currentPage} {t("systemLogOf", lang)} {totalPages || 1}
-          </span>
-          
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage === totalPages || totalPages === 0}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => goToPage(totalPages)}
-            disabled={currentPage === totalPages || totalPages === 0}
-          >
-            <ChevronsLeft className="h-4 w-4" />
+            <Trash2 className="h-4 w-4 ml-2" />
+            {t("systemLogDeleteAll", lang)}
           </Button>
         </div>
-      </div>
 
-      {}
-      <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("systemLogDeleteAllConfirmTitle", lang)}</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-4">
-                <span className="block">{t("systemLogDeleteAllConfirmDescription", lang)}</span>
-                <div className="space-y-2">
-                  <Label htmlFor="password">{t("systemLogPasswordLabel", lang)}</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={passwordInput}
-                    onChange={(e) => setPasswordInput(e.target.value)}
-                    placeholder={t("systemLogPasswordPlaceholder", lang)}
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <Input
+              placeholder={t("systemLogSearchPlaceholder", lang)}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            />
+          </div>
+          <Button
+            variant="ghost"
+            onClick={handleClearSearch}
+          >
+            <X className="h-4 w-4 ml-2" />
+            {t("systemLogClear", lang)}
+          </Button>
+          <Button
+            variant="default"
+            onClick={handleSearch}
+          >
+            <RefreshCw className="h-4 w-4 ml-2" />
+            {t("search", lang)}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={fetchLogs}
+          >
+            <RefreshCw className="h-4 w-4 ml-2" />
+            {t("refresh", lang)}
+          </Button>
+        </div>
+
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50px] text-center">{t("systemLogColumnIndex", lang)}</TableHead>
+                <TableHead className="w-[50px] text-center">
+                  <Checkbox
+                    checked={selectedIds.length === logs.length && logs.length > 0}
+                    onCheckedChange={handleSelectAll}
                   />
-                </div>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPasswordInput("")}>
-              {t("cancel", lang)}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteAll}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t("systemLogDeleteAllAction", lang)}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {}
-      <AlertDialog open={viewingDetails !== null} onOpenChange={(open) => !open && setViewingDetails(null)}>
-        <AlertDialogContent className="max-w-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("systemLogDetailsTitle", lang)}</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="py-4">
-                <div className="bg-muted p-4 rounded-lg whitespace-pre-wrap text-foreground">
-                  {viewingDetails}
-                </div>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setViewingDetails(null)}>
-              {t("close", lang)}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {}
-      <AlertDialog open={viewingOldValue !== null} onOpenChange={(open) => !open && setViewingOldValue(null)}>
-        <AlertDialogContent className="max-w-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("systemLogOldValueTitle", lang)}</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="py-4">
-                <div className="bg-muted p-4 rounded-lg">
-                  <pre className="text-xs overflow-auto whitespace-pre-wrap text-foreground">
-                    {(() => {
-                      try {
-                        const parsed = JSON.parse(viewingOldValue || "{}")
-                        return JSON.stringify(parsed, null, 2)
-                      } catch {
-                        return viewingOldValue
+                </TableHead>
+                <TableHead>{t("systemLogColumnActionOwner", lang)}</TableHead>
+                <TableHead>{t("systemLogColumnActionType", lang)}</TableHead>
+                <TableHead>{t("systemLogColumnAffectedTable", lang)}</TableHead>
+                <TableHead>{t("systemLogColumnDetails", lang)}</TableHead>
+                <TableHead>{t("systemLogColumnOldValue", lang)}</TableHead>
+                <TableHead>{t("systemLogColumnEventDate", lang)}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
+                    {t("loading", lang)}
+                  </TableCell>
+                </TableRow>
+              ) : logs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
+                    {t("systemLogNoRecords", lang)}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                logs.map((log, index) => (
+                  <TableRow key={log.id}>
+                    <TableCell className="text-center">
+                      {(currentPage - 1) * pageSize + index + 1}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={selectedIds.includes(log.id)}
+                        onCheckedChange={(checked) => 
+                          handleSelectRow(log.id, checked as boolean)
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {log.user_name && log.user_name.length > 10 ? (
+                        <div className="flex items-center gap-2">
+                          <span className="truncate max-w-20">{log.user_name}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={() => setViewingUserName(log.user_name || null)}
+                            title={t("systemLogPreview", lang)}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                          </Button>
+                        </div>
+                      ) : (
+                        log.user_name || t("unknownUser", lang)
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="px-3 py-2 rounded bg-primary/10 text-primary text-sm">
+                        {log.action_type}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {log.ref_table && log.ref_id 
+                        ? `${log.ref_table} (ID: ${log.ref_id})`
+                        : log.ref_table || "-"
                       }
-                    })()}
-                  </pre>
-                </div>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setViewingOldValue(null)}>
-              {t("close", lang)}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+                    </TableCell>
+                    <TableCell>
+                      {log.description && log.description.length > 15 ? (
+                        <div className="flex items-center gap-2">
+                          <span className="truncate max-w-[100px]">{log.description}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={() => setViewingDetails(log.description || null)}
+                            title={t("systemLogPreview", lang)}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                          </Button>
+                        </div>
+                      ) : (
+                        log.description || "-"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {log.old_value && log.old_value.length > 15 ? (
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs truncate max-w-[100px]">{log.old_value}</code>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={() => setViewingOldValue(log.old_value || null)}
+                            title={t("systemLogPreview", lang)}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                          </Button>
+                        </div>
+                      ) : log.old_value ? (
+                        <code className="text-xs">{log.old_value}</code>
+                      ) : "-"}
+                    </TableCell>
+                    <TableCell dir="ltr" className="text-right">
+                      {formatDate(log.created_at)}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-      {}
-      <AlertDialog open={viewingUserName !== null} onOpenChange={(open) => !open && setViewingUserName(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("systemLogActionOwnerTitle", lang)}</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="py-4">
-                <div className="bg-muted p-4 rounded-lg text-center">
-                  <p className="text-lg font-semibold text-foreground">{viewingUserName}</p>
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            {t("systemLogCount", lang)}: <span className="font-semibold">{totalCount}</span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => goToPage(1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            
+            <span className="text-sm px-4">
+              {t("systemLogPage", lang)} {currentPage} {t("systemLogOf", lang)} {totalPages || 1}
+            </span>
+            
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages || totalPages === 0}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => goToPage(totalPages)}
+              disabled={currentPage === totalPages || totalPages === 0}
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("systemLogDeleteAllConfirmTitle", lang)}</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-4">
+                  <span className="block">{t("systemLogDeleteAllConfirmDescription", lang)}</span>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">{t("systemLogPasswordLabel", lang)}</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
+                      placeholder={t("systemLogPasswordPlaceholder", lang)}
+                    />
+                  </div>
                 </div>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setViewingUserName(null)}>
-              {t("close", lang)}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setPasswordInput("")}>
+                {t("cancel", lang)}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteAll}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {t("systemLogDeleteAllAction", lang)}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={viewingDetails !== null} onOpenChange={(open) => !open && setViewingDetails(null)}>
+          <AlertDialogContent className="max-w-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("systemLogDetailsTitle", lang)}</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="py-4">
+                  <div className="bg-muted p-4 rounded-lg whitespace-pre-wrap text-foreground">
+                    {viewingDetails}
+                  </div>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={() => setViewingDetails(null)}>
+                {t("close", lang)}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={viewingOldValue !== null} onOpenChange={(open) => !open && setViewingOldValue(null)}>
+          <AlertDialogContent className="max-w-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("systemLogOldValueTitle", lang)}</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="py-4">
+                  <div className="bg-muted p-4 rounded-lg">
+                    <pre className="text-xs overflow-auto whitespace-pre-wrap text-foreground">
+                      {(() => {
+                        try {
+                          const parsed = JSON.parse(viewingOldValue || "{}")
+                          return JSON.stringify(parsed, null, 2)
+                        } catch {
+                          return viewingOldValue
+                        }
+                      })()}
+                    </pre>
+                  </div>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={() => setViewingOldValue(null)}>
+                {t("close", lang)}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={viewingUserName !== null} onOpenChange={(open) => !open && setViewingUserName(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("systemLogActionOwnerTitle", lang)}</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="py-4">
+                  <div className="bg-muted p-4 rounded-lg text-center">
+                    <p className="text-lg font-semibold text-foreground">{viewingUserName}</p>
+                  </div>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={() => setViewingUserName(null)}>
+                {t("close", lang)}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </PermissionGuard>
-  )
+  );
 }

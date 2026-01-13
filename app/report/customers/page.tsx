@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { ReportLayout } from "@/components/reports/report-layout"
@@ -78,8 +77,7 @@ export default function CustomersReportPage() {
   useEffect(() => {
     const loadData = () => {
       try {
-        // First try reading from 's' param (Base64) - for backward compatibility/small data
-        const dataParam = searchParams.get("s")
+        const dataParam = searchParams.get("s");
         if (dataParam) {
           const decodedData = decodeURIComponent(dataParam)
           const binaryString = atob(decodedData)
@@ -90,18 +88,13 @@ export default function CustomersReportPage() {
           return
         }
 
-        // Fallback: Try reading from 'token' param (LocalStorage) - for large data
-        const token = searchParams.get("token")
+        const token = searchParams.get("token");
         if (token) {
            const storageKey = `customersReportPayload:${token}`
            const rawData = localStorage.getItem(storageKey)
            if (rawData) {
-             const parsedData = JSON.parse(rawData)
-             // Check if it matches our expected structure or the old structure
-             // The old structure had { customers: ... }, our new structure has { items: ... }
-             // We need to handle both or ensure the sender uses the new structure.
-             // I will ensure sender uses new structure.
-             setReportData(parsedData)
+             const parsedData = JSON.parse(rawData);
+             setReportData(parsedData);
              return
            }
         }
@@ -157,7 +150,6 @@ export default function CustomersReportPage() {
         <div className="custom-header mb-6 text-center border-b pb-4">
           <h1 className="text-xl font-bold">كشف حسابات الزبائن</h1>
         </div>
-
         <div className="header-info">
           <div className="info-right">
             <div><strong>بواسطة:</strong> {reportData.generatedBy}</div>
@@ -174,7 +166,6 @@ export default function CustomersReportPage() {
             }).replace('AM', 'صباحاً').replace('PM', 'مساءً')}</div>
           </div>
         </div>
-
         <div className="table-container">
           <table className="items-table">
             <thead>
@@ -205,7 +196,6 @@ export default function CustomersReportPage() {
             </tbody>
           </table>
         </div>
-
         <div className="final-totals-section">
           <table className="final-totals-table">
             <tbody>
@@ -226,14 +216,11 @@ export default function CustomersReportPage() {
             </tbody>
           </table>
         </div>
-        
-        {/* Footer Area - No signature needed for customer list usually */}
+
         <div className="mt-8 text-center text-xs text-gray-500">
            نهاية التقرير - {reportData.count} سجل
         </div>
-
       </ReportLayout>
-
       <style jsx>{`
         .header-info {
           display: flex;
@@ -357,5 +344,5 @@ export default function CustomersReportPage() {
         }
       `}</style>
     </>
-  )
+  );
 }

@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { Card } from "@/components/ui/card"
@@ -106,11 +105,10 @@ export default function AccountPage() {
   return (
     <div className="p-6 h-full overflow-auto">
       <h1 className="text-3xl font-bold mb-6">{t('account', lang)}</h1>
-
       <div className="grid grid-cols-1 lg:grid-cols-[30%_70%] gap-6">
-        {/* الجزء الأيمن - 30% */}
+
         <div className="space-y-4">
-          {/* صورة المستخدم */}
+
           <Card className="p-0 relative overflow-hidden">
             <div className="relative w-full aspect-square">
               <div 
@@ -137,7 +135,6 @@ export default function AccountPage() {
             </div>
           </Card>
 
-          {/* معلومات المستخدم */}
           <Card className="p-6">
             <h3 className="font-bold text-xl mb-4">{userData.full_name}</h3>
             <div className="space-y-2 text-sm text-muted-foreground">
@@ -166,7 +163,6 @@ export default function AccountPage() {
             </div>
           </Card>
 
-          {/* الحسابات المرتبطة */}
           {connectedAccounts.length > 0 && (
             <Card className="p-6">
               <h3 className="font-bold mb-4">{t('connectedAccounts', lang)}</h3>
@@ -209,7 +205,6 @@ export default function AccountPage() {
             </Card>
           )}
 
-          {/* الصلاحيات */}
           <Card className="p-6 bg-linear-to-br from-primary/10 to-accent/10">
             <div className="flex items-center gap-2 mb-4">
               <Shield className="h-5 w-5 text-primary" />
@@ -220,29 +215,26 @@ export default function AccountPage() {
             </div>
             <div className="space-y-2">
               {userData.permission_type === 'مدير' ? (
-                // إذا كان مدير - عرض جميع الصلاحيات
-                permissionsList.map((perm) => (
+                (permissionsList.map((perm) => (
                   <div key={perm.key} className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-green-500" />
                     <span className="text-foreground">{t(perm.labelKey, lang)}</span>
                   </div>
-                ))
+                )))
               ) : (
-                // إذا كان موظف أو محاسب - عرض الصلاحيات المتاحة فقط
-                permissionsList
+                (permissionsList
                   .filter((perm) => userData.permissions[perm.key as keyof typeof userData.permissions])
                   .map((perm) => (
                     <div key={perm.key} className="flex items-center gap-2 text-sm">
                       <Check className="h-4 w-4 text-green-500" />
                       <span className="text-foreground">{t(perm.labelKey, lang)}</span>
                     </div>
-                  ))
+                  )))
               )}
             </div>
           </Card>
         </div>
 
-        {/* الجزء الأيسر - 70% */}
         <div>
           <Tabs defaultValue="personal" className="w-full">
             <TabsList className="w-full grid grid-cols-2">
@@ -261,7 +253,6 @@ export default function AccountPage() {
         </div>
       </div>
 
-      {/* محرر الصورة */}
       {showAvatarEditor && (
         <AvatarEditor
           currentAvatar={userData.avatar_url}
@@ -271,5 +262,5 @@ export default function AccountPage() {
         />
       )}
     </div>
-  )
+  );
 }

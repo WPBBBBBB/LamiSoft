@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -68,9 +67,8 @@ export default function PrintSettingsPage() {
           {t('printSettingsDescription', lang)}
         </p>
       </div>
-
       <div className="space-y-6">
-        {/* نموذج الإدخال */}
+
         <Card className="p-6 space-y-6 w-full">
           <div className="space-y-2">
             <h2 className="text-xl font-semibold flex items-center gap-2">
@@ -80,7 +78,7 @@ export default function PrintSettingsPage() {
           </div>
 
           <div className="space-y-4">
-            {/* اسم المتجر */}
+
             <div className="space-y-2">
               <Label htmlFor="storeName" className="text-base">
                 {t('storeNameMainLabel', lang)}
@@ -94,7 +92,6 @@ export default function PrintSettingsPage() {
               />
             </div>
 
-            {/* العنوان الثانوي */}
             <div className="space-y-2">
               <Label htmlFor="storeSubtitle" className="text-base">
                 {t('storeSubtitleLabel', lang)}
@@ -108,7 +105,6 @@ export default function PrintSettingsPage() {
               />
             </div>
 
-            {/* معلومات التواصل */}
             <div className="space-y-2">
               <Label htmlFor="contactInfo" className="text-base">
                 {t('storeContactLabel', lang)}
@@ -122,7 +118,6 @@ export default function PrintSettingsPage() {
               />
             </div>
 
-            {/* الفوتر */}
             <div className="space-y-2">
               <Label htmlFor="footer" className="text-base">
                 {t('storeFooterLabel', lang)}
@@ -160,7 +155,6 @@ export default function PrintSettingsPage() {
           </div>
         </Card>
 
-        {/* معاينة الطباعة */}
         <Card className="p-6 space-y-4">
           <div className="space-y-2">
             <h2 className="text-xl font-semibold flex items-center gap-2">
@@ -173,7 +167,7 @@ export default function PrintSettingsPage() {
           </div>
 
           <div className="border rounded-lg bg-white p-8 space-y-6 shadow-sm min-h-[500px]">
-            {/* الهيدر */}
+
             <div className="text-center space-y-2 border-b pb-4">
               <h1 className="text-2xl font-bold text-gray-900">
                 {settings.storeName || t('storeNameFallback', lang)}
@@ -190,7 +184,6 @@ export default function PrintSettingsPage() {
               )}
             </div>
 
-            {/* محتوى مثالي */}
             <div className="space-y-4">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">{t('invoiceNumber', lang)}:</span>
@@ -232,7 +225,6 @@ export default function PrintSettingsPage() {
               </div>
             </div>
 
-            {/* الفوتر */}
             {settings.footer && (
               <div className="border-t pt-4 mt-auto">
                 <p className="text-center text-xs text-gray-500 whitespace-pre-line">
@@ -244,5 +236,5 @@ export default function PrintSettingsPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

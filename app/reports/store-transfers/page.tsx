@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -171,7 +170,7 @@ export default function StoreTransfersManagementPage() {
   return (
     <div className="flex-1 overflow-auto">
       <div className="container mx-auto p-6 space-y-6">
-        {}
+
         <div className="mb-6 flex items-start justify-between gap-4">
           <Button
             variant="outline"
@@ -192,7 +191,6 @@ export default function StoreTransfersManagementPage() {
           </div>
         </div>
 
-        {}
         <Card className="p-4">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="relative flex-1 w-full">
@@ -217,7 +215,6 @@ export default function StoreTransfersManagementPage() {
           </div>
         </Card>
 
-        {}
         <Card>
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -309,7 +306,6 @@ export default function StoreTransfersManagementPage() {
           )}
         </Card>
 
-        {}
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -344,7 +340,6 @@ export default function StoreTransfersManagementPage() {
           </DialogContent>
         </Dialog>
 
-        {}
         <Dialog open={deleteMultipleDialogOpen} onOpenChange={setDeleteMultipleDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -375,5 +370,5 @@ export default function StoreTransfersManagementPage() {
         </Dialog>
       </div>
     </div>
-  )
+  );
 }

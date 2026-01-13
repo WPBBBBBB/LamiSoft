@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import { ReportLayout } from "@/components/reports/report-layout"
@@ -138,14 +137,12 @@ export default function ReportPage() {
     }
 
     loadData()
-  }, [searchParams])
+  }, [searchParams]);
 
-  // رسم QR Code عند تحميل البيانات
   useEffect(() => {
     if (reportData?.saleNumber && qrCodeCanvasRef.current) {
       try {
-        // استخدام رقم القائمة فقط في QR Code
-        const qrData = reportData.saleNumber
+        const qrData = reportData.saleNumber;
         drawQRCodeOnCanvas(qrData, qrCodeCanvasRef.current, {
           width: 200,
           errorCorrectionLevel: 'M'
@@ -153,7 +150,7 @@ export default function ReportPage() {
       } catch (error) {
         }
     }
-  }, [reportData])
+  }, [reportData]);
 
   if (error) {
     return (
@@ -188,7 +185,7 @@ export default function ReportPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 py-8">
-      {}
+
       <div className="no-print container mx-auto mb-4 flex gap-2 justify-center">
         <Button onClick={() => window.print()} className="gap-2">
           <Printer className="h-4 w-4" />
@@ -199,9 +196,8 @@ export default function ReportPage() {
           العودة
         </Button>
       </div>
-
       <ReportLayout title={getReportTitle()} storeName={reportData.storeName || "شركة الميسر"} autoPrint={false}>
-        {}
+
         <div className="header-info">
           <div className="info-right">
             <div><strong>نوع العملة:</strong> {reportData.currencyType} موحد</div>
@@ -226,7 +222,6 @@ export default function ReportPage() {
           </div>
         </div>
 
-        {}
         <div className="info-section" style={{ display: 'none' }}>
           <div className="info-row">
             <span className="info-label">اسم {reportData.type === "sale" ? "الزبون" : "المجهز"}:</span>
@@ -271,7 +266,6 @@ export default function ReportPage() {
           </div>
         </div>
 
-        {}
         <div className="table-container">
           <table className="items-table">
             <thead>
@@ -301,7 +295,6 @@ export default function ReportPage() {
           </table>
         </div>
 
-        {}
         <div className="totals-section">
           {reportData.discountIQD && reportData.discountIQD > 0 && (
             <div className="total-row">
@@ -345,7 +338,6 @@ export default function ReportPage() {
           )}
         </div>
 
-        {}
         <div className="signature-qr-section">
           <div className="signature-box">
             <div className="signature-line"></div>
@@ -370,7 +362,6 @@ export default function ReportPage() {
           </div>
         </div>
 
-        {}
         <div className="final-totals-section">
           <table className="final-totals-table">
             <tbody>
@@ -413,7 +404,6 @@ export default function ReportPage() {
           </div>
         </div>
       </ReportLayout>
-
       <style jsx>{`
         .header-info {
           display: flex;
@@ -704,5 +694,5 @@ export default function ReportPage() {
         }
       `}</style>
     </div>
-  )
+  );
 }

@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import { ReportLayout } from "@/components/reports/report-layout"
@@ -121,9 +120,8 @@ export default function InventoryReportPage() {
     }
 
     loadData()
-  }, [searchParams])
+  }, [searchParams]);
 
-  // رسم QR Code
   useEffect(() => {
     if (reportData?.countId && qrCodeCanvasRef.current) {
       try {
@@ -135,7 +133,7 @@ export default function InventoryReportPage() {
       } catch (error) {
       }
     }
-  }, [reportData])
+  }, [reportData]);
 
   if (error) {
     return (
@@ -172,7 +170,6 @@ export default function InventoryReportPage() {
           طباعة
         </Button>
       </div>
-
       <ReportLayout 
         title="تقرير جرد مخزني" 
         storeName={reportData.storeName || "الشركة"} 
@@ -243,7 +240,7 @@ export default function InventoryReportPage() {
                 <td className="label-cell">إجمالي فرق العدد:</td>
                 <td className="amount-cell" dir="ltr">{reportData.totalDiffQty}</td>
                 <td className="words-cell" colSpan={2}>
-                   {/* مساحة فارغة أو ملاحظة */}
+
                 </td>
               </tr>
               <tr>
@@ -258,7 +255,7 @@ export default function InventoryReportPage() {
         </div>
 
         <div className="signature-qr-section">
-          {/* Signature removed as per request */}
+
           <div className="qr-box" style={{ width: '100%', alignItems: 'center' }}>
             {reportData.countId ? (
               <>
@@ -272,7 +269,6 @@ export default function InventoryReportPage() {
         </div>
 
       </ReportLayout>
-
       <style jsx>{`
         .header-info {
           display: flex;
@@ -432,5 +428,5 @@ export default function InventoryReportPage() {
         }
       `}</style>
     </div>
-  )
+  );
 }

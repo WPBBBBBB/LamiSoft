@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { t } from "@/lib/translations"
@@ -150,256 +149,244 @@ export default function AddUserPage() {
 
   return (
     <PermissionGuard requiredRole="مدير">
-    <div className="flex-1 overflow-auto">
-      <div className="container mx-auto p-6 space-y-6">
-        {}
-        <div className="mb-6 flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => router.back()}
-            title={t('back', lang)}
-            className="shrink-0"
-          >
-            <ArrowRight className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
-              {t('addUserPageTitle', lang)}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {t('addUserPageDescription', lang)}
-            </p>
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto p-6 space-y-6">
+
+          <div className="mb-6 flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => router.back()}
+              title={t('back', lang)}
+              className="shrink-0"
+            >
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
+                {t('addUserPageTitle', lang)}
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                {t('addUserPageDescription', lang)}
+              </p>
+            </div>
           </div>
-        </div>
+          <form onSubmit={handleSubmit}>
+            <Card className="p-6">
+              <div className="space-y-6">
 
-        <form onSubmit={handleSubmit}>
-          <Card className="p-6">
-            <div className="space-y-6">
-              {}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">{t('basicInformation', lang)}</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {}
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">
-                      {t('fullName', lang)} <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="fullName"
-                      value={formData.fullName}
-                      onChange={(e) => handleInputChange("fullName", e.target.value)}
-                      placeholder={t('enterFullName', lang)}
-                      required
-                    />
-                  </div>
-
-                  {}
-                  <div className="space-y-2">
-                    <Label htmlFor="phoneNumber">{t('phoneNumber', lang)}</Label>
-                    <Input
-                      id="phoneNumber"
-                      value={formData.phoneNumber}
-                      onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-                      placeholder="07xxxxxxxxx"
-                      dir="ltr"
-                      maxLength={11}
-                    />
-                    <p className="text-xs text-muted-foreground">{t('phoneNumberHint', lang)}</p>
-                  </div>
-
-                  {}
-                  <div className="space-y-2">
-                    <Label htmlFor="address">{t('address', lang)}</Label>
-                    <Input
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) => handleInputChange("address", e.target.value)}
-                      placeholder={t('enterAddress', lang)}
-                    />
-                  </div>
-
-                  {}
-                  <div className="space-y-2">
-                    <Label htmlFor="age">{t('age', lang)}</Label>
-                    <Input
-                      id="age"
-                      type="number"
-                      value={formData.age}
-                      onChange={(e) => handleInputChange("age", e.target.value)}
-                      placeholder={t('enterAge', lang)}
-                      min="18"
-                      max="100"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">{t('loginData', lang)}</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {}
-                  <div className="space-y-2">
-                    <Label htmlFor="username">
-                      {t('username', lang)} <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="username"
-                      value={formData.username}
-                      onChange={(e) => handleInputChange("username", e.target.value)}
-                      placeholder={t('enterUsername', lang)}
-                      required
-                      dir="ltr"
-                    />
-                  </div>
-
-                  {}
-                  <div className="space-y-2">
-                    <Label htmlFor="password">
-                      {t('password', lang)} <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => handleInputChange("password", e.target.value)}
-                      placeholder={t('enterPassword', lang)}
-                      required
-                      dir="ltr"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">{t('permissionsAndRole', lang)}</h3>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="permissionType">
-                    {t('permissionType', lang)} <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={formData.permissionType}
-                    onValueChange={(value: "مدير" | "محاسب" | "موظف") =>
-                      handleInputChange("permissionType", value)
-                    }
-                  >
-                    <SelectTrigger id="permissionType">
-                      <SelectValue placeholder={t('selectPermissionTypePlaceholder', lang)} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="مدير">{t('roleManager', lang)}</SelectItem>
-                      <SelectItem value="محاسب">{t('roleAccountant', lang)}</SelectItem>
-                      <SelectItem value="موظف">{t('roleEmployeeRegular', lang)}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">{t('basicInformation', lang)}</h3>
                   
-                  {formData.permissionType === "مدير" && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {t('managerFullPermissionsHint', lang)}
-                    </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName">
+                        {t('fullName', lang)} <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="fullName"
+                        value={formData.fullName}
+                        onChange={(e) => handleInputChange("fullName", e.target.value)}
+                        placeholder={t('enterFullName', lang)}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="phoneNumber">{t('phoneNumber', lang)}</Label>
+                      <Input
+                        id="phoneNumber"
+                        value={formData.phoneNumber}
+                        onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
+                        placeholder="07xxxxxxxxx"
+                        dir="ltr"
+                        maxLength={11}
+                      />
+                      <p className="text-xs text-muted-foreground">{t('phoneNumberHint', lang)}</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="address">{t('address', lang)}</Label>
+                      <Input
+                        id="address"
+                        value={formData.address}
+                        onChange={(e) => handleInputChange("address", e.target.value)}
+                        placeholder={t('enterAddress', lang)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="age">{t('age', lang)}</Label>
+                      <Input
+                        id="age"
+                        type="number"
+                        value={formData.age}
+                        onChange={(e) => handleInputChange("age", e.target.value)}
+                        placeholder={t('enterAge', lang)}
+                        min="18"
+                        max="100"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">{t('loginData', lang)}</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <div className="space-y-2">
+                      <Label htmlFor="username">
+                        {t('username', lang)} <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="username"
+                        value={formData.username}
+                        onChange={(e) => handleInputChange("username", e.target.value)}
+                        placeholder={t('enterUsername', lang)}
+                        required
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="password">
+                        {t('password', lang)} <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => handleInputChange("password", e.target.value)}
+                        placeholder={t('enterPassword', lang)}
+                        required
+                        dir="ltr"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">{t('permissionsAndRole', lang)}</h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="permissionType">
+                      {t('permissionType', lang)} <span className="text-destructive">*</span>
+                    </Label>
+                    <Select
+                      value={formData.permissionType}
+                      onValueChange={(value: "مدير" | "محاسب" | "موظف") =>
+                        handleInputChange("permissionType", value)
+                      }
+                    >
+                      <SelectTrigger id="permissionType">
+                        <SelectValue placeholder={t('selectPermissionTypePlaceholder', lang)} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="مدير">{t('roleManager', lang)}</SelectItem>
+                        <SelectItem value="محاسب">{t('roleAccountant', lang)}</SelectItem>
+                        <SelectItem value="موظف">{t('roleEmployeeRegular', lang)}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    {formData.permissionType === "مدير" && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {t('managerFullPermissionsHint', lang)}
+                      </p>
+                    )}
+                  </div>
+
+                  {formData.permissionType === "محاسب" && (
+                    <div className="space-y-3 pt-4">
+                      <Label className="text-base">{t('chooseAllowedSections', lang)}</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-muted/50 rounded-lg">
+                        {accountantPermissions.map((perm) => (
+                          <div key={perm.id} className="flex items-center space-x-2 space-x-reverse">
+                            <Checkbox
+                              id={perm.id}
+                              checked={permissions[perm.id as keyof typeof permissions]}
+                              onCheckedChange={(checked) =>
+                                handlePermissionChange(perm.id, checked as boolean)
+                              }
+                            />
+                            <Label
+                              htmlFor={perm.id}
+                              className="text-sm font-normal cursor-pointer"
+                            >
+                              {perm.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {formData.permissionType === "موظف" && (
+                    <div className="space-y-3 pt-4">
+                      <Label className="text-base">{t('chooseAllowedSections', lang)}</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-muted/50 rounded-lg">
+
+                        {accountantPermissions.map((perm) => (
+                          <div key={perm.id} className="flex items-center space-x-2 space-x-reverse">
+                            <Checkbox
+                              id={perm.id}
+                              checked={permissions[perm.id as keyof typeof permissions]}
+                              onCheckedChange={(checked) =>
+                                handlePermissionChange(perm.id, checked as boolean)
+                              }
+                            />
+                            <Label
+                              htmlFor={perm.id}
+                              className="text-sm font-normal cursor-pointer"
+                            >
+                              {perm.label}
+                            </Label>
+                          </div>
+                        ))}
+
+                        {employeeAdditionalPermissions.map((perm) => (
+                          <div key={perm.id} className="flex items-center space-x-2 space-x-reverse">
+                            <Checkbox
+                              id={perm.id}
+                              checked={permissions[perm.id as keyof typeof permissions]}
+                              onCheckedChange={(checked) =>
+                                handlePermissionChange(perm.id, checked as boolean)
+                              }
+                            />
+                            <Label
+                              htmlFor={perm.id}
+                              className="text-sm font-normal cursor-pointer"
+                            >
+                              {perm.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
 
-                {}
-                {formData.permissionType === "محاسب" && (
-                  <div className="space-y-3 pt-4">
-                    <Label className="text-base">{t('chooseAllowedSections', lang)}</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-muted/50 rounded-lg">
-                      {accountantPermissions.map((perm) => (
-                        <div key={perm.id} className="flex items-center space-x-2 space-x-reverse">
-                          <Checkbox
-                            id={perm.id}
-                            checked={permissions[perm.id as keyof typeof permissions]}
-                            onCheckedChange={(checked) =>
-                              handlePermissionChange(perm.id, checked as boolean)
-                            }
-                          />
-                          <Label
-                            htmlFor={perm.id}
-                            className="text-sm font-normal cursor-pointer"
-                          >
-                            {perm.label}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {}
-                {formData.permissionType === "موظف" && (
-                  <div className="space-y-3 pt-4">
-                    <Label className="text-base">{t('chooseAllowedSections', lang)}</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-muted/50 rounded-lg">
-                      {}
-                      {accountantPermissions.map((perm) => (
-                        <div key={perm.id} className="flex items-center space-x-2 space-x-reverse">
-                          <Checkbox
-                            id={perm.id}
-                            checked={permissions[perm.id as keyof typeof permissions]}
-                            onCheckedChange={(checked) =>
-                              handlePermissionChange(perm.id, checked as boolean)
-                            }
-                          />
-                          <Label
-                            htmlFor={perm.id}
-                            className="text-sm font-normal cursor-pointer"
-                          >
-                            {perm.label}
-                          </Label>
-                        </div>
-                      ))}
-                      
-                      {}
-                      {employeeAdditionalPermissions.map((perm) => (
-                        <div key={perm.id} className="flex items-center space-x-2 space-x-reverse">
-                          <Checkbox
-                            id={perm.id}
-                            checked={permissions[perm.id as keyof typeof permissions]}
-                            onCheckedChange={(checked) =>
-                              handlePermissionChange(perm.id, checked as boolean)
-                            }
-                          />
-                          <Label
-                            htmlFor={perm.id}
-                            className="text-sm font-normal cursor-pointer"
-                          >
-                            {perm.label}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <div className="flex justify-end gap-3 pt-6 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={isLoading}
+                    className="gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    {t('cancel', lang)}
+                  </Button>
+                  <Button type="submit" disabled={isLoading} className="gap-2">
+                    <Save className="h-4 w-4" />
+                    {isLoading ? t('saving', lang) : t('save', lang)}
+                  </Button>
+                </div>
               </div>
-
-              {}
-              <div className="flex justify-end gap-3 pt-6 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancel}
-                  disabled={isLoading}
-                  className="gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  {t('cancel', lang)}
-                </Button>
-                <Button type="submit" disabled={isLoading} className="gap-2">
-                  <Save className="h-4 w-4" />
-                  {isLoading ? t('saving', lang) : t('save', lang)}
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </form>
+            </Card>
+          </form>
+        </div>
       </div>
-    </div>
     </PermissionGuard>
-  )
+  );
 }

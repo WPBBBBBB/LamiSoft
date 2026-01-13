@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -183,7 +182,7 @@ export default function ForgotPasswordPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {}
+
           {currentStep === 'phone' && (
             <>
               <div className="space-y-2">
@@ -216,7 +215,6 @@ export default function ForgotPasswordPage() {
             </>
           )}
 
-          {}
           {currentStep === 'otp' && (
             <>
               <div className="space-y-2">
@@ -263,7 +261,6 @@ export default function ForgotPasswordPage() {
             </>
           )}
 
-          {}
           {currentStep === 'password' && (
             <>
               <div className="space-y-2">
@@ -333,5 +330,5 @@ export default function ForgotPasswordPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

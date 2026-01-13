@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { t } from "@/lib/translations"
@@ -349,9 +348,8 @@ export default function SalesProfitPage() {
     }))
 
     const workbook = new ExcelJS.Workbook()
-    const worksheet = workbook.addWorksheet('أرباح المبيعات')
+    const worksheet = workbook.addWorksheet('أرباح المبيعات');
     
-    // تحديد الأعمدة
     worksheet.columns = [
       { header: 'اسم المادة', key: 'اسم المادة', width: 30 },
       { header: 'عدد مرات البيع', key: 'عدد مرات البيع', width: 15 },
@@ -360,17 +358,14 @@ export default function SalesProfitPage() {
       { header: 'سعر البيع مفرد', key: 'سعر البيع مفرد', width: 18 },
       { header: 'ربح المفرد', key: 'ربح المفرد', width: 15 },
       { header: 'مجموع ربح المادة', key: 'مجموع ربح المادة', width: 20 },
-    ]
+    ];
     
-    // إضافة البيانات
-    worksheet.addRows(data)
+    worksheet.addRows(data);
     
-    // تنسيق الهيدر
-    worksheet.getRow(1).font = { bold: true }
-    worksheet.getRow(1).alignment = { horizontal: 'center' }
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).alignment = { horizontal: 'center' };
     
-    // حفظ الملف
-    const buffer = await workbook.xlsx.writeBuffer()
+    const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -452,468 +447,456 @@ export default function SalesProfitPage() {
 
   return (
     <PermissionGuard requiredPermission="view_statistics">
-    <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
-          {t('salesProfit', currentLanguage.code)}
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          {t('trackAndAnalyzeProfits', currentLanguage.code)}
-          {getPeriodLabel()}
-        </p>
-      </div>
+      <div className="p-8 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
+            {t('salesProfit', currentLanguage.code)}
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            {t('trackAndAnalyzeProfits', currentLanguage.code)}
+            {getPeriodLabel()}
+          </p>
+        </div>
 
-      {}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-3 items-end">
-            <Button
-              variant={selectedPeriod === "thisweek" ? "default" : "outline"}
-              onClick={() => setSelectedPeriod("thisweek")}
-              className="gap-2"
-            >
-              <Calendar className="h-4 w-4" />
-              {t('profitThisWeek', currentLanguage.code)}
-            </Button>
-            <Button
-              variant={selectedPeriod === "thismonth" ? "default" : "outline"}
-              onClick={() => setSelectedPeriod("thismonth")}
-              className="gap-2"
-            >
-              <Calendar className="h-4 w-4" />
-              {t('profitThisMonth', currentLanguage.code)}
-            </Button>
-            <Button
-              variant={selectedPeriod === "thisyear" ? "default" : "outline"}
-              onClick={() => setSelectedPeriod("thisyear")}
-              className="gap-2"
-            >
-              <Calendar className="h-4 w-4" />
-              {t('profitThisYear', currentLanguage.code)}
-            </Button>
-            <Button
-              variant={selectedPeriod === "all" ? "default" : "outline"}
-              onClick={() => setSelectedPeriod("all")}
-              className="gap-2"
-            >
-              <TrendingUp className="h-4 w-4" />
-              {t('totalProfitAll', currentLanguage.code)}
-            </Button>
-
-            <div className="flex-1 min-w-[300px]" />
-
-            {}
-            <div className="flex gap-2 items-end">
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">{t('from', currentLanguage.code)}</label>
-                <Input
-                  type="date"
-                  value={customStartDate}
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="w-[150px]"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">{t('to', currentLanguage.code)}</label>
-                <Input
-                  type="date"
-                  value={customEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="w-[150px]"
-                />
-              </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-wrap gap-3 items-end">
               <Button
-                onClick={handleCustomDateFilter}
-                variant={selectedPeriod === "custom" ? "default" : "outline"}
+                variant={selectedPeriod === "thisweek" ? "default" : "outline"}
+                onClick={() => setSelectedPeriod("thisweek")}
                 className="gap-2"
               >
                 <Calendar className="h-4 w-4" />
-                عرض
+                {t('profitThisWeek', currentLanguage.code)}
               </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              <Button
+                variant={selectedPeriod === "thismonth" ? "default" : "outline"}
+                onClick={() => setSelectedPeriod("thismonth")}
+                className="gap-2"
+              >
+                <Calendar className="h-4 w-4" />
+                {t('profitThisMonth', currentLanguage.code)}
+              </Button>
+              <Button
+                variant={selectedPeriod === "thisyear" ? "default" : "outline"}
+                onClick={() => setSelectedPeriod("thisyear")}
+                className="gap-2"
+              >
+                <Calendar className="h-4 w-4" />
+                {t('profitThisYear', currentLanguage.code)}
+              </Button>
+              <Button
+                variant={selectedPeriod === "all" ? "default" : "outline"}
+                onClick={() => setSelectedPeriod("all")}
+                className="gap-2"
+              >
+                <TrendingUp className="h-4 w-4" />
+                {t('totalProfitAll', currentLanguage.code)}
+              </Button>
+              <div className="flex-1 min-w-[300px]" />
 
-      {}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={handleExportReport} variant="outline" className="gap-2">
-              <FileText className="h-4 w-4 theme-info" />
-              {t('file', currentLanguage.code)}
-            </Button>
-            <Button onClick={handleExportExcel} variant="outline" className="gap-2">
-              <FileSpreadsheet className="h-4 w-4" />
-              {t('exportExcel', currentLanguage.code)}
-            </Button>
-            <Button onClick={handleExportPDF} variant="outline" className="gap-2">
-              <FileText className="h-4 w-4" />
-              {t('exportPDF', currentLanguage.code)}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            {t('profitDetails', currentLanguage.code)}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('materialCode', currentLanguage.code)}</TableHead>
-                  <TableHead>{t('materialName', currentLanguage.code)}</TableHead>
-                  <TableHead>{t('salesCount', currentLanguage.code)}</TableHead>
-                  <TableHead>{t('totalQuantitySold', currentLanguage.code)}</TableHead>
-                  <TableHead>{t('purchasePrice', currentLanguage.code)}</TableHead>
-                  <TableHead>{t('sellPrice', currentLanguage.code)}</TableHead>
-                  <TableHead>{t('profitPerUnit', currentLanguage.code)}</TableHead>
-                  <TableHead>{t('totalProductProfit', currentLanguage.code)}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      {t('noDataToDisplay', currentLanguage.code)}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  currentProducts.map((product) => (
-                    <TableRow key={product.productCode}>
-                      <TableCell className="font-medium">{product.productCode}</TableCell>
-                      <TableCell>{product.productName}</TableCell>
-                      <TableCell>{formatCurrency(product.salesCount)}</TableCell>
-                      <TableCell className="font-semibold text-blue-600">{formatCurrency(product.totalQuantitySold)}</TableCell>
-                      <TableCell>{formatCurrency(product.purchasePriceIQD)} د.ع</TableCell>
-                      <TableCell>{formatCurrency(product.sellPriceIQD)} د.ع</TableCell>
-                      <TableCell className={product.profitPerUnit >= 0 ? "text-green-600" : "text-red-600"}>
-                        {formatCurrency(product.profitPerUnit)} د.ع
-                      </TableCell>
-                      <TableCell className={product.totalProfit >= 0 ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
-                        {formatCurrency(product.totalProfit)} د.ع
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {}
-          {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-between border-t pt-4">
-              <div className="text-sm text-muted-foreground">
-                {t('showing', currentLanguage.code)} {startIndex + 1} - {Math.min(endIndex, products.length)} {t('outOf', currentLanguage.code)} {products.length} {t('material', currentLanguage.code)}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePreviousPage}
-                  disabled={currentPage === 1}
-                  className="gap-1"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                  {t('previous', currentLanguage.code)}
-                </Button>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium">{t('page', currentLanguage.code)} {currentPage} {t('of', currentLanguage.code)} {totalPages}</span>
+              <div className="flex gap-2 items-end">
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium">{t('from', currentLanguage.code)}</label>
+                  <Input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="w-[150px]"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium">{t('to', currentLanguage.code)}</label>
+                  <Input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="w-[150px]"
+                  />
                 </div>
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                  className="gap-1"
+                  onClick={handleCustomDateFilter}
+                  variant={selectedPeriod === "custom" ? "default" : "outline"}
+                  className="gap-2"
                 >
-                  {t('next', currentLanguage.code)}
-                  <ChevronLeft className="h-4 w-4" />
+                  <Calendar className="h-4 w-4" />
+                  عرض
                 </Button>
               </div>
             </div>
-          )}
+          </CardContent>
+        </Card>
 
-          {}
-          <div className="mt-6 space-y-2 border-t pt-4">
-            <div className="flex justify-between items-center text-lg">
-              <span className="font-semibold">{t('totalMaterials', currentLanguage.code)}:</span>
-              <span className="text-blue-600 font-bold">{formatCurrency(totalItems)} {t('material', currentLanguage.code)}</span>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={handleExportReport} variant="outline" className="gap-2">
+                <FileText className="h-4 w-4 theme-info" />
+                {t('file', currentLanguage.code)}
+              </Button>
+              <Button onClick={handleExportExcel} variant="outline" className="gap-2">
+                <FileSpreadsheet className="h-4 w-4" />
+                {t('exportExcel', currentLanguage.code)}
+              </Button>
+              <Button onClick={handleExportPDF} variant="outline" className="gap-2">
+                <FileText className="h-4 w-4" />
+                {t('exportPDF', currentLanguage.code)}
+              </Button>
             </div>
-            <div className="flex justify-between items-center text-xl">
-              <span className="font-semibold">{t('totalOverallProfit', currentLanguage.code)}:</span>
-              <span className={`font-bold ${totalProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
-                {formatCurrency(totalProfit)} د.ع
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-blue-600" />
-            {t('top6SellingProducts', currentLanguage.code)}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {topSellingProducts.length === 0 ? (
-            <p className="text-center py-8 text-muted-foreground">{t('noDataToDisplay', currentLanguage.code)}</p>
-          ) : (
-            <>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
-                {topSellingProducts.map((product, index) => (
-                  <Card key={product.productCode} className="border-2 border-blue-500/20">
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="text-2xl font-bold text-blue-600">#{index + 1}</div>
-                        <div className="text-right">
-                          <div className="font-semibold text-sm">{product.productName}</div>
-                          <div className="text-xs text-muted-foreground">{product.productCode}</div>
-                        </div>
-                      </div>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span>{t('quantity', currentLanguage.code)}:</span>
-                          <span className="font-bold text-blue-600">{formatCurrency(product.totalQuantitySold)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{t('profit', currentLanguage.code)}:</span>
-                          <span className="font-bold text-green-600">{formatCurrency(product.totalProfit)} د.ع</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              
-              {}
-              <div className="mt-6 p-4 bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-lg">
-                <h3 className="text-lg font-semibold mb-4 text-center text-blue-900 dark:text-blue-100">مخطط الكميات المباعة</h3>
-                <ResponsiveContainer width="100%" height={450}>
-                  <BarChart 
-                    data={topSellingProducts.map(p => ({
-                      name: p.productName.length > 20 ? p.productName.substring(0, 20) + '...' : p.productName,
-                      الكمية: p.totalQuantitySold,
-                      الربح: p.totalProfit
-                    }))}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" />
-                    <XAxis 
-                      dataKey="name" 
-                      angle={-25} 
-                      textAnchor="end" 
-                      height={130}
-                      tick={{ fontSize: 15, fill: '#0f172a', fontWeight: 700 }}
-                      interval={0}
-                      stroke="#475569"
-                    />
-                    <YAxis 
-                      yAxisId="left"
-                      tick={{ fontSize: 14, fill: '#0f172a', fontWeight: 600 }}
-                      label={{ value: t('quantity', currentLanguage.code), angle: -90, position: 'insideLeft', style: { fontSize: 16, fontWeight: 'bold', fill: '#1e3a8a' } }}
-                      stroke="#475569"
-                    />
-                    <YAxis 
-                      yAxisId="right"
-                      orientation="right"
-                      tick={{ fontSize: 14, fill: '#0f172a', fontWeight: 600 }}
-                      label={{ value: `${t('profit', currentLanguage.code)} (${t('iqd', currentLanguage.code)})`, angle: 90, position: 'insideRight', style: { fontSize: 16, fontWeight: 'bold', fill: '#065f46' } }}
-                      stroke="#475569"
-                    />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                      formatter={(value: number | string) => formatCurrency(Number(value))}
-                    />
-                    <Legend 
-                      wrapperStyle={{ paddingTop: '20px' }}
-                      iconType="rect"
-                    />
-                    <Bar 
-                      yAxisId="left"
-                      dataKey={t('quantity', currentLanguage.code)} 
-                      fill="#2563eb" 
-                      radius={[8, 8, 0, 0]}
-                      label={{ position: 'top', fontSize: 12, fill: '#1e3a8a', fontWeight: 'bold' }}
-                    />
-                    <Bar 
-                      yAxisId="right"
-                      dataKey={t('profit', currentLanguage.code)} 
-                      fill="#059669" 
-                      radius={[8, 8, 0, 0]}
-                      opacity={0.85}
-                      label={{ position: 'top', fontSize: 11, fill: '#065f46', fontWeight: 'bold' }}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-green-600" />
-            {t('top6ProfitableProducts', currentLanguage.code)}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {topProfitProducts.length === 0 ? (
-            <p className="text-center py-8 text-muted-foreground">{t('noDataToDisplay', currentLanguage.code)}</p>
-          ) : (
-            <>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
-                {topProfitProducts.map((product, index) => (
-                  <Card key={product.productCode} className="border-2 border-green-500/20">
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="text-2xl font-bold text-green-600">#{index + 1}</div>
-                        <div className="text-right">
-                          <div className="font-semibold text-sm">{product.productName}</div>
-                          <div className="text-xs text-muted-foreground">{product.productCode}</div>
-                        </div>
-                      </div>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span>{t('profitPerUnit', currentLanguage.code)}:</span>
-                          <span className="font-semibold">{formatCurrency(product.profitPerUnit)} {t('iqd', currentLanguage.code)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{t('totalProfit', currentLanguage.code)}:</span>
-                          <span className="font-bold text-green-600">{formatCurrency(product.totalProfit)} {t('iqd', currentLanguage.code)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{t('quantity', currentLanguage.code)}:</span>
-                          <span className="text-muted-foreground">{formatCurrency(product.totalQuantitySold)}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              
-              {}
-              <div className="mt-6 p-4 bg-linear-to-br from-green-50 to-emerald-100 dark:from-green-950 dark:to-emerald-900 rounded-lg">
-                <h3 className="text-lg font-semibold mb-4 text-center text-green-900 dark:text-green-100">{t('profitChart', currentLanguage.code)}</h3>
-                <ResponsiveContainer width="100%" height={450}>
-                  <BarChart 
-                    data={topProfitProducts.map(p => ({
-                      name: p.productName.length > 20 ? p.productName.substring(0, 20) + '...' : p.productName,
-                      الربح: p.totalProfit,
-                      ربح_المفرد: p.profitPerUnit,
-                      الكمية: p.totalQuantitySold
-                    }))}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" />
-                    <XAxis 
-                      dataKey="name" 
-                      angle={-25} 
-                      textAnchor="end" 
-                      height={130}
-                      tick={{ fontSize: 15, fill: '#0f172a', fontWeight: 700 }}
-                      interval={0}
-                      stroke="#475569"
-                    />
-                    <YAxis 
-                      yAxisId="left"
-                      tick={{ fontSize: 14, fill: '#0f172a', fontWeight: 600 }}
-                      label={{ value: `${t('totalProfitLabel', currentLanguage.code)} (${t('iqd', currentLanguage.code)})`, angle: -90, position: 'insideLeft', style: { fontSize: 16, fontWeight: 'bold', fill: '#065f46' } }}
-                      stroke="#475569"
-                    />
-                    <YAxis 
-                      yAxisId="right"
-                      orientation="right"
-                      tick={{ fontSize: 14, fill: '#0f172a', fontWeight: 600 }}
-                      label={{ value: `${t('unitProfitLabel', currentLanguage.code)} (${t('iqd', currentLanguage.code)})`, angle: 90, position: 'insideRight', style: { fontSize: 16, fontWeight: 'bold', fill: '#ea580c' } }}
-                      stroke="#475569"
-                    />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                      formatter={(value: number | string) => formatCurrency(Number(value)) + ' د.ع'}
-                    />
-                    <Legend 
-                      wrapperStyle={{ paddingTop: '20px' }}
-                      iconType="rect"
-                    />
-                    <Bar 
-                      yAxisId="left"
-                      dataKey={t('totalProfit', currentLanguage.code)} 
-                      fill="#059669" 
-                      radius={[8, 8, 0, 0]}
-                      label={{ position: 'top', fontSize: 12, fill: '#065f46', fontWeight: 'bold' }}
-                    />
-                    <Bar 
-                      yAxisId="right"
-                      dataKey={t('profitPerUnit', currentLanguage.code)} 
-                      fill="#f97316" 
-                      radius={[8, 8, 0, 0]}
-                      opacity={0.85}
-                      label={{ position: 'top', fontSize: 11, fill: '#ea580c', fontWeight: 'bold' }}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-orange-600" />
-            {t('slowMovingProductsFullTitle', currentLanguage.code)}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {slowMovingProducts.length === 0 ? (
-            <p className="text-center py-8 text-muted-foreground">{t('allProductsActive', currentLanguage.code)}</p>
-          ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              {t('profitDetails', currentLanguage.code)}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>#</TableHead>
                     <TableHead>{t('materialCode', currentLanguage.code)}</TableHead>
                     <TableHead>{t('materialName', currentLanguage.code)}</TableHead>
-                    <TableHead>{t('lastSaleDate', currentLanguage.code)}</TableHead>
-                    <TableHead>{t('numberOfDays', currentLanguage.code)}</TableHead>
+                    <TableHead>{t('salesCount', currentLanguage.code)}</TableHead>
+                    <TableHead>{t('totalQuantitySold', currentLanguage.code)}</TableHead>
+                    <TableHead>{t('purchasePrice', currentLanguage.code)}</TableHead>
+                    <TableHead>{t('sellPrice', currentLanguage.code)}</TableHead>
+                    <TableHead>{t('profitPerUnit', currentLanguage.code)}</TableHead>
+                    <TableHead>{t('totalProductProfit', currentLanguage.code)}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {slowMovingProducts.map((product, index) => (
-                    <TableRow key={`${product.productCode}-${index}`}>
-                      <TableCell className="font-medium">{index + 1}</TableCell>
-                      <TableCell>{product.productCode}</TableCell>
-                      <TableCell>{product.productName}</TableCell>
-                      <TableCell>{product.lastSaleDate}</TableCell>
-                      <TableCell className="font-bold text-orange-600">
-                        {product.daysSinceLastSale === 999 ? t('neverSold', currentLanguage.code) : `${product.daysSinceLastSale} ${t('day', currentLanguage.code)}`}
+                  {products.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        {t('noDataToDisplay', currentLanguage.code)}
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    currentProducts.map((product) => (
+                      <TableRow key={product.productCode}>
+                        <TableCell className="font-medium">{product.productCode}</TableCell>
+                        <TableCell>{product.productName}</TableCell>
+                        <TableCell>{formatCurrency(product.salesCount)}</TableCell>
+                        <TableCell className="font-semibold text-blue-600">{formatCurrency(product.totalQuantitySold)}</TableCell>
+                        <TableCell>{formatCurrency(product.purchasePriceIQD)} د.ع</TableCell>
+                        <TableCell>{formatCurrency(product.sellPriceIQD)} د.ع</TableCell>
+                        <TableCell className={product.profitPerUnit >= 0 ? "text-green-600" : "text-red-600"}>
+                          {formatCurrency(product.profitPerUnit)} د.ع
+                        </TableCell>
+                        <TableCell className={product.totalProfit >= 0 ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
+                          {formatCurrency(product.totalProfit)} د.ع
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-between border-t pt-4">
+                <div className="text-sm text-muted-foreground">
+                  {t('showing', currentLanguage.code)} {startIndex + 1} - {Math.min(endIndex, products.length)} {t('outOf', currentLanguage.code)} {products.length} {t('material', currentLanguage.code)}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 1}
+                    className="gap-1"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                    {t('previous', currentLanguage.code)}
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-medium">{t('page', currentLanguage.code)} {currentPage} {t('of', currentLanguage.code)} {totalPages}</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                    className="gap-1"
+                  >
+                    {t('next', currentLanguage.code)}
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 space-y-2 border-t pt-4">
+              <div className="flex justify-between items-center text-lg">
+                <span className="font-semibold">{t('totalMaterials', currentLanguage.code)}:</span>
+                <span className="text-blue-600 font-bold">{formatCurrency(totalItems)} {t('material', currentLanguage.code)}</span>
+              </div>
+              <div className="flex justify-between items-center text-xl">
+                <span className="font-semibold">{t('totalOverallProfit', currentLanguage.code)}:</span>
+                <span className={`font-bold ${totalProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                  {formatCurrency(totalProfit)} د.ع
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-blue-600" />
+              {t('top6SellingProducts', currentLanguage.code)}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {topSellingProducts.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground">{t('noDataToDisplay', currentLanguage.code)}</p>
+            ) : (
+              <>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+                  {topSellingProducts.map((product, index) => (
+                    <Card key={product.productCode} className="border-2 border-blue-500/20">
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="text-2xl font-bold text-blue-600">#{index + 1}</div>
+                          <div className="text-right">
+                            <div className="font-semibold text-sm">{product.productName}</div>
+                            <div className="text-xs text-muted-foreground">{product.productCode}</div>
+                          </div>
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span>{t('quantity', currentLanguage.code)}:</span>
+                            <span className="font-bold text-blue-600">{formatCurrency(product.totalQuantitySold)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>{t('profit', currentLanguage.code)}:</span>
+                            <span className="font-bold text-green-600">{formatCurrency(product.totalProfit)} د.ع</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                <div className="mt-6 p-4 bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-lg">
+                  <h3 className="text-lg font-semibold mb-4 text-center text-blue-900 dark:text-blue-100">مخطط الكميات المباعة</h3>
+                  <ResponsiveContainer width="100%" height={450}>
+                    <BarChart 
+                      data={topSellingProducts.map(p => ({
+                        name: p.productName.length > 20 ? p.productName.substring(0, 20) + '...' : p.productName,
+                        الكمية: p.totalQuantitySold,
+                        الربح: p.totalProfit
+                      }))}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" />
+                      <XAxis 
+                        dataKey="name" 
+                        angle={-25} 
+                        textAnchor="end" 
+                        height={130}
+                        tick={{ fontSize: 15, fill: '#0f172a', fontWeight: 700 }}
+                        interval={0}
+                        stroke="#475569"
+                      />
+                      <YAxis 
+                        yAxisId="left"
+                        tick={{ fontSize: 14, fill: '#0f172a', fontWeight: 600 }}
+                        label={{ value: t('quantity', currentLanguage.code), angle: -90, position: 'insideLeft', style: { fontSize: 16, fontWeight: 'bold', fill: '#1e3a8a' } }}
+                        stroke="#475569"
+                      />
+                      <YAxis 
+                        yAxisId="right"
+                        orientation="right"
+                        tick={{ fontSize: 14, fill: '#0f172a', fontWeight: 600 }}
+                        label={{ value: `${t('profit', currentLanguage.code)} (${t('iqd', currentLanguage.code)})`, angle: 90, position: 'insideRight', style: { fontSize: 16, fontWeight: 'bold', fill: '#065f46' } }}
+                        stroke="#475569"
+                      />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                        formatter={(value: number | string) => formatCurrency(Number(value))}
+                      />
+                      <Legend 
+                        wrapperStyle={{ paddingTop: '20px' }}
+                        iconType="rect"
+                      />
+                      <Bar 
+                        yAxisId="left"
+                        dataKey={t('quantity', currentLanguage.code)} 
+                        fill="#2563eb" 
+                        radius={[8, 8, 0, 0]}
+                        label={{ position: 'top', fontSize: 12, fill: '#1e3a8a', fontWeight: 'bold' }}
+                      />
+                      <Bar 
+                        yAxisId="right"
+                        dataKey={t('profit', currentLanguage.code)} 
+                        fill="#059669" 
+                        radius={[8, 8, 0, 0]}
+                        opacity={0.85}
+                        label={{ position: 'top', fontSize: 11, fill: '#065f46', fontWeight: 'bold' }}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-green-600" />
+              {t('top6ProfitableProducts', currentLanguage.code)}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {topProfitProducts.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground">{t('noDataToDisplay', currentLanguage.code)}</p>
+            ) : (
+              <>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+                  {topProfitProducts.map((product, index) => (
+                    <Card key={product.productCode} className="border-2 border-green-500/20">
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="text-2xl font-bold text-green-600">#{index + 1}</div>
+                          <div className="text-right">
+                            <div className="font-semibold text-sm">{product.productName}</div>
+                            <div className="text-xs text-muted-foreground">{product.productCode}</div>
+                          </div>
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span>{t('profitPerUnit', currentLanguage.code)}:</span>
+                            <span className="font-semibold">{formatCurrency(product.profitPerUnit)} {t('iqd', currentLanguage.code)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>{t('totalProfit', currentLanguage.code)}:</span>
+                            <span className="font-bold text-green-600">{formatCurrency(product.totalProfit)} {t('iqd', currentLanguage.code)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>{t('quantity', currentLanguage.code)}:</span>
+                            <span className="text-muted-foreground">{formatCurrency(product.totalQuantitySold)}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                <div className="mt-6 p-4 bg-linear-to-br from-green-50 to-emerald-100 dark:from-green-950 dark:to-emerald-900 rounded-lg">
+                  <h3 className="text-lg font-semibold mb-4 text-center text-green-900 dark:text-green-100">{t('profitChart', currentLanguage.code)}</h3>
+                  <ResponsiveContainer width="100%" height={450}>
+                    <BarChart 
+                      data={topProfitProducts.map(p => ({
+                        name: p.productName.length > 20 ? p.productName.substring(0, 20) + '...' : p.productName,
+                        الربح: p.totalProfit,
+                        ربح_المفرد: p.profitPerUnit,
+                        الكمية: p.totalQuantitySold
+                      }))}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" />
+                      <XAxis 
+                        dataKey="name" 
+                        angle={-25} 
+                        textAnchor="end" 
+                        height={130}
+                        tick={{ fontSize: 15, fill: '#0f172a', fontWeight: 700 }}
+                        interval={0}
+                        stroke="#475569"
+                      />
+                      <YAxis 
+                        yAxisId="left"
+                        tick={{ fontSize: 14, fill: '#0f172a', fontWeight: 600 }}
+                        label={{ value: `${t('totalProfitLabel', currentLanguage.code)} (${t('iqd', currentLanguage.code)})`, angle: -90, position: 'insideLeft', style: { fontSize: 16, fontWeight: 'bold', fill: '#065f46' } }}
+                        stroke="#475569"
+                      />
+                      <YAxis 
+                        yAxisId="right"
+                        orientation="right"
+                        tick={{ fontSize: 14, fill: '#0f172a', fontWeight: 600 }}
+                        label={{ value: `${t('unitProfitLabel', currentLanguage.code)} (${t('iqd', currentLanguage.code)})`, angle: 90, position: 'insideRight', style: { fontSize: 16, fontWeight: 'bold', fill: '#ea580c' } }}
+                        stroke="#475569"
+                      />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                        formatter={(value: number | string) => formatCurrency(Number(value)) + ' د.ع'}
+                      />
+                      <Legend 
+                        wrapperStyle={{ paddingTop: '20px' }}
+                        iconType="rect"
+                      />
+                      <Bar 
+                        yAxisId="left"
+                        dataKey={t('totalProfit', currentLanguage.code)} 
+                        fill="#059669" 
+                        radius={[8, 8, 0, 0]}
+                        label={{ position: 'top', fontSize: 12, fill: '#065f46', fontWeight: 'bold' }}
+                      />
+                      <Bar 
+                        yAxisId="right"
+                        dataKey={t('profitPerUnit', currentLanguage.code)} 
+                        fill="#f97316" 
+                        radius={[8, 8, 0, 0]}
+                        opacity={0.85}
+                        label={{ position: 'top', fontSize: 11, fill: '#ea580c', fontWeight: 'bold' }}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-600" />
+              {t('slowMovingProductsFullTitle', currentLanguage.code)}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {slowMovingProducts.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground">{t('allProductsActive', currentLanguage.code)}</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>#</TableHead>
+                      <TableHead>{t('materialCode', currentLanguage.code)}</TableHead>
+                      <TableHead>{t('materialName', currentLanguage.code)}</TableHead>
+                      <TableHead>{t('lastSaleDate', currentLanguage.code)}</TableHead>
+                      <TableHead>{t('numberOfDays', currentLanguage.code)}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {slowMovingProducts.map((product, index) => (
+                      <TableRow key={`${product.productCode}-${index}`}>
+                        <TableCell className="font-medium">{index + 1}</TableCell>
+                        <TableCell>{product.productCode}</TableCell>
+                        <TableCell>{product.productName}</TableCell>
+                        <TableCell>{product.lastSaleDate}</TableCell>
+                        <TableCell className="font-bold text-orange-600">
+                          {product.daysSinceLastSale === 999 ? t('neverSold', currentLanguage.code) : `${product.daysSinceLastSale} ${t('day', currentLanguage.code)}`}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </PermissionGuard>
-  )
+  );
 }

@@ -9,7 +9,8 @@
     "build:webpack": "next build --webpack",
     "start": "next start",
     "lint": "next lint",
-    "health": "node scripts/health-check.mjs"
+    "health": "node scripts/health-check.mjs",
+    "strip:comments": "node scripts/strip-comments.cjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
@@ -77,6 +78,7 @@
     "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.7",
+    "recast": "^0.23.11",
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "typescript": "^5"

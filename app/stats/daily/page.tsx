@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { PermissionGuard } from "@/components/permission-guard"
 
 import { useState, useEffect } from "react"
@@ -242,312 +241,304 @@ export default function DailyStatsPage() {
 
   return (
     <PermissionGuard requiredPermission="view_statistics">
-    <div className="p-8 space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
-            {t('dailyStats', currentLanguage.code)}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {t('detailedStatsBySelectedPeriod', currentLanguage.code)}
-          </p>
+      <div className="p-8 space-y-6">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
+              {t('dailyStats', currentLanguage.code)}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {t('detailedStatsBySelectedPeriod', currentLanguage.code)}
+            </p>
+          </div>
+          <Badge variant="outline" className="text-sm">
+            <Calendar className="h-4 w-4 ml-2" />
+            {getRangeLabel()}
+          </Badge>
         </div>
-        <Badge variant="outline" className="text-sm">
-          <Calendar className="h-4 w-4 ml-2" />
-          {getRangeLabel()}
-        </Badge>
-      </div>
 
-      {}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-3 items-end">
-            <Button
-              variant={selectedRange === "today" && !isCustomRange ? "default" : "outline"}
-              onClick={() => {
-                setSelectedRange("today")
-                setIsCustomRange(false)
-              }}
-              className="gap-2"
-            >
-              <Calendar className="h-4 w-4" />
-              {t('today', currentLanguage.code)}
-            </Button>
-            <Button
-              variant={selectedRange === "yesterday" && !isCustomRange ? "default" : "outline"}
-              onClick={() => {
-                setSelectedRange("yesterday")
-                setIsCustomRange(false)
-              }}
-              className="gap-2"
-            >
-              <Calendar className="h-4 w-4" />
-              {t('yesterday', currentLanguage.code)}
-            </Button>
-            <Button
-              variant={selectedRange === "last3days" && !isCustomRange ? "default" : "outline"}
-              onClick={() => {
-                setSelectedRange("last3days")
-                setIsCustomRange(false)
-              }}
-              className="gap-2"
-            >
-              <Calendar className="h-4 w-4" />
-              {t('last3Days', currentLanguage.code)}
-            </Button>
-            <Button
-              variant={selectedRange === "thisweek" && !isCustomRange ? "default" : "outline"}
-              onClick={() => {
-                setSelectedRange("thisweek")
-                setIsCustomRange(false)
-              }}
-              className="gap-2"
-            >
-              <Calendar className="h-4 w-4" />
-              {t('thisWeek', currentLanguage.code)}
-            </Button>
-            
-            <div className="flex-1 min-w-[300px]" />
-            
-            {}
-            <div className="flex gap-2 items-end">
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">{t('from', currentLanguage.code)}</label>
-                <Input
-                  type="date"
-                  value={customStartDate}
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="w-[150px]"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium">{t('to', currentLanguage.code)}</label>
-                <Input
-                  type="date"
-                  value={customEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="w-[150px]"
-                />
-              </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-wrap gap-3 items-end">
               <Button
-                onClick={handleCustomDateFilter}
-                variant={isCustomRange ? "default" : "outline"}
+                variant={selectedRange === "today" && !isCustomRange ? "default" : "outline"}
+                onClick={() => {
+                  setSelectedRange("today")
+                  setIsCustomRange(false)
+                }}
                 className="gap-2"
               >
                 <Calendar className="h-4 w-4" />
-                {t('view', currentLanguage.code)}
+                {t('today', currentLanguage.code)}
               </Button>
+              <Button
+                variant={selectedRange === "yesterday" && !isCustomRange ? "default" : "outline"}
+                onClick={() => {
+                  setSelectedRange("yesterday")
+                  setIsCustomRange(false)
+                }}
+                className="gap-2"
+              >
+                <Calendar className="h-4 w-4" />
+                {t('yesterday', currentLanguage.code)}
+              </Button>
+              <Button
+                variant={selectedRange === "last3days" && !isCustomRange ? "default" : "outline"}
+                onClick={() => {
+                  setSelectedRange("last3days")
+                  setIsCustomRange(false)
+                }}
+                className="gap-2"
+              >
+                <Calendar className="h-4 w-4" />
+                {t('last3Days', currentLanguage.code)}
+              </Button>
+              <Button
+                variant={selectedRange === "thisweek" && !isCustomRange ? "default" : "outline"}
+                onClick={() => {
+                  setSelectedRange("thisweek")
+                  setIsCustomRange(false)
+                }}
+                className="gap-2"
+              >
+                <Calendar className="h-4 w-4" />
+                {t('thisWeek', currentLanguage.code)}
+              </Button>
+              <div className="flex-1 min-w-[300px]" />
+
+              <div className="flex gap-2 items-end">
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium">{t('from', currentLanguage.code)}</label>
+                  <Input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="w-[150px]"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-medium">{t('to', currentLanguage.code)}</label>
+                  <Input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="w-[150px]"
+                  />
+                </div>
+                <Button
+                  onClick={handleCustomDateFilter}
+                  variant={isCustomRange ? "default" : "outline"}
+                  className="gap-2"
+                >
+                  <Calendar className="h-4 w-4" />
+                  {t('view', currentLanguage.code)}
+                </Button>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {}
-      <div>
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 theme-success" />
-          {t('salesStats', currentLanguage.code)}
-        </h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('totalSales', currentLanguage.code)}</CardTitle>
-              <ShoppingCart className="h-4 w-4 theme-icon" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalSales)}</div>
-              <p className="text-xs text-muted-foreground">{t('saleOperation', currentLanguage.code)}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('salesValue', currentLanguage.code)}</CardTitle>
-              <DollarSign className="h-4 w-4 theme-icon" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalSalesAmount)}</div>
-              <p className="text-xs text-muted-foreground">{t('iraqiDinar', currentLanguage.code)}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('averageSale', currentLanguage.code)}</CardTitle>
-              <BarChart3 className="h-4 w-4 theme-icon" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatCurrency(stats.totalSales > 0 ? Math.round(stats.totalSalesAmount / stats.totalSales) : 0)}
-              </div>
-              <p className="text-xs text-muted-foreground">{t('dinarPerOperation', currentLanguage.code)}</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {}
-      <div>
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <TrendingDown className="h-5 w-5 theme-danger" />
-          {t('purchasesStats', currentLanguage.code)}
-        </h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('totalPurchases', currentLanguage.code)}</CardTitle>
-              <ShoppingCart className="h-4 w-4 theme-icon" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalPurchases)}</div>
-              <p className="text-xs text-muted-foreground">{t('purchaseOperation', currentLanguage.code)}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('purchasesValue', currentLanguage.code)}</CardTitle>
-              <DollarSign className="h-4 w-4 theme-icon" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalPurchasesAmount)}</div>
-              <p className="text-xs text-muted-foreground">{t('iraqiDinar', currentLanguage.code)}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('averagePurchase', currentLanguage.code)}</CardTitle>
-              <BarChart3 className="h-4 w-4 theme-icon" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatCurrency(stats.totalPurchases > 0 ? Math.round(stats.totalPurchasesAmount / stats.totalPurchases) : 0)}
-              </div>
-              <p className="text-xs text-muted-foreground">{t('dinarPerOperation', currentLanguage.code)}</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {}
-      <div>
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Wallet className="h-5 w-5 theme-info" />
-          {t('profitAndLoss', currentLanguage.code)}
-        </h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="border-2 border-green-500/20 bg-green-500/5">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('netProfit', currentLanguage.code)}</CardTitle>
-              <TrendingUp className="h-4 w-4 theme-success" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {formatCurrency(stats.totalProfit)}
-              </div>
-              <p className="text-xs text-muted-foreground">{t('iraqiDinar', currentLanguage.code)}</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 border-blue-500/20 bg-blue-500/5">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('profitMargin', currentLanguage.code)}</CardTitle>
-              <BarChart3 className="h-4 w-4 theme-info" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {stats.totalPurchasesAmount > 0
-                  ? (((stats.totalProfit / stats.totalPurchasesAmount) * 100).toFixed(1))
-                  : 0}%
-              </div>
-              <p className="text-xs text-muted-foreground">{t('ofTotalPurchases', currentLanguage.code)}</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 border-purple-500/20 bg-purple-500/5">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('profitMarginPercent', currentLanguage.code)}</CardTitle>
-              <TrendingUp className="h-4 w-4 theme-info" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {stats.totalSalesAmount > 0
-                  ? (((stats.totalProfit / stats.totalSalesAmount) * 100).toFixed(1))
-                  : 0}%
-              </div>
-              <p className="text-xs text-muted-foreground">{t('ofTotalSales', currentLanguage.code)}</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 theme-info" />
-              {t('salesAndPurchasesChart', currentLanguage.code)} ({getRangeLabel()})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={dailyChart}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                <Legend />
-                <Bar dataKey={t('sales', currentLanguage.code)} fill="#10b981" />
-                <Bar dataKey={t('purchases', currentLanguage.code)} fill="#ef4444" />
-                <Bar dataKey={t('profit', currentLanguage.code)} fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
-      </div>
 
-      {}
-      <div>
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Users className="h-5 w-5 theme-info" />
-          {t('usersAndActivityStats', currentLanguage.code)}
-        </h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('totalUsers', currentLanguage.code)}</CardTitle>
-              <Users className="h-4 w-4 theme-icon" />
+        <div>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 theme-success" />
+            {t('salesStats', currentLanguage.code)}
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('totalSales', currentLanguage.code)}</CardTitle>
+                <ShoppingCart className="h-4 w-4 theme-icon" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(stats.totalSales)}</div>
+                <p className="text-xs text-muted-foreground">{t('saleOperation', currentLanguage.code)}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('salesValue', currentLanguage.code)}</CardTitle>
+                <DollarSign className="h-4 w-4 theme-icon" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(stats.totalSalesAmount)}</div>
+                <p className="text-xs text-muted-foreground">{t('iraqiDinar', currentLanguage.code)}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('averageSale', currentLanguage.code)}</CardTitle>
+                <BarChart3 className="h-4 w-4 theme-icon" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(stats.totalSales > 0 ? Math.round(stats.totalSalesAmount / stats.totalSales) : 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">{t('dinarPerOperation', currentLanguage.code)}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <TrendingDown className="h-5 w-5 theme-danger" />
+            {t('purchasesStats', currentLanguage.code)}
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('totalPurchases', currentLanguage.code)}</CardTitle>
+                <ShoppingCart className="h-4 w-4 theme-icon" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(stats.totalPurchases)}</div>
+                <p className="text-xs text-muted-foreground">{t('purchaseOperation', currentLanguage.code)}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('purchasesValue', currentLanguage.code)}</CardTitle>
+                <DollarSign className="h-4 w-4 theme-icon" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(stats.totalPurchasesAmount)}</div>
+                <p className="text-xs text-muted-foreground">{t('iraqiDinar', currentLanguage.code)}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('averagePurchase', currentLanguage.code)}</CardTitle>
+                <BarChart3 className="h-4 w-4 theme-icon" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(stats.totalPurchases > 0 ? Math.round(stats.totalPurchasesAmount / stats.totalPurchases) : 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">{t('dinarPerOperation', currentLanguage.code)}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Wallet className="h-5 w-5 theme-info" />
+            {t('profitAndLoss', currentLanguage.code)}
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="border-2 border-green-500/20 bg-green-500/5">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('netProfit', currentLanguage.code)}</CardTitle>
+                <TrendingUp className="h-4 w-4 theme-success" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {formatCurrency(stats.totalProfit)}
+                </div>
+                <p className="text-xs text-muted-foreground">{t('iraqiDinar', currentLanguage.code)}</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-blue-500/20 bg-blue-500/5">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('profitMargin', currentLanguage.code)}</CardTitle>
+                <BarChart3 className="h-4 w-4 theme-info" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">
+                  {stats.totalPurchasesAmount > 0
+                    ? (((stats.totalProfit / stats.totalPurchasesAmount) * 100).toFixed(1))
+                    : 0}%
+                </div>
+                <p className="text-xs text-muted-foreground">{t('ofTotalPurchases', currentLanguage.code)}</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-purple-500/20 bg-purple-500/5">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('profitMarginPercent', currentLanguage.code)}</CardTitle>
+                <TrendingUp className="h-4 w-4 theme-info" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-purple-600">
+                  {stats.totalSalesAmount > 0
+                    ? (((stats.totalProfit / stats.totalSalesAmount) * 100).toFixed(1))
+                    : 0}%
+                </div>
+                <p className="text-xs text-muted-foreground">{t('ofTotalSales', currentLanguage.code)}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 theme-info" />
+                {t('salesAndPurchasesChart', currentLanguage.code)} ({getRangeLabel()})
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalUsers)}</div>
-              <p className="text-xs text-muted-foreground">{t('registeredUser', currentLanguage.code)}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('totalLogins', currentLanguage.code)}</CardTitle>
-              <Activity className="h-4 w-4 theme-icon" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalLogins)}</div>
-              <p className="text-xs text-muted-foreground">{t('loginOperation', currentLanguage.code)}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('totalCustomers', currentLanguage.code)}</CardTitle>
-              <Users className="h-4 w-4 theme-icon" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalCustomers)}</div>
-              <p className="text-xs text-muted-foreground">{t('customer', currentLanguage.code)}</p>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={dailyChart}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  <Legend />
+                  <Bar dataKey={t('sales', currentLanguage.code)} fill="#10b981" />
+                  <Bar dataKey={t('purchases', currentLanguage.code)} fill="#ef4444" />
+                  <Bar dataKey={t('profit', currentLanguage.code)} fill="#3b82f6" />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
+
+        <div>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Users className="h-5 w-5 theme-info" />
+            {t('usersAndActivityStats', currentLanguage.code)}
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('totalUsers', currentLanguage.code)}</CardTitle>
+                <Users className="h-4 w-4 theme-icon" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(stats.totalUsers)}</div>
+                <p className="text-xs text-muted-foreground">{t('registeredUser', currentLanguage.code)}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('totalLogins', currentLanguage.code)}</CardTitle>
+                <Activity className="h-4 w-4 theme-icon" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(stats.totalLogins)}</div>
+                <p className="text-xs text-muted-foreground">{t('loginOperation', currentLanguage.code)}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t('totalCustomers', currentLanguage.code)}</CardTitle>
+                <Users className="h-4 w-4 theme-icon" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(stats.totalCustomers)}</div>
+                <p className="text-xs text-muted-foreground">{t('customer', currentLanguage.code)}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
-    </div>
     </PermissionGuard>
-  )
+  );
 }

@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 export const dynamic = "force-dynamic"
 
 import { useState } from "react"
@@ -83,7 +82,6 @@ function ThemePreview({
           cursor: pointer !important;
         }
       `}</style>
-      
       <div 
         className={cn("flex theme-preview-container", isFullscreen ? "min-h-screen" : "h-full")}
         style={{
@@ -106,7 +104,6 @@ function ThemePreview({
         </div>
       </div>
 
-      {}
       {onMaximize && !isFullscreen && (
         <button
           data-preview-control="true"
@@ -122,7 +119,6 @@ function ThemePreview({
         </button>
       )}
 
-      {}
       {isFullscreen && (
         <div 
           className="absolute top-4 right-4 z-40 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2"
@@ -138,7 +134,7 @@ function ThemePreview({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function OldThemePreview({ theme }: { theme: Theme }) {
@@ -153,11 +149,11 @@ function OldThemePreview({ theme }: { theme: Theme }) {
         minHeight: '500px'
       }}
     >
-      {}
+
       <div className="flex h-full">
-        {}
+
         <div className="flex-1 flex flex-col">
-          {}
+
           <div 
             className="p-4 border-b flex items-center justify-between"
             style={{ 
@@ -183,9 +179,8 @@ function OldThemePreview({ theme }: { theme: Theme }) {
             </div>
           </div>
 
-          {}
           <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-            {}
+
             <div 
               className="rounded-lg p-3 flex items-center gap-2"
               style={{ backgroundColor: theme.colors.surface }}
@@ -194,7 +189,6 @@ function OldThemePreview({ theme }: { theme: Theme }) {
               <div className="h-2 rounded-full flex-1" style={{ backgroundColor: theme.colors.text, opacity: 0.1 }} />
             </div>
 
-            {}
             <div className="grid grid-cols-3 gap-3">
               {[
                 { icon: ShoppingCart, label: 'المبيعات', value: '1.2K', color: theme.colors.success },
@@ -224,7 +218,6 @@ function OldThemePreview({ theme }: { theme: Theme }) {
               ))}
             </div>
 
-            {}
             <div className="space-y-2">
               <div className="text-xs font-medium opacity-60 mb-2" style={{ color: theme.colors.text }}>
                 العمليات الرئيسية
@@ -250,7 +243,6 @@ function OldThemePreview({ theme }: { theme: Theme }) {
               </div>
             </div>
 
-            {}
             <div className="space-y-2">
               <div className="text-xs font-medium opacity-60 mb-2" style={{ color: theme.colors.text }}>
                 إدارة المخزون
@@ -275,7 +267,6 @@ function OldThemePreview({ theme }: { theme: Theme }) {
               </div>
             </div>
 
-            {}
             <div className="grid grid-cols-2 gap-2">
               {[
                 { icon: Users, label: 'الأشخاص' },
@@ -295,7 +286,6 @@ function OldThemePreview({ theme }: { theme: Theme }) {
               ))}
             </div>
 
-            {}
             <div 
               className="rounded-xl p-4 shadow-sm"
               style={{ backgroundColor: theme.colors.surface }}
@@ -316,7 +306,6 @@ function OldThemePreview({ theme }: { theme: Theme }) {
               </div>
             </div>
 
-            {}
             <div 
               className="rounded-xl p-4 shadow-sm"
               style={{ backgroundColor: theme.colors.surface }}
@@ -345,7 +334,6 @@ function OldThemePreview({ theme }: { theme: Theme }) {
           </div>
         </div>
 
-        {}
         <div 
           className="w-16 flex flex-col border-r"
           style={{ 
@@ -353,7 +341,7 @@ function OldThemePreview({ theme }: { theme: Theme }) {
             borderColor: theme.colors.border
           }}
         >
-          {}
+
           <div className="p-3 border-b" style={{ borderColor: theme.colors.border }}>
             <div 
               className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
@@ -363,7 +351,6 @@ function OldThemePreview({ theme }: { theme: Theme }) {
             </div>
           </div>
 
-          {}
           <div className="flex-1 py-4 space-y-2">
             {[
               { icon: Home, active: true },
@@ -393,7 +380,6 @@ function OldThemePreview({ theme }: { theme: Theme }) {
             ))}
           </div>
 
-          {}
           <div className="p-3 border-t" style={{ borderColor: theme.colors.border }}>
             <div 
               className="w-10 h-10 rounded-full flex items-center justify-center"
@@ -405,7 +391,7 @@ function OldThemePreview({ theme }: { theme: Theme }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default function AppearancePage() {
@@ -443,7 +429,6 @@ export default function AppearancePage() {
         </p>
       </div>
 
-      {}
       <Card>
         <CardHeader>
           <CardTitle>{t('basicMode', currentLanguage.code)}</CardTitle>
@@ -470,7 +455,6 @@ export default function AppearancePage() {
         </CardContent>
       </Card>
 
-      {}
       <Card>
         <CardHeader>
           <CardTitle>{t('coloredThemes', currentLanguage.code)}</CardTitle>
@@ -478,7 +462,7 @@ export default function AppearancePage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-4 sm:gap-6">
-            {}
+
             <div className="order-2 lg:order-1">
               <ScrollArea className="h-[400px] sm:h-[500px] pr-2 sm:pr-4">
                 <div className="space-y-2">
@@ -502,8 +486,7 @@ export default function AppearancePage() {
                               <Check className="h-4 w-4 text-primary" />
                             )}
                           </div>
-                          
-                          {}
+
                           <div className="flex gap-1.5">
                             <div
                               className="w-6 h-6 rounded border"
@@ -534,7 +517,6 @@ export default function AppearancePage() {
               </ScrollArea>
             </div>
 
-            {}
             <div className="order-1 lg:order-2">
               <div className="sticky top-4 sm:top-8">
                 <h3 className="text-sm font-medium mb-2 sm:mb-3 text-muted-foreground">{t('themePreview', currentLanguage.code)}</h3>
@@ -545,7 +527,6 @@ export default function AppearancePage() {
         </CardContent>
       </Card>
 
-      {}
       <Card>
         <CardHeader>
           <CardTitle>{t('currentTheme', currentLanguage.code)}</CardTitle>
@@ -591,7 +572,6 @@ export default function AppearancePage() {
         </CardContent>
       </Card>
 
-      {}
       {isFullscreenPreview && (
         <div 
           className="fixed inset-0 z-9999 flex items-center justify-center overflow-hidden"
@@ -606,7 +586,7 @@ export default function AppearancePage() {
             }
           }}
         >
-          {}
+
           <button
             data-preview-control="true"
             onClick={() => setIsFullscreenPreview(false)}
@@ -619,7 +599,6 @@ export default function AppearancePage() {
             <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6" style={{ color: previewTheme.colors.primary }} />
           </button>
 
-          {}
           <button
             data-preview-control="true"
             onClick={() => setIsFullscreenPreview(false)}
@@ -635,7 +614,6 @@ export default function AppearancePage() {
             </span>
           </button>
 
-          {}
           <div className="w-full h-full overflow-auto p-4">
             <div className="max-w-[1920px] mx-auto h-full">
               <ThemePreview theme={previewTheme} lang={currentLanguage.code} isFullscreen={true} />
@@ -644,5 +622,5 @@ export default function AppearancePage() {
         </div>
       )}
     </div>
-  )
+  );
 }

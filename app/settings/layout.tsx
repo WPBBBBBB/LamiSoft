@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { SettingsSidebar } from "@/components/layout/settings-sidebar"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"

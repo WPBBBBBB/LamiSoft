@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -25,7 +24,6 @@ export default function FontsPage() {
         </p>
       </div>
 
-      {}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -73,7 +71,6 @@ export default function FontsPage() {
         </CardContent>
       </Card>
 
-      {}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -121,7 +118,6 @@ export default function FontsPage() {
         </CardContent>
       </Card>
 
-      {}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -169,7 +165,6 @@ export default function FontsPage() {
         </CardContent>
       </Card>
 
-      {}
       <Card>
         <CardHeader>
           <CardTitle>الخط الحالي</CardTitle>
@@ -198,5 +193,5 @@ export default function FontsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

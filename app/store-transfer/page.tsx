@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -303,302 +302,147 @@ export default function StoreTransferPage() {
 
   return (
     <PermissionGuard requiredPermission="view_store_transfer">
-    <div className="flex-1 overflow-auto">
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => router.back()}
-            title="رجوع"
-            className="shrink-0"
-          >
-            <ArrowRight className="h-5 w-5 theme-icon" />
-          </Button>
-          <div className="flex-1 text-right">
-            <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
-              {t('storeTransferPage', currentLanguage.code)}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {t('transferMaterialsBetweenStores', currentLanguage.code)}
-            </p>
-          </div>
-        </div>
-
-        {}
-        <Card className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {}
-            <div className="space-y-2">
-              <Label htmlFor="fromStore">
-                {t('fromStore', currentLanguage.code)}
-              </Label>
-              <Select 
-                value={fromStoreId} 
-                onValueChange={(value) => {
-                  setFromStoreId(value)
-                  if (value === toStoreId) {
-                    setToStoreId("")
-                  }
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t('selectSourceStore', currentLanguage.code)} />
-                </SelectTrigger>
-                <SelectContent>
-                  {stores.map((store) => (
-                    <SelectItem 
-                      key={store.id} 
-                      value={store.id}
-                      disabled={store.id === toStoreId}
-                    >
-                      {store.storename}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {}
-            <div className="space-y-2">
-              <Label htmlFor="toStore">
-                {t('toStore', currentLanguage.code)}
-              </Label>
-              <Select 
-                value={toStoreId} 
-                onValueChange={(value) => {
-                  setToStoreId(value)
-                  if (value === fromStoreId) {
-                    setFromStoreId("")
-                  }
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t('selectTargetStore', currentLanguage.code)} />
-                </SelectTrigger>
-                <SelectContent>
-                  {stores.map((store) => (
-                    <SelectItem 
-                      key={store.id} 
-                      value={store.id}
-                      disabled={store.id === fromStoreId}
-                    >
-                      {store.storename}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto p-6 space-y-6">
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => router.back()}
+              title="رجوع"
+              className="shrink-0"
+            >
+              <ArrowRight className="h-5 w-5 theme-icon" />
+            </Button>
+            <div className="flex-1 text-right">
+              <h1 className="text-3xl font-bold" style={{ color: "var(--theme-primary)" }}>
+                {t('storeTransferPage', currentLanguage.code)}
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                {t('transferMaterialsBetweenStores', currentLanguage.code)}
+              </p>
             </div>
           </div>
 
-          {}
-          <div className="mt-6 space-y-2">
-            <Label htmlFor="note">
-              {t('notes', currentLanguage.code)}
-            </Label>
-            <Textarea
-              id="note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder={t('enterTransferDetails', currentLanguage.code)}
-              rows={3}
-              className="w-full"
-            />
-          </div>
-        </Card>
+          <Card className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        {}
-        <Card className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">{t('materialsToTransfer', currentLanguage.code)}</h2>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="fromStore">
+                  {t('fromStore', currentLanguage.code)}
+                </Label>
+                <Select 
+                  value={fromStoreId} 
+                  onValueChange={(value) => {
+                    setFromStoreId(value)
+                    if (value === toStoreId) {
+                      setToStoreId("")
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t('selectSourceStore', currentLanguage.code)} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {stores.map((store) => (
+                      <SelectItem 
+                        key={store.id} 
+                        value={store.id}
+                        disabled={store.id === toStoreId}
+                      >
+                        {store.storename}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="rounded-lg border h-[450px] overflow-x-auto overflow-y-auto">
-            <Table>
-              <TableHeader>
-                <TableRow style={{ background: 'linear-gradient(to right, var(--theme-surface), var(--theme-accent))', color: 'var(--theme-text)' }}>
-                  <TableHead className="text-center w-[50px]" style={{ color: 'var(--theme-text)' }}>#</TableHead>
-                  <TableHead className="text-right min-w-[150px]" style={{ color: 'var(--theme-text)' }}>{t('materialCode', currentLanguage.code)}</TableHead>
-                  <TableHead className="text-right min-w-[200px]" style={{ color: 'var(--theme-text)' }}>{t('materialName', currentLanguage.code)}</TableHead>
-                  <TableHead className="text-right min-w-[120px]" style={{ color: 'var(--theme-text)' }}>{t('availableQuantity', currentLanguage.code)}</TableHead>
-                  <TableHead className="text-right min-w-[150px]" style={{ color: 'var(--theme-text)' }}>{t('transferQuantity', currentLanguage.code)}</TableHead>
-                  <TableHead className="text-center w-[50px]" style={{ color: 'var(--theme-text)' }}>{t('action', currentLanguage.code)}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {}
-                <TableRow className="sticky top-0 z-10" style={{ backgroundColor: 'var(--theme-surface)', opacity: 0.95, color: 'var(--theme-text)' }}>
-                  <TableCell className="text-center" style={{ color: 'var(--theme-text)' }}>✨</TableCell>
-                  
-                  {}
-                  <TableCell>
-                    <div className="relative">
-                      <Input
-                        value={newRow.productcode}
-                        onFocus={() => {
-                          handleProductSearch("new-code", newRow.productcode)
-                        }}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          setNewRow({ ...newRow, productcode: value })
-                          handleProductSearch("new-code", value)
-                        }}
-                        onBlur={() => {
-                          setTimeout(() => setSearchOpen(null), 200)
-                        }}
-                        placeholder={t('materialCode', currentLanguage.code)}
-                        autoFocus
-                      />
-                      {searchOpen === "new-code" && searchResults.length > 0 && (
-                        <div className="absolute z-50 w-full min-w-[360px] mt-1 bg-background border rounded-md shadow-lg max-h-[700px] overflow-auto">
-                          {searchResults.map((item) => (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onMouseDown={(e) => {
-                                e.preventDefault()
-                                handleNewRowSelectProduct(item)
-                              }}
-                              className="w-full flex flex-col items-start px-4 py-2 text-right hover:bg-accent cursor-pointer border-b last:border-b-0"
-                            >
-                              <span className="font-medium">{item.productcode}</span>
-                              <span className="text-sm text-muted-foreground">
-                                {item.productname}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
+              <div className="space-y-2">
+                <Label htmlFor="toStore">
+                  {t('toStore', currentLanguage.code)}
+                </Label>
+                <Select 
+                  value={toStoreId} 
+                  onValueChange={(value) => {
+                    setToStoreId(value)
+                    if (value === fromStoreId) {
+                      setFromStoreId("")
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t('selectTargetStore', currentLanguage.code)} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {stores.map((store) => (
+                      <SelectItem 
+                        key={store.id} 
+                        value={store.id}
+                        disabled={store.id === fromStoreId}
+                      >
+                        {store.storename}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-                  {}
-                  <TableCell>
-                    <div className="relative">
-                      <Input
-                        value={newRow.productname}
-                        onFocus={() => {
-                          handleProductSearch("new-name", newRow.productname)
-                        }}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          setNewRow({ ...newRow, productname: value })
-                          handleProductSearch("new-name", value)
-                        }}
-                        onBlur={() => {
-                          setTimeout(() => setSearchOpen(null), 200)
-                        }}
-                        placeholder={t('materialName', currentLanguage.code)}
-                      />
-                      {searchOpen === "new-name" && searchResults.length > 0 && (
-                        <div className="absolute z-50 w-full min-w-[360px] mt-1 bg-background border rounded-md shadow-lg max-h-[700px] overflow-auto">
-                          {searchResults.map((item) => (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onMouseDown={(e) => {
-                                e.preventDefault()
-                                handleNewRowSelectProduct(item)
-                              }}
-                              className="w-full flex flex-col items-start px-4 py-2 text-right hover:bg-accent cursor-pointer border-b last:border-b-0"
-                            >
-                              <span className="font-medium">{item.productname}</span>
-                              <span className="text-sm text-muted-foreground">
-                                {item.productcode}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
+            <div className="mt-6 space-y-2">
+              <Label htmlFor="note">
+                {t('notes', currentLanguage.code)}
+              </Label>
+              <Textarea
+                id="note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={t('enterTransferDetails', currentLanguage.code)}
+                rows={3}
+                className="w-full"
+              />
+            </div>
+          </Card>
 
-                  {}
-                  <TableCell className="text-right">
-                    <span className="font-medium">
-                      {newRow.availableQuantity > 0
-                        ? `${newRow.availableQuantity} ${newRow.unit}`
-                        : "-"}
-                    </span>
-                  </TableCell>
-
-                  {}
-                  <TableCell>
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        value={newRow.transferQuantity || ""}
-                        onChange={(e) =>
-                          setNewRow({
-                            ...newRow,
-                            transferQuantity: parseFloat(e.target.value) || 0,
-                          })
-                        }
-                        onKeyPress={handleNewRowKeyPress}
-                        placeholder="0"
-                        className={
-                          newRow.transferQuantity > newRow.availableQuantity
-                            ? "border-orange-500"
-                            : ""
-                        }
-                      />
-                      {newRow.transferQuantity > newRow.availableQuantity && (
-                        <div className="absolute -bottom-6 right-0 text-xs text-orange-600 flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" />
-                          <span>{t('quantityGreaterThanAvailable', currentLanguage.code)}</span>
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-
-                  {}
-                  <TableCell className="text-center">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleAddRow}
-                      title={`${t('addToList', currentLanguage.code)} (Enter)`}
-                    >
-                      <Plus className="h-4 w-4 theme-success" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-
-                {}
-                {transferRows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      {t('noMaterialsInTransferList', currentLanguage.code)}
-                    </TableCell>
+          <Card className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">{t('materialsToTransfer', currentLanguage.code)}</h2>
+            </div>
+            <div className="rounded-lg border h-[450px] overflow-x-auto overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow style={{ background: 'linear-gradient(to right, var(--theme-surface), var(--theme-accent))', color: 'var(--theme-text)' }}>
+                    <TableHead className="text-center w-[50px]" style={{ color: 'var(--theme-text)' }}>#</TableHead>
+                    <TableHead className="text-right min-w-[150px]" style={{ color: 'var(--theme-text)' }}>{t('materialCode', currentLanguage.code)}</TableHead>
+                    <TableHead className="text-right min-w-[200px]" style={{ color: 'var(--theme-text)' }}>{t('materialName', currentLanguage.code)}</TableHead>
+                    <TableHead className="text-right min-w-[120px]" style={{ color: 'var(--theme-text)' }}>{t('availableQuantity', currentLanguage.code)}</TableHead>
+                    <TableHead className="text-right min-w-[150px]" style={{ color: 'var(--theme-text)' }}>{t('transferQuantity', currentLanguage.code)}</TableHead>
+                    <TableHead className="text-center w-[50px]" style={{ color: 'var(--theme-text)' }}>{t('action', currentLanguage.code)}</TableHead>
                   </TableRow>
-                ) : (
-                  transferRows.map((row, index) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="text-center">{index + 1}</TableCell>
-                    
-                    {}
+                </TableHeader>
+                <TableBody>
+
+                  <TableRow className="sticky top-0 z-10" style={{ backgroundColor: 'var(--theme-surface)', opacity: 0.95, color: 'var(--theme-text)' }}>
+                    <TableCell className="text-center" style={{ color: 'var(--theme-text)' }}>✨</TableCell>
+
                     <TableCell>
                       <div className="relative">
                         <Input
-                          value={row.productcode}
+                          value={newRow.productcode}
                           onFocus={() => {
-                            handleProductSearch(`code-${row.id}`, row.productcode)
+                            handleProductSearch("new-code", newRow.productcode)
                           }}
                           onChange={(e) => {
                             const value = e.target.value
-                            setTransferRows(
-                              transferRows.map((r) =>
-                                r.id === row.id ? { ...r, productcode: value } : r
-                              )
-                            )
-                            handleProductSearch(`code-${row.id}`, value)
+                            setNewRow({ ...newRow, productcode: value })
+                            handleProductSearch("new-code", value)
                           }}
                           onBlur={() => {
                             setTimeout(() => setSearchOpen(null), 200)
                           }}
-                          placeholder="رمز المادة"
+                          placeholder={t('materialCode', currentLanguage.code)}
+                          autoFocus
                         />
-                        {searchOpen === `code-${row.id}` && searchResults.length > 0 && (
+                        {searchOpen === "new-code" && searchResults.length > 0 && (
                           <div className="absolute z-50 w-full min-w-[360px] mt-1 bg-background border rounded-md shadow-lg max-h-[700px] overflow-auto">
                             {searchResults.map((item) => (
                               <button
@@ -606,7 +450,7 @@ export default function StoreTransferPage() {
                                 type="button"
                                 onMouseDown={(e) => {
                                   e.preventDefault()
-                                  handleSelectProduct(row.id, item)
+                                  handleNewRowSelectProduct(item)
                                 }}
                                 className="w-full flex flex-col items-start px-4 py-2 text-right hover:bg-accent cursor-pointer border-b last:border-b-0"
                               >
@@ -621,29 +465,24 @@ export default function StoreTransferPage() {
                       </div>
                     </TableCell>
 
-                    {}
                     <TableCell>
                       <div className="relative">
                         <Input
-                          value={row.productname}
+                          value={newRow.productname}
                           onFocus={() => {
-                            handleProductSearch(`name-${row.id}`, row.productname)
+                            handleProductSearch("new-name", newRow.productname)
                           }}
                           onChange={(e) => {
                             const value = e.target.value
-                            setTransferRows(
-                              transferRows.map((r) =>
-                                r.id === row.id ? { ...r, productname: value } : r
-                              )
-                            )
-                            handleProductSearch(`name-${row.id}`, value)
+                            setNewRow({ ...newRow, productname: value })
+                            handleProductSearch("new-name", value)
                           }}
                           onBlur={() => {
                             setTimeout(() => setSearchOpen(null), 200)
                           }}
-                          placeholder="اسم المادة"
+                          placeholder={t('materialName', currentLanguage.code)}
                         />
-                        {searchOpen === `name-${row.id}` && searchResults.length > 0 && (
+                        {searchOpen === "new-name" && searchResults.length > 0 && (
                           <div className="absolute z-50 w-full min-w-[360px] mt-1 bg-background border rounded-md shadow-lg max-h-[700px] overflow-auto">
                             {searchResults.map((item) => (
                               <button
@@ -651,7 +490,7 @@ export default function StoreTransferPage() {
                                 type="button"
                                 onMouseDown={(e) => {
                                   e.preventDefault()
-                                  handleSelectProduct(row.id, item)
+                                  handleNewRowSelectProduct(item)
                                 }}
                                 className="w-full flex flex-col items-start px-4 py-2 text-right hover:bg-accent cursor-pointer border-b last:border-b-0"
                               >
@@ -666,133 +505,275 @@ export default function StoreTransferPage() {
                       </div>
                     </TableCell>
 
-                    {}
                     <TableCell className="text-right">
                       <span className="font-medium">
-                        {row.availableQuantity > 0
-                          ? `${row.availableQuantity} ${row.unit}`
+                        {newRow.availableQuantity > 0
+                          ? `${newRow.availableQuantity} ${newRow.unit}`
                           : "-"}
                       </span>
                     </TableCell>
 
-                    {}
                     <TableCell>
                       <div className="relative">
                         <Input
                           type="number"
-                          value={row.transferQuantity || ""}
+                          value={newRow.transferQuantity || ""}
                           onChange={(e) =>
-                            handleQuantityChange(row.id, parseFloat(e.target.value) || 0)
+                            setNewRow({
+                              ...newRow,
+                              transferQuantity: parseFloat(e.target.value) || 0,
+                            })
                           }
+                          onKeyPress={handleNewRowKeyPress}
                           placeholder="0"
                           className={
-                            row.transferQuantity > row.availableQuantity
+                            newRow.transferQuantity > newRow.availableQuantity
                               ? "border-orange-500"
                               : ""
                           }
                         />
-                        {row.transferQuantity > row.availableQuantity && (
+                        {newRow.transferQuantity > newRow.availableQuantity && (
                           <div className="absolute -bottom-6 right-0 text-xs text-orange-600 flex items-center gap-1">
                             <AlertCircle className="h-3 w-3" />
-                            <span>الكمية أكبر من المتوفر</span>
+                            <span>{t('quantityGreaterThanAvailable', currentLanguage.code)}</span>
                           </div>
                         )}
                       </div>
                     </TableCell>
 
-                    {}
                     <TableCell className="text-center">
-                      {transferRows.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveRow(row.id)}
-                        >
-                          <Trash2 className="h-4 w-4 theme-danger" />
-                        </Button>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleAddRow}
+                        title={`${t('addToList', currentLanguage.code)} (Enter)`}
+                      >
+                        <Plus className="h-4 w-4 theme-success" />
+                      </Button>
                     </TableCell>
                   </TableRow>
-                  ))
+
+                  {transferRows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        {t('noMaterialsInTransferList', currentLanguage.code)}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    transferRows.map((row, index) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="text-center">{index + 1}</TableCell>
+
+                      <TableCell>
+                        <div className="relative">
+                          <Input
+                            value={row.productcode}
+                            onFocus={() => {
+                              handleProductSearch(`code-${row.id}`, row.productcode)
+                            }}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setTransferRows(
+                                transferRows.map((r) =>
+                                  r.id === row.id ? { ...r, productcode: value } : r
+                                )
+                              )
+                              handleProductSearch(`code-${row.id}`, value)
+                            }}
+                            onBlur={() => {
+                              setTimeout(() => setSearchOpen(null), 200)
+                            }}
+                            placeholder="رمز المادة"
+                          />
+                          {searchOpen === `code-${row.id}` && searchResults.length > 0 && (
+                            <div className="absolute z-50 w-full min-w-[360px] mt-1 bg-background border rounded-md shadow-lg max-h-[700px] overflow-auto">
+                              {searchResults.map((item) => (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault()
+                                    handleSelectProduct(row.id, item)
+                                  }}
+                                  className="w-full flex flex-col items-start px-4 py-2 text-right hover:bg-accent cursor-pointer border-b last:border-b-0"
+                                >
+                                  <span className="font-medium">{item.productcode}</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    {item.productname}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <div className="relative">
+                          <Input
+                            value={row.productname}
+                            onFocus={() => {
+                              handleProductSearch(`name-${row.id}`, row.productname)
+                            }}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setTransferRows(
+                                transferRows.map((r) =>
+                                  r.id === row.id ? { ...r, productname: value } : r
+                                )
+                              )
+                              handleProductSearch(`name-${row.id}`, value)
+                            }}
+                            onBlur={() => {
+                              setTimeout(() => setSearchOpen(null), 200)
+                            }}
+                            placeholder="اسم المادة"
+                          />
+                          {searchOpen === `name-${row.id}` && searchResults.length > 0 && (
+                            <div className="absolute z-50 w-full min-w-[360px] mt-1 bg-background border rounded-md shadow-lg max-h-[700px] overflow-auto">
+                              {searchResults.map((item) => (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault()
+                                    handleSelectProduct(row.id, item)
+                                  }}
+                                  className="w-full flex flex-col items-start px-4 py-2 text-right hover:bg-accent cursor-pointer border-b last:border-b-0"
+                                >
+                                  <span className="font-medium">{item.productname}</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    {item.productcode}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="text-right">
+                        <span className="font-medium">
+                          {row.availableQuantity > 0
+                            ? `${row.availableQuantity} ${row.unit}`
+                            : "-"}
+                        </span>
+                      </TableCell>
+
+                      <TableCell>
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            value={row.transferQuantity || ""}
+                            onChange={(e) =>
+                              handleQuantityChange(row.id, parseFloat(e.target.value) || 0)
+                            }
+                            placeholder="0"
+                            className={
+                              row.transferQuantity > row.availableQuantity
+                                ? "border-orange-500"
+                                : ""
+                            }
+                          />
+                          {row.transferQuantity > row.availableQuantity && (
+                            <div className="absolute -bottom-6 right-0 text-xs text-orange-600 flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              <span>الكمية أكبر من المتوفر</span>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="text-center">
+                        {transferRows.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveRow(row.id)}
+                          >
+                            <Trash2 className="h-4 w-4 theme-danger" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="mt-6 pt-6 border-t">
+              <Button
+                onClick={handleStartTransfer}
+                disabled={isTransferring}
+                className="w-full h-14 text-lg gap-2"
+              >
+                {isTransferring ? (
+                  <>
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    {t('transferring', currentLanguage.code)}
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-6 w-6" />
+                    {t('startTransfer', currentLanguage.code)}
+                  </>
                 )}
-              </TableBody>
-            </Table>
-          </div>
+              </Button>
+            </div>
+          </Card>
+        </div>
 
-          {}
-          <div className="mt-6 pt-6 border-t">
-            <Button
-              onClick={handleStartTransfer}
-              disabled={isTransferring}
-              className="w-full h-14 text-lg gap-2"
-            >
-              {isTransferring ? (
-                <>
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                  {t('transferring', currentLanguage.code)}
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-6 w-6" />
-                  {t('startTransfer', currentLanguage.code)}
-                </>
-              )}
-            </Button>
-          </div>
-        </Card>
+        <Dialog open={priceUpdateModalOpen} onOpenChange={setPriceUpdateModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('updateData', currentLanguage.code)}</DialogTitle>
+              <DialogDescription>
+                {t('materialExistsWithDifferentPrice', currentLanguage.code)}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => {
+                  setPriceUpdateChoice("price")
+                  setPriceUpdateModalOpen(false)
+                }}
+              >
+                {t('updatePriceOnly', currentLanguage.code)}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => {
+                  setPriceUpdateChoice("quantity")
+                  setPriceUpdateModalOpen(false)
+                }}
+              >
+                {t('updateQuantityOnly', currentLanguage.code)}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => {
+                  setPriceUpdateChoice("both")
+                  setPriceUpdateModalOpen(false)
+                }}
+              >
+                {t('updateBoth', currentLanguage.code)}
+              </Button>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPriceUpdateModalOpen(false)}>
+                {t('cancel', currentLanguage.code)}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {}
-      <Dialog open={priceUpdateModalOpen} onOpenChange={setPriceUpdateModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('updateData', currentLanguage.code)}</DialogTitle>
-            <DialogDescription>
-              {t('materialExistsWithDifferentPrice', currentLanguage.code)}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3">
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => {
-                setPriceUpdateChoice("price")
-                setPriceUpdateModalOpen(false)
-              }}
-            >
-              {t('updatePriceOnly', currentLanguage.code)}
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => {
-                setPriceUpdateChoice("quantity")
-                setPriceUpdateModalOpen(false)
-              }}
-            >
-              {t('updateQuantityOnly', currentLanguage.code)}
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => {
-                setPriceUpdateChoice("both")
-                setPriceUpdateModalOpen(false)
-              }}
-            >
-              {t('updateBoth', currentLanguage.code)}
-            </Button>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPriceUpdateModalOpen(false)}>
-              {t('cancel', currentLanguage.code)}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
     </PermissionGuard>
-  )
+  );
 }
