@@ -98,7 +98,7 @@ function buildCspHeader(nonce: string): string {
     // (Some scanners mis-score 'strict-dynamic', so we omit it for better compatibility.)
     `script-src 'self' 'nonce-${nonce}'${devScriptExtras}${allowVercelLive ? " https://vercel.live" : ""}`,
     // Tighten network destinations to known backends.
-    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openweathermap.org https://v6.exchangerate-api.com${allowVercelLive ? " https://vercel.live" : ""}${devConnectExtras}`,
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openweathermap.org https://v6.exchangerate-api.com https://nominatim.openstreetmap.org${allowVercelLive ? " https://vercel.live" : ""}${devConnectExtras}`,
     "worker-src 'self' blob:",
     ...(isDev ? [] : ["upgrade-insecure-requests"]),
   ]

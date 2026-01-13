@@ -1,7 +1,7 @@
 
 services:
   - type: web
-    name: al-lamisoft-app
+    name: al-lamisoft
     env: node
     plan: free
     region: frankfurt
