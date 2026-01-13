@@ -42,54 +42,126 @@ function isSensitiveApiPath(pathname: string): boolean {
   )
 }
 
+function toBase64(value: string): string {
+  // proxy.ts can run in different runtimes; support both Buffer and btoa.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (typeof Buffer !== "undefined") return Buffer.from(value).toString("base64")
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (typeof btoa !== "undefined") return btoa(value)
+  return value
+}
+
+function buildCspHeader(nonce: string): string {
+  const isDev = process.env.NODE_ENV === "development"
+  const isVercelPreview = process.env.VERCEL_ENV === "preview"
+  const allowVercelLive = isDev || isVercelPreview
+
+  // In dev, HMR tooling needs 'unsafe-eval' and websocket connections.
+  const devScriptExtras = isDev ? " 'unsafe-eval'" : ""
+  const devConnectExtras = isDev ? " http: ws: wss:" : ""
+
+  const csp = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    `frame-src 'self'${allowVercelLive ? " https://vercel.live" : ""}`,
+    `child-src 'self'${allowVercelLive ? " https://vercel.live" : ""}`,
+    "form-action 'self'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    // Inline style attributes require 'unsafe-inline'. Removing this requires migrating inline styles.
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    // Strict script policy: no 'unsafe-inline'. Next.js will attach the nonce automatically.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${devScriptExtras}${allowVercelLive ? " https://vercel.live" : ""}`,
+    // Tighten network destinations to known backends.
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openweathermap.org https://v6.exchangerate-api.com${allowVercelLive ? " https://vercel.live" : ""}${devConnectExtras}`,
+    "worker-src 'self' blob:",
+    ...(isDev ? [] : ["upgrade-insecure-requests"]),
+  ]
+    .join("; ")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+
+  return csp
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Only handle sensitive APIs.
-  if (!isSensitiveApiPath(pathname)) return NextResponse.next()
+  // 1) Sensitive API protection (rate limit + no-store)
+  if (isSensitiveApiPath(pathname)) {
+    // Set anti-caching headers for sensitive endpoints.
+    const next = NextResponse.next()
+    applyNoStore(next)
 
-  // Set anti-caching headers for sensitive endpoints.
-  const next = NextResponse.next()
-  applyNoStore(next)
+    if (!shouldRateLimit(request)) return next
 
-  if (!shouldRateLimit(request)) return next
+    // Basic in-memory rate limit (best-effort). For strongest protection use WAF/CDN.
+    const windowMs = getEnvInt("RATE_LIMIT_WINDOW_MS", 60_000)
+    const maxPerWindow = getEnvInt("RATE_LIMIT_MAX", 60)
 
-  // Basic in-memory rate limit (best-effort). For strongest protection use WAF/CDN.
-  const windowMs = getEnvInt("RATE_LIMIT_WINDOW_MS", 60_000)
-  const maxPerWindow = getEnvInt("RATE_LIMIT_MAX", 60)
+    const ip = getClientIp(request)
+    const key = `${ip}:${pathname}`
+    const now = Date.now()
 
-  const ip = getClientIp(request)
-  const key = `${ip}:${pathname}`
-  const now = Date.now()
+    const current = counters.get(key)
+    if (!current || now >= current.resetAt) {
+      counters.set(key, { count: 1, resetAt: now + windowMs })
+      return next
+    }
 
-  const current = counters.get(key)
-  if (!current || now >= current.resetAt) {
-    counters.set(key, { count: 1, resetAt: now + windowMs })
+    current.count += 1
+    counters.set(key, current)
+
+    if (current.count > maxPerWindow) {
+      const retryAfterSeconds = Math.max(1, Math.ceil((current.resetAt - now) / 1000))
+      const blocked = NextResponse.json(
+        { success: false, error: "طلبات كثيرة جداً. حاول مرة أخرى بعد قليل." },
+        { status: 429 }
+      )
+      applyNoStore(blocked)
+      blocked.headers.set("Retry-After", String(retryAfterSeconds))
+      return blocked
+    }
+
     return next
   }
 
-  current.count += 1
-  counters.set(key, current)
+  // 2) CSP with per-request nonce for pages (fixes unsafe CSP without using 'unsafe-inline' in script-src)
+  const nonce = toBase64(crypto.randomUUID())
+  const cspHeader = buildCspHeader(nonce)
 
-  if (current.count > maxPerWindow) {
-    const retryAfterSeconds = Math.max(1, Math.ceil((current.resetAt - now) / 1000))
-    const blocked = NextResponse.json(
-      { success: false, error: "طلبات كثيرة جداً. حاول مرة أخرى بعد قليل." },
-      { status: 429 }
-    )
-    applyNoStore(blocked)
-    blocked.headers.set("Retry-After", String(retryAfterSeconds))
-    return blocked
-  }
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set("x-nonce", nonce)
+  requestHeaders.set("Content-Security-Policy", cspHeader)
 
-  return next
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
+
+  response.headers.set("Content-Security-Policy", cspHeader)
+  response.headers.set("x-nonce", nonce)
+
+  return response
 }
 
 export const config = {
   matcher: [
+    // Sensitive APIs
     "/api/auth/:path*",
     "/api/send-otp/:path*",
     "/api/whatsapp-send/:path*",
     "/api/whatsapp-send-media/:path*",
+    // All pages except static assets + images + API (also skip router prefetches)
+    {
+      source: "/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|workbox-).*)",
+      missing: [
+        { type: "header", key: "next-router-prefetch" },
+        { type: "header", key: "purpose", value: "prefetch" },
+      ],
+    },
   ],
 }

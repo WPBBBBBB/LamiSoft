@@ -28,39 +28,8 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     const isDev = process.env.NODE_ENV === "development";
-    const isVercelPreview = process.env.VERCEL_ENV === "preview";
     const enableApiCors = process.env.ENABLE_API_CORS === "true";
     const apiCorsAllowOrigin = (process.env.API_CORS_ALLOW_ORIGIN || "").trim();
-
-    // Pragmatic CSP for Next.js App Router:
-    // - Allows inline scripts (Next injects some inline scripts)
-    // - Allows unsafe-eval only in development (HMR/tooling)
-    const allowVercelLive = isDev || isVercelPreview;
-
-    const csp = [
-      "default-src 'self'",
-      "base-uri 'self'",
-      "object-src 'none'",
-      "frame-ancestors 'none'",
-      // Vercel Live injects a feedback iframe in Preview/Dev.
-      // If frame-src/child-src are not set, browsers fall back to default-src and block it.
-      `frame-src 'self'${allowVercelLive ? " https://vercel.live" : ""}`,
-      `child-src 'self'${allowVercelLive ? " https://vercel.live" : ""}`,
-      "form-action 'self'",
-      "img-src 'self' data: blob: https:",
-      "font-src 'self' data: https://fonts.gstatic.com",
-      // Keep 'unsafe-inline' for now because the app uses inline styles in multiple places.
-      // Narrow external stylesheets to Google Fonts only.
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      // Narrow scripts to self (and Vercel Live in dev/preview). Next.js may rely on inline scripts.
-      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}${allowVercelLive ? " https://vercel.live" : ""}`,
-      // Tighten network destinations to known backends.
-      `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openweathermap.org https://v6.exchangerate-api.com${allowVercelLive ? " https://vercel.live" : ""}`,
-      "worker-src 'self' blob:",
-      "upgrade-insecure-requests",
-    ]
-      .join("; ")
-      .trim();
 
     const securityHeaders = [
       { key: "X-Content-Type-Options", value: "nosniff" },
@@ -82,7 +51,6 @@ const nextConfig: NextConfig = {
         key: "Strict-Transport-Security",
         value: "max-age=63072000; includeSubDomains; preload",
       },
-      { key: "Content-Security-Policy", value: csp },
     ];
 
     return [
