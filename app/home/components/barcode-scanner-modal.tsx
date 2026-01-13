@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Camera, X, ScanLine } from "lucide-react"
 import { Html5Qrcode } from "html5-qrcode"
 import { toast } from "sonner"
+import { t } from "@/lib/translations"
+import { useSettings } from "@/components/providers/settings-provider"
 
 interface BarcodeScannerModalProps {
   open: boolean
@@ -14,6 +16,9 @@ interface BarcodeScannerModalProps {
 }
 
 export function BarcodeScannerModal({ open, onOpenChange, onBarcodeScanned }: BarcodeScannerModalProps) {
+  const { currentLanguage } = useSettings()
+  const lang = currentLanguage.code
+
   const [isScanning, setIsScanning] = useState(false)
   const [error, setError] = useState<string>("")
   const [cameras, setCameras] = useState<{ id: string; label: string }[]>([])
@@ -30,10 +35,10 @@ export function BarcodeScannerModal({ open, onOpenChange, onBarcodeScanned }: Ba
         const backCamera = devices.find(d => d.label.toLowerCase().includes('back')) || devices[0]
         setSelectedCamera(backCamera.id)
       } else {
-        setError('لم يتم العثور على كاميرا')
+        setError(t("cameraNotFound", lang))
       }
     } catch (err) {
-      setError('خطأ في الوصول إلى الكاميرا')
+      setError(t("cameraAccessError", lang))
     }
   }
 
@@ -47,7 +52,7 @@ export function BarcodeScannerModal({ open, onOpenChange, onBarcodeScanned }: Ba
 
   const startScanning = async () => {
     if (!selectedCamera) {
-      toast.error('الرجاء اختيار كاميرا')
+      toast.error(t("pleaseSelectCamera", lang))
       return
     }
 
@@ -69,7 +74,7 @@ export function BarcodeScannerModal({ open, onOpenChange, onBarcodeScanned }: Ba
         },
         (decodedText: string) => {
           // تم مسح QR Code بنجاح
-          toast.success('تم مسح QR Code بنجاح!')
+          toast.success(t("scanSuccess", lang))
           
           // إيقاف المسح
           stopScanning()
@@ -85,7 +90,8 @@ export function BarcodeScannerModal({ open, onOpenChange, onBarcodeScanned }: Ba
         }
       )
     } catch (err: unknown) {
-      setError('خطأ في بدء المسح: ' + ((err as { message?: string })?.message || 'خطأ غير معروف'))
+      const message = (err as { message?: string })?.message || t("unknownError", lang)
+      setError(t("scanStartError", lang).replace("{message}", message))
       setIsScanning(false)
     }
   }
@@ -126,7 +132,7 @@ export function BarcodeScannerModal({ open, onOpenChange, onBarcodeScanned }: Ba
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Camera className="h-5 w-5" />
-            مسح QR Code
+            {t("scanQrCodeTitle", lang)}
           </DialogTitle>
         </DialogHeader>
 
@@ -134,7 +140,7 @@ export function BarcodeScannerModal({ open, onOpenChange, onBarcodeScanned }: Ba
           {/* اختيار الكاميرا */}
           {cameras.length > 1 && !isScanning && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">اختر الكاميرا:</label>
+              <label className="text-sm font-medium">{t("selectCameraLabel", lang)}</label>
               <select
                 value={selectedCamera}
                 onChange={(e) => setSelectedCamera(e.target.value)}
@@ -142,7 +148,7 @@ export function BarcodeScannerModal({ open, onOpenChange, onBarcodeScanned }: Ba
               >
                 {cameras.map((camera) => (
                   <option key={camera.id} value={camera.id}>
-                    {camera.label || `كاميرا ${camera.id}`}
+                    {camera.label || t("cameraLabel", lang).replace("{id}", camera.id)}
                   </option>
                 ))}
               </select>
@@ -155,7 +161,7 @@ export function BarcodeScannerModal({ open, onOpenChange, onBarcodeScanned }: Ba
               <div className="aspect-video flex items-center justify-center bg-muted">
                 <div className="text-center space-y-4">
                   <Camera className="h-16 w-16 mx-auto text-muted-foreground" />
-                  <p className="text-muted-foreground">اضغط على &ldquo;بدء المسح&rdquo; لفتح الكاميرا</p>
+                  <p className="text-muted-foreground">{t("scanStartHint", lang)}</p>
                 </div>
               </div>
             )}
@@ -186,29 +192,29 @@ export function BarcodeScannerModal({ open, onOpenChange, onBarcodeScanned }: Ba
               <>
                 <Button variant="outline" onClick={() => onOpenChange(false)}>
                   <X className="h-4 w-4 ml-2" />
-                  إلغاء
+                  {t("cancel", lang)}
                 </Button>
                 <Button onClick={startScanning} disabled={!selectedCamera}>
                   <Camera className="h-4 w-4 ml-2" />
-                  بدء المسح
+                  {t("startScan", lang)}
                 </Button>
               </>
             ) : (
               <Button variant="destructive" onClick={stopScanning}>
                 <X className="h-4 w-4 ml-2" />
-                إيقاف المسح
+                {t("stopScan", lang)}
               </Button>
             )}
           </div>
 
           {/* نصائح */}
           <div className="text-sm text-muted-foreground space-y-1 bg-muted p-3 rounded-md">
-            <p className="font-semibold">💡 نصائح للمسح الجيد:</p>
+            <p className="font-semibold">{t("scanTipsTitle", lang)}</p>
             <ul className="list-disc list-inside space-y-1 mr-4">
-              <li>تأكد من وجود إضاءة جيدة</li>
-              <li>ضع QR Code في منتصف المربع</li>
-              <li>حافظ على ثبات الكاميرا</li>
-              <li>تأكد من وضوح QR Code</li>
+              <li>{t("scanTipGoodLighting", lang)}</li>
+              <li>{t("scanTipCenterQr", lang)}</li>
+              <li>{t("scanTipHoldSteady", lang)}</li>
+              <li>{t("scanTipClearQr", lang)}</li>
             </ul>
           </div>
         </div>

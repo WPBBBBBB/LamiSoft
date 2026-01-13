@@ -241,7 +241,7 @@ export default function ReportsPage() {
       setFilteredSales(data)
     } catch (error) {
       console.error("Error loading sales:", error)
-      toast.error("فشل تحميل المبيعات")
+      toast.error(t("failedToLoadSales", currentLanguage.code))
     } finally {
       setLoading(false)
     }
@@ -255,11 +255,11 @@ export default function ReportsPage() {
         setPayments(result.data)
         setFilteredPayments(result.data)
       } else {
-        toast.error(result.error || "فشل تحميل حركات الصندوق")
+        toast.error(result.error || t("failedToLoadCashMovements", currentLanguage.code))
       }
     } catch (error) {
       console.error("Error loading payments:", error)
-      toast.error("فشل تحميل حركات الصندوق")
+      toast.error(t("failedToLoadCashMovements", currentLanguage.code))
     } finally {
       setPaymentsLoading(false)
     }
@@ -273,7 +273,7 @@ export default function ReportsPage() {
       setFilteredTransfers(data)
     } catch (error) {
       console.error("Error loading transfers:", error)
-      toast.error("فشل تحميل عمليات النقل")
+      toast.error(t("failedToLoadTransfers", currentLanguage.code))
     } finally {
       setTransfersLoading(false)
     }
@@ -287,10 +287,40 @@ export default function ReportsPage() {
       setFilteredPurchases(data)
     } catch (error) {
       console.error("Error loading purchases:", error)
-      toast.error("فشل تحميل المشتريات")
+      toast.error(t("failedToLoadPurchases", currentLanguage.code))
     } finally {
       setPurchasesLoading(false)
     }
+  }
+
+  const replacePlaceholders = (template: string, values: Record<string, string | number>) => {
+    return Object.entries(values).reduce(
+      (acc, [key, value]) => acc.replaceAll(`{${key}}`, String(value)),
+      template
+    )
+  }
+
+  const formatPaginationRange = (from: number, to: number, total: number) =>
+    replacePlaceholders(t("paginationRange", currentLanguage.code), { from, to, total })
+
+  const formatPaginationPage = (page: number, pages: number) =>
+    replacePlaceholders(t("paginationPage", currentLanguage.code), { page, pages })
+
+  const formatSelectedCount = (key: string, count: number) =>
+    replacePlaceholders(t(key, currentLanguage.code), { count })
+
+  const translatePayType = (payType: string) => {
+    if (payType === "نقدي") return t("cash", currentLanguage.code)
+    if (payType === "آجل") return t("credit", currentLanguage.code)
+    return payType
+  }
+
+  const translateTransactionType = (transactionType: string) => {
+    if (transactionType === "قبض") return t("receive", currentLanguage.code)
+    if (transactionType === "صرف") return t("pay", currentLanguage.code)
+    if (transactionType === "ايداع") return t("deposit", currentLanguage.code)
+    if (transactionType === "سحب") return t("withdraw", currentLanguage.code)
+    return transactionType
   }
 
   const totalPages = Math.ceil(filteredSales.length / itemsPerPage)
@@ -1567,7 +1597,7 @@ const handleExportSalesProfitReport = async () => {
                 <Button
                   onClick={() => {
                     if (selectedSales.length === 0) {
-                      toast.error("الرجاء تحديد قائمة واحدة على الأقل")
+                      toast.error(t("selectAtLeastOneList", currentLanguage.code))
                       return
                     }
                     setShowDeleteDialog(true)
@@ -1591,7 +1621,7 @@ const handleExportSalesProfitReport = async () => {
                   disabled={selectedSales.length !== 1}
                 >
                   <FileText className="h-4 w-4" />
-                  كشف
+                  {t("statement", currentLanguage.code)}
                 </Button>
                 <Button
                   onClick={handlePrintReceipt}
@@ -1600,7 +1630,7 @@ const handleExportSalesProfitReport = async () => {
                   disabled={selectedSales.length !== 1}
                 >
                   <Receipt className="h-4 w-4" />
-                  طباعة وصل
+                  {t("printReceipt", currentLanguage.code)}
                 </Button>
               </div>
 
@@ -1608,12 +1638,12 @@ const handleExportSalesProfitReport = async () => {
               <div className="flex flex-wrap gap-2 items-center">
                 <Button variant="outline" className="gap-2">
                   <FileText className="h-4 w-4" />
-                  الملف
+                  {t("file", currentLanguage.code)}
                 </Button>
                 <div className="flex-1 min-w-[300px] relative">
                   <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
-                    placeholder="بحث حسب رقم القائمة، اسم الزبون، نوع الدفع..."
+                    placeholder={t("searchPlaceholder", currentLanguage.code)}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pr-10"
@@ -1623,7 +1653,7 @@ const handleExportSalesProfitReport = async () => {
                   variant="outline"
                   size="icon"
                   onClick={() => setSearchTerm("")}
-                  title="تنظيف"
+                  title={t("cleanSearch", currentLanguage.code)}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -1631,7 +1661,7 @@ const handleExportSalesProfitReport = async () => {
                   variant="outline"
                   size="icon"
                   onClick={loadSales}
-                  title="تحديث"
+                  title={t("refresh", currentLanguage.code)}
                   disabled={loading}
                 >
                   <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -1658,18 +1688,18 @@ const handleExportSalesProfitReport = async () => {
                             />
                           </TableHead>
                           <TableHead className="w-20 text-center">#</TableHead>
-                          <TableHead>رقم القائمة</TableHead>
-                          <TableHead>اسم الزبون</TableHead>
-                          <TableHead>نوع الدفع</TableHead>
-                          <TableHead>ملاحظات</TableHead>
-                          <TableHead>تاريخ الإضافة</TableHead>
+                          <TableHead>{t("listNumber", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("customerNameLabel", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("paymentType", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("notes", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("addedDate", currentLanguage.code)}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {currentSales.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
-                              لا توجد قوائم مبيعات
+                              {t("noSales", currentLanguage.code)}
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -1694,7 +1724,7 @@ const handleExportSalesProfitReport = async () => {
                                       : "bg-orange-100 text-orange-800"
                                   }`}
                                 >
-                                  {sale.paytype}
+                                  {translatePayType(sale.paytype)}
                                 </span>
                               </TableCell>
                               <TableCell>
@@ -1730,8 +1760,11 @@ const handleExportSalesProfitReport = async () => {
                     {totalPages > 1 && (
                       <div className="flex items-center justify-between px-4 py-3 border-t">
                         <div className="text-sm text-muted-foreground">
-                          عرض {startIndex + 1} - {Math.min(endIndex, filteredSales.length)} من{" "}
-                          {filteredSales.length}
+                          {formatPaginationRange(
+                            startIndex + 1,
+                            Math.min(endIndex, filteredSales.length),
+                            filteredSales.length
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
@@ -1743,7 +1776,7 @@ const handleExportSalesProfitReport = async () => {
                             <ChevronRight className="h-4 w-4" />
                           </Button>
                           <span className="text-sm">
-                            صفحة {currentPage} من {totalPages}
+                            {formatPaginationPage(currentPage, totalPages)}
                           </span>
                           <Button
                             variant="outline"
@@ -1763,7 +1796,7 @@ const handleExportSalesProfitReport = async () => {
               {}
               {selectedSales.length > 0 && (
                 <div className="text-sm text-muted-foreground">
-                  تم تحديد {selectedSales.length} قائمة
+                  {formatSelectedCount("selectedSalesCount", selectedSales.length)}
                 </div>
               )}
             </CardContent>
@@ -1773,8 +1806,8 @@ const handleExportSalesProfitReport = async () => {
         <TabsContent value="purchases" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>إدارة المشتريات</CardTitle>
-              <CardDescription>عرض وإدارة جميع قوائم المشتريات</CardDescription>
+              <CardTitle>{t("purchasesManagement", currentLanguage.code)}</CardTitle>
+              <CardDescription>{t("managePurchasesList", currentLanguage.code)}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {}
@@ -1792,7 +1825,7 @@ const handleExportSalesProfitReport = async () => {
                       }}
                     >
                       <Plus className="h-4 w-4" />
-                      إضافة
+                      {t("add", currentLanguage.code)}
                     </Button>
                     <Button
                       onClick={handleEditPurchase}
@@ -1801,12 +1834,12 @@ const handleExportSalesProfitReport = async () => {
                       disabled={selectedPurchases.length !== 1}
                     >
                       <Edit className="h-4 w-4" />
-                      تعديل
+                      {t("edit", currentLanguage.code)}
                     </Button>
                     <Button
                       onClick={() => {
                         if (selectedPurchases.length === 0) {
-                          toast.error("الرجاء تحديد قائمة واحدة على الأقل")
+                          toast.error(t("selectAtLeastOneList", currentLanguage.code))
                           return
                         }
                         setShowPurchasesDeleteDialog(true)
@@ -1816,7 +1849,7 @@ const handleExportSalesProfitReport = async () => {
                       disabled={selectedPurchases.length === 0}
                     >
                       <Trash2 className="h-4 w-4" />
-                      حذف
+                      {t("delete", currentLanguage.code)}
                     </Button>
                   </>
                 )}
@@ -1828,7 +1861,7 @@ const handleExportSalesProfitReport = async () => {
                   disabled={selectedPurchases.length !== 1}
                 >
                   <FileText className="h-4 w-4" />
-                  كشف
+                  {t("statement", currentLanguage.code)}
                 </Button>
               </div>
 
@@ -1836,12 +1869,12 @@ const handleExportSalesProfitReport = async () => {
               <div className="flex flex-wrap gap-2 items-center">
                 <Button variant="outline" className="gap-2">
                   <FileText className="h-4 w-4" />
-                  الملف
+                  {t("file", currentLanguage.code)}
                 </Button>
                 <div className="flex-1 min-w-[300px] relative">
                   <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
-                    placeholder="بحث حسب رقم القائمة، اسم المورد، نوع الشراء..."
+                    placeholder={t("searchPlaceholderPurchases", currentLanguage.code)}
                     value={purchasesSearchTerm}
                     onChange={(e) => setPurchasesSearchTerm(e.target.value)}
                     className="pr-10"
@@ -1851,7 +1884,7 @@ const handleExportSalesProfitReport = async () => {
                   variant="outline"
                   size="icon"
                   onClick={() => setPurchasesSearchTerm("")}
-                  title="تنظيف"
+                  title={t("cleanSearch", currentLanguage.code)}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -1859,7 +1892,7 @@ const handleExportSalesProfitReport = async () => {
                   variant="outline"
                   size="icon"
                   onClick={loadPurchases}
-                  title="تحديث"
+                  title={t("refresh", currentLanguage.code)}
                   disabled={purchasesLoading}
                 >
                   <RefreshCw className={`h-4 w-4 ${purchasesLoading ? "animate-spin" : ""}`} />
@@ -1890,12 +1923,12 @@ const handleExportSalesProfitReport = async () => {
                             </TableHead>
                           )}
                           <TableHead className="w-20 text-center">#</TableHead>
-                          <TableHead>رقم القائمة</TableHead>
-                          <TableHead>اسم المورد</TableHead>
-                          <TableHead>نوع الشراء</TableHead>
-                          <TableHead>نوع الدفع</TableHead>
-                          <TableHead>التفاصيل</TableHead>
-                          <TableHead>تاريخ الشراء</TableHead>
+                          <TableHead>{t("listNumber", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("supplierName", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("purchaseType", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("paymentType", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("details", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("purchaseDate", currentLanguage.code)}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1909,7 +1942,7 @@ const handleExportSalesProfitReport = async () => {
                               } 
                               className="text-center py-10 text-muted-foreground"
                             >
-                              لا توجد قوائم مشتريات
+                              {t("noPurchases", currentLanguage.code)}
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -1940,7 +1973,11 @@ const handleExportSalesProfitReport = async () => {
                                       : "bg-gray-100 text-gray-800"
                                   }`}
                                 >
-                                  {purchase.typeofbuy}
+                                  {purchase.typeofbuy === "محلي"
+                                    ? t("local", currentLanguage.code)
+                                    : purchase.typeofbuy === "استيراد"
+                                    ? t("importType", currentLanguage.code)
+                                    : purchase.typeofbuy}
                                 </span>
                               </TableCell>
                               <TableCell>
@@ -1951,7 +1988,7 @@ const handleExportSalesProfitReport = async () => {
                                       : "bg-orange-100 text-orange-800"
                                   }`}
                                 >
-                                  {purchase.typeofpayment}
+                                  {translatePayType(purchase.typeofpayment)}
                                 </span>
                               </TableCell>
                               <TableCell>
@@ -1987,8 +2024,11 @@ const handleExportSalesProfitReport = async () => {
                     {purchasesTotalPages > 1 && (
                       <div className="flex items-center justify-between px-4 py-3 border-t">
                         <div className="text-sm text-muted-foreground">
-                          عرض {purchasesStartIndex + 1} - {Math.min(purchasesEndIndex, filteredPurchases.length)} من{" "}
-                          {filteredPurchases.length}
+                          {formatPaginationRange(
+                            purchasesStartIndex + 1,
+                            Math.min(purchasesEndIndex, filteredPurchases.length),
+                            filteredPurchases.length
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
@@ -2000,7 +2040,7 @@ const handleExportSalesProfitReport = async () => {
                             <ChevronRight className="h-4 w-4" />
                           </Button>
                           <span className="text-sm">
-                            صفحة {purchasesCurrentPage} من {purchasesTotalPages}
+                            {formatPaginationPage(purchasesCurrentPage, purchasesTotalPages)}
                           </span>
                           <Button
                             variant="outline"
@@ -2020,7 +2060,7 @@ const handleExportSalesProfitReport = async () => {
               {}
               {selectedPurchases.length > 0 && (
                 <div className="text-sm text-muted-foreground">
-                  تم تحديد {selectedPurchases.length} قائمة
+                  {formatSelectedCount("selectedPurchasesCount", selectedPurchases.length)}
                 </div>
               )}
             </CardContent>
@@ -2030,8 +2070,8 @@ const handleExportSalesProfitReport = async () => {
         <TabsContent value="cash" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>إدارة الصندوق</CardTitle>
-              <CardDescription>عرض وإدارة حركات الصندوق</CardDescription>
+              <CardTitle>{t("cashBoxManagement", currentLanguage.code)}</CardTitle>
+              <CardDescription>{t("manageCashMovements", currentLanguage.code)}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {}
@@ -2045,7 +2085,7 @@ const handleExportSalesProfitReport = async () => {
                   }}
                 >
                   <Plus className="h-4 w-4" />
-                  إضافة
+                  {t("add", currentLanguage.code)}
                 </Button>
                 <Button
                   onClick={() => setShowPaymentsDeleteDialog(true)}
@@ -2054,7 +2094,7 @@ const handleExportSalesProfitReport = async () => {
                   disabled={selectedPayments.length === 0}
                 >
                   <Trash2 className="h-4 w-4" />
-                  حذف ({selectedPayments.length})
+                  {t("delete", currentLanguage.code)} ({selectedPayments.length})
                 </Button>
 
                 <Button
@@ -2064,7 +2104,7 @@ const handleExportSalesProfitReport = async () => {
                   disabled={selectedPayments.length !== 1}
                 >
                   <FileText className="h-4 w-4" />
-                  كشف
+                  {t("statement", currentLanguage.code)}
                 </Button>
               </div>
 
@@ -2072,7 +2112,7 @@ const handleExportSalesProfitReport = async () => {
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="البحث في حركات الصندوق..."
+                  placeholder={t("searchCashMovementsPlaceholder", currentLanguage.code)}
                   value={paymentsSearchTerm}
                   onChange={(e) => setPaymentsSearchTerm(e.target.value)}
                   className="pr-10"
@@ -2110,20 +2150,20 @@ const handleExportSalesProfitReport = async () => {
                             />
                           </TableHead>
                           <TableHead className="text-center">#</TableHead>
-                          <TableHead>رقم الفاتورة</TableHead>
-                          <TableHead>اسم الزبون</TableHead>
-                          <TableHead>نوع الحركة</TableHead>
-                          <TableHead>المبلغ دينار</TableHead>
-                          <TableHead>المبلغ دولار</TableHead>
-                          <TableHead>الملاحظة</TableHead>
-                          <TableHead>تاريخ الحركة</TableHead>
+                          <TableHead>{t("invoiceNumber", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("customerNameLabel", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("movementType", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("amountIQD", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("amountUSD", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("notes", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("movementDate", currentLanguage.code)}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredPayments.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                              لا توجد حركات
+                              {t("noMovements", currentLanguage.code)}
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -2148,14 +2188,14 @@ const handleExportSalesProfitReport = async () => {
                                       : "bg-red-100 text-red-800"
                                   }`}
                                 >
-                                  {payment.transaction_type}
+                                  {translateTransactionType(payment.transaction_type)}
                                 </span>
                               </TableCell>
                               <TableCell className="font-medium text-green-700">
-                                {payment.amount_iqd.toLocaleString()} د.ع
+                                {payment.amount_iqd.toLocaleString()} {t("iqd", currentLanguage.code)}
                               </TableCell>
                               <TableCell className="font-medium text-blue-700">
-                                ${payment.amount_usd.toLocaleString()}
+                                {payment.amount_usd.toLocaleString()} {t("usd", currentLanguage.code)}
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-2">
@@ -2190,8 +2230,11 @@ const handleExportSalesProfitReport = async () => {
                     {paymentsTotalPages > 1 && (
                       <div className="flex items-center justify-between px-4 py-3 border-t">
                         <div className="text-sm text-muted-foreground">
-                          عرض {paymentsStartIndex + 1} - {Math.min(paymentsEndIndex, filteredPayments.length)} من{" "}
-                          {filteredPayments.length}
+                          {formatPaginationRange(
+                            paymentsStartIndex + 1,
+                            Math.min(paymentsEndIndex, filteredPayments.length),
+                            filteredPayments.length
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
@@ -2203,7 +2246,7 @@ const handleExportSalesProfitReport = async () => {
                             <ChevronRight className="h-4 w-4" />
                           </Button>
                           <span className="text-sm">
-                            صفحة {paymentsCurrentPage} من {paymentsTotalPages}
+                            {formatPaginationPage(paymentsCurrentPage, paymentsTotalPages)}
                           </span>
                           <Button
                             variant="outline"
@@ -2223,7 +2266,7 @@ const handleExportSalesProfitReport = async () => {
               {}
               {selectedPayments.length > 0 && (
                 <div className="text-sm text-muted-foreground">
-                  تم تحديد {selectedPayments.length} حركة
+                  {formatSelectedCount("selectedPaymentsCount", selectedPayments.length)}
                 </div>
               )}
             </CardContent>
@@ -2233,8 +2276,8 @@ const handleExportSalesProfitReport = async () => {
         <TabsContent value="transfer" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>إدارة النقل المخزني</CardTitle>
-              <CardDescription>عرض وإدارة عمليات النقل بين المخازن</CardDescription>
+              <CardTitle>{t("storeTransferManagement", currentLanguage.code)}</CardTitle>
+              <CardDescription>{t("manageStoreTransfers", currentLanguage.code)}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {}
@@ -2252,7 +2295,7 @@ const handleExportSalesProfitReport = async () => {
                       }}
                     >
                       <Plus className="h-4 w-4" />
-                      إضافة
+                      {t("add", currentLanguage.code)}
                     </Button>
                     <Button
                       onClick={() => setShowTransfersDeleteDialog(true)}
@@ -2261,7 +2304,7 @@ const handleExportSalesProfitReport = async () => {
                       disabled={selectedTransfers.length === 0}
                     >
                       <Trash2 className="h-4 w-4" />
-                      حذف ({selectedTransfers.length})
+                      {t("delete", currentLanguage.code)} ({selectedTransfers.length})
                     </Button>
                   </>
                 )}
@@ -2273,7 +2316,7 @@ const handleExportSalesProfitReport = async () => {
                   disabled={selectedTransfers.length !== 1}
                 >
                   <FileText className="h-4 w-4" />
-                  كشف
+                  {t("statement", currentLanguage.code)}
                 </Button>
               </div>
 
@@ -2281,7 +2324,7 @@ const handleExportSalesProfitReport = async () => {
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="البحث في عمليات النقل..."
+                  placeholder={t("searchTransfersPlaceholder", currentLanguage.code)}
                   value={transfersSearchTerm}
                   onChange={(e) => setTransfersSearchTerm(e.target.value)}
                   className="pr-10"
@@ -2319,20 +2362,20 @@ const handleExportSalesProfitReport = async () => {
                             />
                           </TableHead>
                           <TableHead className="text-center">#</TableHead>
-                          <TableHead>رمز المادة</TableHead>
-                          <TableHead>اسم المادة</TableHead>
-                          <TableHead>الكمية المنقولة</TableHead>
-                          <TableHead>من المخزن</TableHead>
-                          <TableHead>إلى المخزن</TableHead>
-                          <TableHead>ملاحظات</TableHead>
-                          <TableHead>تاريخ النقل</TableHead>
+                          <TableHead>{t("materialCode", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("materialName", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("transferredQuantity", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("fromStore", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("toStore", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("notes", currentLanguage.code)}</TableHead>
+                          <TableHead>{t("transferDate", currentLanguage.code)}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredTransfers.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                              لا توجد عمليات نقل
+                              {t("noTransfers", currentLanguage.code)}
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -2395,8 +2438,11 @@ const handleExportSalesProfitReport = async () => {
                     {transfersTotalPages > 1 && (
                       <div className="flex items-center justify-between px-4 py-3 border-t">
                         <div className="text-sm text-muted-foreground">
-                          عرض {transfersStartIndex + 1} - {Math.min(transfersEndIndex, filteredTransfers.length)} من{" "}
-                          {filteredTransfers.length}
+                          {formatPaginationRange(
+                            transfersStartIndex + 1,
+                            Math.min(transfersEndIndex, filteredTransfers.length),
+                            filteredTransfers.length
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
@@ -2408,7 +2454,7 @@ const handleExportSalesProfitReport = async () => {
                             <ChevronRight className="h-4 w-4" />
                           </Button>
                           <span className="text-sm">
-                            صفحة {transfersCurrentPage} من {transfersTotalPages}
+                            {formatPaginationPage(transfersCurrentPage, transfersTotalPages)}
                           </span>
                           <Button
                             variant="outline"
@@ -2428,7 +2474,7 @@ const handleExportSalesProfitReport = async () => {
               {}
               {selectedTransfers.length > 0 && (
                 <div className="text-sm text-muted-foreground">
-                  تم تحديد {selectedTransfers.length} عملية نقل
+                  {formatSelectedCount("selectedTransfersCount", selectedTransfers.length)}
                 </div>
               )}
             </CardContent>
@@ -2442,7 +2488,7 @@ const handleExportSalesProfitReport = async () => {
                 {t('reports', currentLanguage.code)}
               </CardTitle>
               <CardDescription>
-                إنشاء وتصدير تقارير شاملة لجميع أقسام النظام
+                {t("reportsHubDescription", currentLanguage.code)}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -2481,7 +2527,7 @@ const handleExportSalesProfitReport = async () => {
                       {t('sales', currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      تقرير شامل للمبيعات
+                      {t("reportSalesDescription", currentLanguage.code)}
                     </p>
                   </div>
                 </Button>
@@ -2520,7 +2566,7 @@ const handleExportSalesProfitReport = async () => {
                       {t('purchases', currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      تقرير شامل للمشتريات
+                      {t("reportPurchasesDescription", currentLanguage.code)}
                     </p>
                   </div>
                 </Button>
@@ -2560,7 +2606,7 @@ const handleExportSalesProfitReport = async () => {
                       {t('storeTransfer', currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      تقرير شامل للنقل المخزني
+                      {t("reportStoreTransfersDescription", currentLanguage.code)}
                     </p>
                   </div>
                 </Button>
@@ -2599,7 +2645,7 @@ const handleExportSalesProfitReport = async () => {
                       {t('customers', currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      تقرير شامل للزبائن
+                      {t("reportCustomersDescription", currentLanguage.code)}
                     </p>
                   </div>
                 </Button>
@@ -2638,7 +2684,7 @@ const handleExportSalesProfitReport = async () => {
                       {t('stores', currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      تقرير شامل للمخازن
+                      {t("reportStoresDescription", currentLanguage.code)}
                     </p>
                   </div>
                 </Button>
@@ -2677,7 +2723,7 @@ const handleExportSalesProfitReport = async () => {
                       {t('cashBox', currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      تقرير شامل للصرفيات
+                      {t("reportCashBoxDescription", currentLanguage.code)}
                     </p>
                   </div>
                 </Button>
@@ -2716,7 +2762,7 @@ const handleExportSalesProfitReport = async () => {
                       {t('expenses', currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      تقرير شامل للمصاريف الإدارية
+                      {t("reportExpensesDescription", currentLanguage.code)}
                     </p>
                   </div>
                 </Button>
@@ -2755,7 +2801,7 @@ const handleExportSalesProfitReport = async () => {
                       {t('materialsBalance', currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      تقرير شامل لأرصدة المواد والمخزون
+                      {t("reportMaterialsBalanceDescription", currentLanguage.code)}
                     </p>
                   </div>
                 </Button>
@@ -2794,7 +2840,7 @@ const handleExportSalesProfitReport = async () => {
                       {t('salesProfit', currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      تقرير شامل للأرباح والخسائر
+                      {t("reportSalesProfitDescription", currentLanguage.code)}
                     </p>
                   </div>
                 </Button>
@@ -2830,10 +2876,10 @@ const handleExportSalesProfitReport = async () => {
                   </div>
                   <div className="text-right relative flex-1">
                     <h3 className="font-bold text-lg" style={{ color: "#128C7E" }}>
-                      تقرير الواتساب
+                      {t("whatsappReportTitle", currentLanguage.code)}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      تقرير شامل للزبائن والمطالبات المالية
+                      {t("whatsappReportDescription", currentLanguage.code)}
                     </p>
                   </div>
                 </Button>
@@ -2847,15 +2893,14 @@ const handleExportSalesProfitReport = async () => {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تأكيد الحذف</DialogTitle>
+            <DialogTitle>{t("deleteConfirmationTitle", currentLanguage.code)}</DialogTitle>
             <DialogDescription>
-              هل أنت متأكد من حذف {selectedSales.length} قائمة؟ سيتم حذف جميع التفاصيل المرتبطة بها.
-              هذا الإجراء لا يمكن التراجع عنه.
+              {t("deleteConfirmMessage", currentLanguage.code).replace("{count}", String(selectedSales.length))}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={deleteLoading}>
-              إلغاء
+              {t("cancel", currentLanguage.code)}
             </Button>
             <Button
               variant="destructive"
@@ -2866,12 +2911,12 @@ const handleExportSalesProfitReport = async () => {
               {deleteLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  جاري الحذف...
+                  {t("deletingSales", currentLanguage.code)}
                 </>
               ) : (
                 <>
                   <Trash2 className="h-4 w-4" />
-                  حذف
+                  {t("delete", currentLanguage.code)}
                 </>
               )}
             </Button>
@@ -2883,15 +2928,14 @@ const handleExportSalesProfitReport = async () => {
       <Dialog open={showPurchasesDeleteDialog} onOpenChange={setShowPurchasesDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تأكيد الحذف</DialogTitle>
+            <DialogTitle>{t("deleteConfirmationTitle", currentLanguage.code)}</DialogTitle>
             <DialogDescription>
-              هل أنت متأكد من حذف {selectedPurchases.length} قائمة؟ سيتم حذف جميع التفاصيل المرتبطة بها.
-              هذا الإجراء لا يمكن التراجع عنه.
+              {t("deleteConfirmMessage", currentLanguage.code).replace("{count}", String(selectedPurchases.length))}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPurchasesDeleteDialog(false)} disabled={purchasesDeleteLoading}>
-              إلغاء
+              {t("cancel", currentLanguage.code)}
             </Button>
             <Button
               variant="destructive"
@@ -2902,12 +2946,12 @@ const handleExportSalesProfitReport = async () => {
               {purchasesDeleteLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  جاري الحذف...
+                  {t("deletingSales", currentLanguage.code)}
                 </>
               ) : (
                 <>
                   <Trash2 className="h-4 w-4" />
-                  حذف
+                  {t("delete", currentLanguage.code)}
                 </>
               )}
             </Button>
@@ -2919,15 +2963,14 @@ const handleExportSalesProfitReport = async () => {
       <Dialog open={showPaymentsDeleteDialog} onOpenChange={setShowPaymentsDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تأكيد الحذف</DialogTitle>
+            <DialogTitle>{t("deleteConfirmationTitle", currentLanguage.code)}</DialogTitle>
             <DialogDescription>
-              هل أنت متأكد من حذف {selectedPayments.length} حركة؟
-              هذا الإجراء لا يمكن التراجع عنه.
+              {t("deleteConfirmMovements", currentLanguage.code).replace("{count}", String(selectedPayments.length))}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPaymentsDeleteDialog(false)} disabled={paymentsDeleteLoading}>
-              إلغاء
+              {t("cancel", currentLanguage.code)}
             </Button>
             <Button
               variant="destructive"
@@ -2938,12 +2981,12 @@ const handleExportSalesProfitReport = async () => {
               {paymentsDeleteLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  جاري الحذف...
+                  {t("deletingSales", currentLanguage.code)}
                 </>
               ) : (
                 <>
                   <Trash2 className="h-4 w-4" />
-                  حذف
+                  {t("delete", currentLanguage.code)}
                 </>
               )}
             </Button>
@@ -2955,7 +2998,7 @@ const handleExportSalesProfitReport = async () => {
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>تفاصيل كاملة</DialogTitle>
+            <DialogTitle>{t("fullDetails", currentLanguage.code)}</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <div className="p-4 bg-muted rounded-lg whitespace-pre-wrap wrap-break-word">
@@ -2964,7 +3007,7 @@ const handleExportSalesProfitReport = async () => {
           </div>
           <DialogFooter>
             <Button onClick={() => setShowDetailsDialog(false)}>
-              إغلاق
+              {t("close", currentLanguage.code)}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2984,21 +3027,21 @@ const handleExportSalesProfitReport = async () => {
       <Dialog open={showPaymentDetailsDialog} onOpenChange={setShowPaymentDetailsDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>تفاصيل حركة الصندوق</DialogTitle>
+            <DialogTitle>{t("movementDetails", currentLanguage.code)}</DialogTitle>
           </DialogHeader>
           {selectedPaymentDetails && (
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">رقم الفاتورة</p>
+                  <p className="text-sm text-muted-foreground">{t("invoiceNumber", currentLanguage.code)}</p>
                   <p className="font-medium">{selectedPaymentDetails.invoice_number}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">اسم الزبون</p>
+                  <p className="text-sm text-muted-foreground">{t("customerNameLabel", currentLanguage.code)}</p>
                   <p className="font-medium">{selectedPaymentDetails.customer_name}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">نوع الحركة</p>
+                  <p className="text-sm text-muted-foreground">{t("movementType", currentLanguage.code)}</p>
                   <p className="font-medium">
                     <span
                       className={`px-2 py-1 rounded text-xs ${
@@ -3013,33 +3056,33 @@ const handleExportSalesProfitReport = async () => {
                           : "bg-purple-100 text-purple-800"
                       }`}
                     >
-                      {selectedPaymentDetails.transaction_type}
+                      {translateTransactionType(selectedPaymentDetails.transaction_type)}
                     </span>
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">نوع العملة</p>
+                  <p className="text-sm text-muted-foreground">{t("currencyType", currentLanguage.code)}</p>
                   <p className="font-medium">{selectedPaymentDetails.currency_type}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">المبلغ دينار</p>
+                  <p className="text-sm text-muted-foreground">{t("amountIQD", currentLanguage.code)}</p>
                   <p className="font-medium text-green-700">
-                    {selectedPaymentDetails.amount_iqd.toLocaleString()} د.ع
+                    {selectedPaymentDetails.amount_iqd.toLocaleString()} {t("iqd", currentLanguage.code)}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">المبلغ دولار</p>
+                  <p className="text-sm text-muted-foreground">{t("amountUSD", currentLanguage.code)}</p>
                   <p className="font-medium text-blue-700">
-                    ${selectedPaymentDetails.amount_usd.toLocaleString()}
+                    {selectedPaymentDetails.amount_usd.toLocaleString()} {t("usd", currentLanguage.code)}
                   </p>
                 </div>
                 <div className="space-y-1 col-span-2">
-                  <p className="text-sm text-muted-foreground">تاريخ الحركة</p>
+                  <p className="text-sm text-muted-foreground">{t("movementDate", currentLanguage.code)}</p>
                   <p className="font-medium">{formatDate(selectedPaymentDetails.pay_date)}</p>
                 </div>
                 {selectedPaymentDetails.notes && (
                   <div className="space-y-1 col-span-2">
-                    <p className="text-sm text-muted-foreground">الملاحظة</p>
+                    <p className="text-sm text-muted-foreground">{t("notes", currentLanguage.code)}</p>
                     <div className="p-3 bg-muted rounded-lg whitespace-pre-wrap wrap-break-word">
                       {selectedPaymentDetails.notes}
                     </div>
@@ -3050,7 +3093,7 @@ const handleExportSalesProfitReport = async () => {
           )}
           <DialogFooter>
             <Button onClick={() => setShowPaymentDetailsDialog(false)}>
-              إغلاق
+              {t("close", currentLanguage.code)}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3060,15 +3103,14 @@ const handleExportSalesProfitReport = async () => {
       <Dialog open={showTransfersDeleteDialog} onOpenChange={setShowTransfersDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تأكيد الحذف</DialogTitle>
+            <DialogTitle>{t("deleteConfirmationTitle", currentLanguage.code)}</DialogTitle>
             <DialogDescription>
-              هل أنت متأكد من حذف {selectedTransfers.length} عملية نقل؟
-              هذا الإجراء لا يمكن التراجع عنه.
+              {t("deleteConfirmTransfers", currentLanguage.code).replace("{count}", String(selectedTransfers.length))}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowTransfersDeleteDialog(false)} disabled={transfersDeleteLoading}>
-              إلغاء
+              {t("cancel", currentLanguage.code)}
             </Button>
             <Button
               variant="destructive"
@@ -3079,12 +3121,12 @@ const handleExportSalesProfitReport = async () => {
               {transfersDeleteLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  جاري الحذف...
+                  {t("deletingSales", currentLanguage.code)}
                 </>
               ) : (
                 <>
                   <Trash2 className="h-4 w-4" />
-                  حذف
+                  {t("delete", currentLanguage.code)}
                 </>
               )}
             </Button>
@@ -3096,31 +3138,31 @@ const handleExportSalesProfitReport = async () => {
       <Dialog open={showTransferDetailsDialog} onOpenChange={setShowTransferDetailsDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>تفاصيل عملية النقل</DialogTitle>
+            <DialogTitle>{t("transferDetails", currentLanguage.code)}</DialogTitle>
           </DialogHeader>
           {selectedTransferDetails && (
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">رمز المادة</p>
+                  <p className="text-sm text-muted-foreground">{t("materialCode", currentLanguage.code)}</p>
                   <p className="font-medium">{selectedTransferDetails.productcode}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">اسم المادة</p>
+                  <p className="text-sm text-muted-foreground">{t("materialName", currentLanguage.code)}</p>
                   <p className="font-medium">{selectedTransferDetails.productname}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">الكمية المنقولة</p>
+                  <p className="text-sm text-muted-foreground">{t("transferredQuantity", currentLanguage.code)}</p>
                   <p className="font-medium text-blue-700">
                     {selectedTransferDetails.quantity.toLocaleString()}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">تاريخ النقل</p>
+                  <p className="text-sm text-muted-foreground">{t("transferDate", currentLanguage.code)}</p>
                   <p className="font-medium">{formatDate(selectedTransferDetails.transferdate)}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">من المخزن</p>
+                  <p className="text-sm text-muted-foreground">{t("fromStore", currentLanguage.code)}</p>
                   <p>
                     <span className="px-2 py-1 rounded text-xs bg-orange-100 text-orange-800">
                       {selectedTransferDetails.fromstorename}
@@ -3128,7 +3170,7 @@ const handleExportSalesProfitReport = async () => {
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">إلى المخزن</p>
+                  <p className="text-sm text-muted-foreground">{t("toStore", currentLanguage.code)}</p>
                   <p>
                     <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800">
                       {selectedTransferDetails.tostorename}
@@ -3137,13 +3179,13 @@ const handleExportSalesProfitReport = async () => {
                 </div>
                 {selectedTransferDetails.createdby && (
                   <div className="space-y-1 col-span-2">
-                    <p className="text-sm text-muted-foreground">بواسطة</p>
+                    <p className="text-sm text-muted-foreground">{t("by", currentLanguage.code)}</p>
                     <p className="font-medium">{selectedTransferDetails.createdby}</p>
                   </div>
                 )}
                 {selectedTransferDetails.note && (
                   <div className="space-y-1 col-span-2">
-                    <p className="text-sm text-muted-foreground">ملاحظات</p>
+                    <p className="text-sm text-muted-foreground">{t("notes", currentLanguage.code)}</p>
                     <div className="p-3 bg-muted rounded-lg whitespace-pre-wrap wrap-break-word">
                       {selectedTransferDetails.note}
                     </div>
@@ -3151,7 +3193,7 @@ const handleExportSalesProfitReport = async () => {
                 )}
                 {selectedTransferDetails.description && (
                   <div className="space-y-1 col-span-2">
-                    <p className="text-sm text-muted-foreground">الوصف</p>
+                    <p className="text-sm text-muted-foreground">{t("description", currentLanguage.code)}</p>
                     <div className="p-3 bg-muted rounded-lg whitespace-pre-wrap wrap-break-word">
                       {selectedTransferDetails.description}
                     </div>
@@ -3162,7 +3204,7 @@ const handleExportSalesProfitReport = async () => {
           )}
           <DialogFooter>
             <Button onClick={() => setShowTransferDetailsDialog(false)}>
-              إغلاق
+              {t("close", currentLanguage.code)}
             </Button>
           </DialogFooter>
         </DialogContent>
