@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,14 +10,71 @@ import { useReminderAuth } from "@/contexts/reminder-auth-context"
 export default function ReminderDashboardPage() {
   const router = useRouter()
   const { user } = useReminderAuth()
-  const [stats] = useState({
-    totalSent: 1547,
-    successRate: 98.5,
-    failed: 23,
+  const [stats, setStats] = useState({
+    totalSent: 0,
+    successRate: 0,
+    failed: 0,
     pending: 0,
-    todaySent: 342,
-    activeUsers: 3,
+    todaySent: 0,
+    activeUsers: 0,
   })
+
+  const [recentActivity, setRecentActivity] = useState<{ time: string; message: string; success: boolean }[]>([])
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const sessionToken = localStorage.getItem("reminder_session_token") || sessionStorage.getItem("reminder_session_token")
+        if (!sessionToken) return
+
+        const resp = await fetch("/api/reminder-dashboard/stats", {
+          method: "GET",
+          headers: {
+            "x-reminder-session-token": sessionToken,
+          },
+        })
+
+        const data = await resp.json()
+        if (!resp.ok) {
+          console.error("Failed to load reminder dashboard stats:", data)
+          return
+        }
+
+        const s = data?.stats || {}
+        setStats({
+          totalSent: Number(s.totalSent || 0),
+          successRate: Number(s.successRate || 0),
+          failed: Number(s.totalFailed || 0),
+          pending: 0,
+          todaySent: Number(s.todaySent || 0),
+          activeUsers: Number(s.activeUsers || 0),
+        })
+
+        const ra = Array.isArray(data?.recentActivity) ? data.recentActivity : []
+        setRecentActivity(
+          ra.map((r: any) => {
+            const createdAt = r?.created_at ? new Date(r.created_at) : null
+            const time = createdAt ? createdAt.toLocaleString("ar-IQ") : ""
+            const op = String(r?.operation || "")
+            const phone = String(r?.phone || "")
+            const ok = Boolean(r?.success)
+            const err = r?.error_message ? String(r.error_message) : ""
+
+            const typeLabel = op === "send_media" ? "صورة" : "رسالة"
+            const message = ok
+              ? `تم إرسال ${typeLabel} إلى ${phone}`
+              : `فشل إرسال ${typeLabel} إلى ${phone}${err ? `: ${err}` : ""}`
+
+            return { time, message, success: ok }
+          })
+        )
+      } catch (e) {
+        console.error("Error loading reminder dashboard stats:", e)
+      }
+    }
+
+    load()
+  }, [])
 
   const quickActions = [
     {
@@ -48,13 +105,6 @@ export default function ReminderDashboardPage() {
       color: "bg-orange-500",
       path: "/reminder/settings",
     },
-  ]
-
-  const recentActivity = [
-    { time: "منذ 5 دقائق", message: "تم إرسال 50 رسالة بنجاح", success: true },
-    { time: "منذ 15 دقيقة", message: "فشل إرسال 2 رسالة", success: false },
-    { time: "منذ ساعة", message: "تم تحديث قالب الرسالة", success: true },
-    { time: "منذ ساعتين", message: "تم إرسال حملة إعلانية لـ 120 عميل", success: true },
   ]
 
   return (
@@ -266,7 +316,7 @@ export default function ReminderDashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.3 }}
       >
-        <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border-primary/20">
+        <Card className="bg-linear-to-r from-primary/10 via-primary/5 to-background border-primary/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>

@@ -49,6 +49,19 @@ type CampaignProgressState = {
 }
 
 export default function ReminderSendPage() {
+  const getReminderSessionToken = () =>
+    localStorage.getItem("reminder_session_token") || sessionStorage.getItem("reminder_session_token")
+
+  const buildHeaders = (extra?: Record<string, string>) => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...(extra || {}),
+    }
+    const token = getReminderSessionToken()
+    if (token) headers["x-reminder-session-token"] = token
+    return headers
+  }
+
   const [customers, setCustomers] = useState<CustomerData[]>([])
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
   const [isDragging, setIsDragging] = useState(false)
@@ -283,7 +296,7 @@ export default function ReminderSendPage() {
           // طلب إنشاء رسالة من القالب
           const response = await fetch("/api/reminder-whatsapp/generate-message", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: buildHeaders(),
             body: JSON.stringify({ code }),
           })
 
@@ -299,7 +312,7 @@ export default function ReminderSendPage() {
       // إرسال الرسائل الجماعية
       const response = await fetch("/api/reminder-whatsapp/send-bulk", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildHeaders(),
         body: JSON.stringify({ recipients }),
       })
 
@@ -412,7 +425,7 @@ export default function ReminderSendPage() {
 
       const prepareResp = await fetch("/api/reminder-whatsapp/prepare-media", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildHeaders(),
         body: JSON.stringify({ mediaUrls: dataUrls }),
       })
 
@@ -472,7 +485,7 @@ export default function ReminderSendPage() {
 
           const sendResp = await fetch("/api/reminder-whatsapp/send-bulk-media", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: buildHeaders(),
             body: JSON.stringify({
               recipients: [{ phone: customer.phone, mediaUrl: publicUrls[imgIdx], caption }],
               startIndex,

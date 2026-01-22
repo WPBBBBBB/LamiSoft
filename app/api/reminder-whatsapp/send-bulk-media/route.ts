@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sendBulkMedia } from "@/lib/wasender-api-operations"
+import { logReminderWhatsAppSends } from "@/lib/reminder-whatsapp-monitoring"
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,6 +25,22 @@ export async function POST(request: NextRequest) {
 
     const parsedStartIndex = typeof startIndex === "number" && Number.isFinite(startIndex) && startIndex >= 0 ? startIndex : 0
     const result = await sendBulkMedia(recipients, undefined, parsedStartIndex)
+
+    // تسجيل محاولات الإرسال (لا تكسر الإرسال إذا فشل التسجيل)
+    await logReminderWhatsAppSends(
+      request,
+      result.results.map((r, idx) => ({
+        operation: "send_media",
+        phone: r.phone,
+        success: r.success,
+        error_message: r.success ? null : (r.error || "خطأ غير معروف"),
+        media_url: recipients[idx]?.mediaUrl ? String(recipients[idx].mediaUrl) : null,
+        caption: recipients[idx]?.caption ? String(recipients[idx].caption) : null,
+        meta: {
+          startIndex: parsedStartIndex,
+        },
+      }))
+    )
 
     // استخراج الأخطاء من النتائج
     const errors = result.results

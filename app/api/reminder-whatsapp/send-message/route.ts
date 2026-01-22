@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sendMessageWithSettings } from "@/lib/wasender-api-operations"
+import { logReminderWhatsAppSends } from "@/lib/reminder-whatsapp-monitoring"
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,11 +20,36 @@ export async function POST(request: NextRequest) {
     )
 
     if (!result.success) {
+      await logReminderWhatsAppSends(request, [
+        {
+          operation: "send_text",
+          phone: phoneNumber,
+          success: false,
+          error_message: result.error || "فشل إرسال الرسالة",
+          meta: {
+            messageLength: String(message).length,
+            messageCount: Number(messageCount || 0),
+          },
+        },
+      ])
       return NextResponse.json(
         { error: result.error || "فشل إرسال الرسالة" },
         { status: 500 }
       )
     }
+
+    await logReminderWhatsAppSends(request, [
+      {
+        operation: "send_text",
+        phone: phoneNumber,
+        success: true,
+        error_message: null,
+        meta: {
+          messageLength: String(message).length,
+          messageCount: Number(messageCount || 0),
+        },
+      },
+    ])
 
     return NextResponse.json({
       success: true,

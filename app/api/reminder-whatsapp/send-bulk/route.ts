@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sendBulkMessages } from "@/lib/wasender-api-operations"
+import { logReminderWhatsAppSends } from "@/lib/reminder-whatsapp-monitoring"
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,6 +24,20 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await sendBulkMessages(recipients)
+
+    // تسجيل محاولات الإرسال (لا تكسر الإرسال إذا فشل التسجيل)
+    await logReminderWhatsAppSends(
+      request,
+      result.results.map((r, idx) => ({
+        operation: "send_text",
+        phone: r.phone,
+        success: r.success,
+        error_message: r.success ? null : (r.error || "خطأ غير معروف"),
+        meta: {
+          messageLength: recipients[idx]?.message ? String(recipients[idx].message).length : 0,
+        },
+      }))
+    )
 
     return NextResponse.json({
       success: true,
