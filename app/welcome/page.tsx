@@ -378,25 +378,41 @@ export default function WelcomePage() {
 
         {/* Footer */}
         <footer className="border-t py-8 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-              {/* Developer Info - Right Side */}
+          <div className="w-full px-4 md:px-8">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:items-end">
+              {/* Left spacer (desktop) */}
+              <div className="hidden md:block" />
+
+              {/* Copyright - Center */}
               <motion.div 
-                className="text-right space-y-3 flex-1 md:order-3"
+                className="text-center md:justify-self-center"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true }}
+              >
+                <p className="text-sm text-muted-foreground">
+                  © 2026 AL-LamiSoft. جميع الحقوق محفوظة.
+                </p>
+              </motion.div>
+
+              {/* Developer/Contact - Far Right */}
+              <motion.div 
+                className="text-right space-y-3 justify-self-end"
                 initial={{ opacity: 0, x: 50 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6 }}
                 viewport={{ once: true }}
               >
                 <p className="text-sm font-semibold" style={{ color: "var(--theme-primary)" }}>
-                  برمجة وتطوير المبرمج مهدي رشيد
+                  برمجة وتطوير: مهدي
                 </p>
                 
                 <a 
                   href="tel:07849704946"
                   className="flex items-center justify-end gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
                 >
-                  <span className="group-hover:translate-x-1 transition-transform">07849704946</span>
+                  <span className="group-hover:translate-x-1 transition-transform">رقم الهاتف: 07849704946</span>
                   <Phone className="h-4 w-4" />
                 </a>
                 
@@ -423,25 +439,9 @@ export default function WelcomePage() {
                   >
                     <Instagram className="h-4 w-4" style={{ color: "var(--theme-primary)" }} />
                   </motion.a>
-                  <span className="text-xs text-muted-foreground">للتواصل</span>
+                  <span className="text-xs text-muted-foreground">التواصل معي</span>
                 </div>
               </motion.div>
-
-              {/* Copyright - Center */}
-              <motion.div 
-                className="text-center flex-1 md:order-2"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true }}
-              >
-                <p className="text-sm text-muted-foreground">
-                  © 2026 AL-LamiSoft. جميع الحقوق محفوظة.
-                </p>
-              </motion.div>
-              
-              {/* Empty Space - Left */}
-              <div className="hidden md:block flex-1 md:order-1"></div>
             </div>
           </div>
         </footer>
