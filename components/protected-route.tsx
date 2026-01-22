@@ -15,7 +15,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const pathname = usePathname()
   const { user, loading } = useAuth()
 
+  // Reminder system has its own auth flow (/reminder-login) and must not be tied to the sales system auth.
+  // So we bypass the main auth guard for any reminder routes.
+  const isReminderRoute = pathname?.startsWith("/reminder")
+
   useEffect(() => {
+    if (isReminderRoute) return
+
     if (!loading) {
       const isPublicRoute = publicRoutes.includes(pathname)
       
@@ -25,9 +31,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         router.replace("/home")
       }
     }
-  }, [user, loading, pathname, router])
+  }, [user, loading, pathname, router, isReminderRoute])
 
-  if (loading) {
+  if (!isReminderRoute && loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -36,6 +42,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         </div>
       </div>
     )
+  }
+
+  if (isReminderRoute) {
+    return <>{children}</>
   }
 
   const isPublicRoute = publicRoutes.includes(pathname)
