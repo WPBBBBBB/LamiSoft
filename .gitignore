@@ -33,6 +33,16 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# uploads (generated at runtime)
+/public/uploads/
+
+# supabase CLI temp
+/supabase/.temp/
+
+# office files (usually local samples/templates)
+*.xls
+*.xlsx
+
 # vercel
 .vercel
 

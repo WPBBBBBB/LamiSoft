@@ -316,3 +316,24 @@
     direction: ltr !important;
   }
 }
+
+/* Reveal on scroll helpers */
+.reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.show {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+/* Ensure smooth scrolling for anchor navigation */
+html {
+  scroll-behavior: smooth;
+}
+
+/* small tweak for translucent header */
+.backdrop-blur-md {
+  backdrop-filter: blur(6px);
+}

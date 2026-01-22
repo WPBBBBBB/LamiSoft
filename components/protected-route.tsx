@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
   children: React.ReactNode
 }
 
-const publicRoutes = ["/login", "/forgot-password"]
+const publicRoutes = ["/login", "/forgot-password", "/welcome", "/reminder-login", "/reminder/dashboard", "/reminder/users", "/reminder/settings"]
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter()

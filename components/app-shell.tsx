@@ -29,6 +29,9 @@ export function AppShell({
 }) {
   const pathname = usePathname()
   const isLoginPage = pathname === "/login" || pathname === "/forgot-password"
+  const isWelcomePage = pathname === "/welcome"
+  const isReminderLoginPage = pathname === "/reminder-login"
+  const isReminderPage = pathname?.startsWith("/reminder")
 
   return (
     <ThemeProvider
@@ -46,7 +49,7 @@ export function AppShell({
               <WeatherProvider>
                 <NotificationProvider>
                   <ProtectedRoute>
-                    {isLoginPage ? (
+                    {isLoginPage || isWelcomePage || isReminderPage ? (
                       <main className="min-h-screen">{children}</main>
                     ) : (
                       <div className="relative flex min-h-screen">
