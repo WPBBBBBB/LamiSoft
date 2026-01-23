@@ -6,9 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
-import { Upload, Send, Image as ImageIcon, FileSpreadsheet, Phone, X } from "lucide-react"
+import { Upload, Send, Image as ImageIcon, FileSpreadsheet, Phone, Search, X } from "lucide-react"
 import { toast } from "sonner"
 import * as XLSX from "xlsx"
 import Image from "next/image"
@@ -66,6 +67,7 @@ export default function ReminderSendPage() {
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // حالة الحملة الإعلانية
@@ -89,6 +91,28 @@ export default function ReminderSendPage() {
 
   const [isPhoneOnlySelected, setIsPhoneOnlySelected] = useState(false)
   const previousSelectionRef = useRef<Set<number> | null>(null)
+
+  const normalizedSearch = searchQuery.trim().toLowerCase()
+  const filteredCustomers = normalizedSearch
+    ? customers.filter((c) => {
+        const haystack = [
+          c.id,
+          c.number,
+          c.name,
+          c.amount,
+          c.debt,
+          c.lastOperation,
+          c.lastPayment,
+          c.phone,
+        ]
+          .map(v => String(v ?? "").toLowerCase())
+          .join(" ")
+        return haystack.includes(normalizedSearch)
+      })
+    : customers
+
+  const visibleIds = filteredCustomers.map(c => c.id)
+  const isAllVisibleSelected = filteredCustomers.length > 0 && visibleIds.every(id => selectedRows.has(id))
 
   const resetCampaignProgress = () => {
     setCampaignProgress({
@@ -237,11 +261,19 @@ export default function ReminderSendPage() {
 
   // اختيار/إلغاء اختيار الكل
   const toggleSelectAll = () => {
-    if (selectedRows.size === customers.length) {
-      setSelectedRows(new Set())
-    } else {
-      setSelectedRows(new Set(customers.map(c => c.id)))
+    if (filteredCustomers.length === 0) return
+
+    const next = new Set(selectedRows)
+    if (isAllVisibleSelected) {
+      // Unselect only visible rows
+      for (const id of visibleIds) next.delete(id)
+      setSelectedRows(next)
+      return
     }
+
+    // Select visible rows (keep existing selections)
+    for (const id of visibleIds) next.add(id)
+    setSelectedRows(next)
   }
 
   // تحديد/إلغاء تحديد العملاء الذين لديهم رقم هاتف فقط (Toggle)
@@ -750,6 +782,39 @@ export default function ReminderSendPage() {
                   {isPhoneOnlySelected ? "إلغاء تحديد ذوي الأرقام فقط" : "تحديد ذوي الأرقام فقط"}
                 </Button>
               </div>
+
+              {/* مربع البحث */}
+              <div className="mt-4">
+                <div className="relative max-w-md">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="بحث في الجدول (اسم، رقم، هاتف...)"
+                    className="pr-10 pl-10"
+                    dir="rtl"
+                    aria-label="بحث في جدول العملاء"
+                  />
+
+                  {searchQuery.trim().length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:text-foreground"
+                      aria-label="مسح البحث"
+                      title="مسح"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                {normalizedSearch && (
+                  <div className="text-xs text-muted-foreground mt-2">
+                    النتائج: {filteredCustomers.length} من {customers.length}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </motion.div>
@@ -765,7 +830,7 @@ export default function ReminderSendPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">
-                قائمة العملاء ({customers.length})
+                قائمة العملاء ({filteredCustomers.length}{normalizedSearch ? ` من ${customers.length}` : ""})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -775,7 +840,7 @@ export default function ReminderSendPage() {
                     <TableRow>
                       <TableHead className="w-12 text-center">
                         <Checkbox
-                          checked={selectedRows.size === customers.length && customers.length > 0}
+                          checked={isAllVisibleSelected}
                           onCheckedChange={toggleSelectAll}
                         />
                       </TableHead>
@@ -790,31 +855,39 @@ export default function ReminderSendPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {customers.map((customer) => (
-                      <TableRow
-                        key={customer.id}
-                        className={selectedRows.has(customer.id) ? "bg-muted/50" : ""}
-                      >
-                        <TableCell className="text-center">
-                          <Checkbox
-                            checked={selectedRows.has(customer.id)}
-                            onCheckedChange={() => toggleRowSelection(customer.id)}
-                          />
-                        </TableCell>
-                        <TableCell className="text-center font-mono text-sm">
-                          {customer.id}
-                        </TableCell>
-                        <TableCell className="text-right">{customer.number}</TableCell>
-                        <TableCell className="text-right font-medium">{customer.name}</TableCell>
-                        <TableCell className="text-right" dir="ltr">{customer.amount}</TableCell>
-                        <TableCell className="text-right">{customer.debt}</TableCell>
-                        <TableCell className="text-right">{customer.lastOperation}</TableCell>
-                        <TableCell className="text-right">{customer.lastPayment}</TableCell>
-                        <TableCell className="text-right font-mono" dir="ltr">
-                          {customer.phone || <span className="text-muted-foreground">-</span>}
+                    {filteredCustomers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center text-muted-foreground py-10">
+                          لا توجد نتائج مطابقة
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      filteredCustomers.map((customer) => (
+                        <TableRow
+                          key={customer.id}
+                          className={selectedRows.has(customer.id) ? "bg-muted/50" : ""}
+                        >
+                          <TableCell className="text-center">
+                            <Checkbox
+                              checked={selectedRows.has(customer.id)}
+                              onCheckedChange={() => toggleRowSelection(customer.id)}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center font-mono text-sm">
+                            {customer.id}
+                          </TableCell>
+                          <TableCell className="text-right">{customer.number}</TableCell>
+                          <TableCell className="text-right font-medium">{customer.name}</TableCell>
+                          <TableCell className="text-right" dir="ltr">{customer.amount}</TableCell>
+                          <TableCell className="text-right">{customer.debt}</TableCell>
+                          <TableCell className="text-right">{customer.lastOperation}</TableCell>
+                          <TableCell className="text-right">{customer.lastPayment}</TableCell>
+                          <TableCell className="text-right font-mono" dir="ltr">
+                            {customer.phone || <span className="text-muted-foreground">-</span>}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>

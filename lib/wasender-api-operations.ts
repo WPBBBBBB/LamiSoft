@@ -10,6 +10,11 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 // نضع هامش أمان بسيط لتجنب الاصطدام بالحد بالضبط.
 const ACCOUNT_PROTECTION_MIN_DELAY_MS = 5200
 
+// لتقليل احتمالية الحظر بسبب نمط ثابت (anti-spam)، نستخدم تأخيراً عشوائياً.
+// افتراضياً نجعل التأخير بين ~5.2s و 8s (مع مراعاة Account Protection).
+const DEFAULT_RANDOM_DELAY_MAX_MS = 8000
+const DEFAULT_MIN_RANDOM_JITTER_MS = 500
+
 export async function getWhatsAppSettings() {
   try {
     console.log("[getWhatsAppSettings] Fetching from reminder_whatsapp_settings table...")
@@ -67,10 +72,36 @@ export function calculateDelay(baseDelay: number, jitterFactor: number): number 
   return baseDelay + jitter
 }
 
+function getRandomIntInclusive(min: number, max: number): number {
+  const safeMin = Math.ceil(min)
+  const safeMax = Math.floor(max)
+  if (!Number.isFinite(safeMin) || !Number.isFinite(safeMax) || safeMax <= safeMin) return safeMin
+  return Math.floor(Math.random() * (safeMax - safeMin + 1)) + safeMin
+}
+
+function coerceToNumber(value: unknown): number {
+  const n = typeof value === "number" ? value : Number(value)
+  return Number.isFinite(n) ? n : 0
+}
+
 function getSafeDelayMs(baseDelay: number, jitterFactor: number): number {
   // نضمن حد أدنى مناسب لإرسال الرسائل/الصور لتجنب Rate Limit عند تفعيل Account Protection.
   const safeBase = Math.max(baseDelay || 0, ACCOUNT_PROTECTION_MIN_DELAY_MS)
   return calculateDelay(safeBase, jitterFactor || 0)
+}
+
+function getSafeRandomDelayMs(baseDelay: unknown, jitterFactor: unknown): number {
+  const base = Math.max(coerceToNumber(baseDelay), ACCOUNT_PROTECTION_MIN_DELAY_MS)
+  const configuredJitter = coerceToNumber(jitterFactor)
+
+  // إذا لم يتم ضبط jitter_factor في الإعدادات، نجعل المدى يصل افتراضياً إلى 8 ثواني.
+  // وإذا كان base أكبر من 8 ثواني، نبقي عشوائية صغيرة لتجنب نمط ثابت.
+  const autoJitter = Math.max(DEFAULT_MIN_RANDOM_JITTER_MS, DEFAULT_RANDOM_DELAY_MAX_MS - base)
+  const jitter = configuredJitter > 0 ? configuredJitter : autoJitter
+
+  const min = base
+  const max = base + jitter
+  return getRandomIntInclusive(min, max)
 }
 
 function coerceToOptionalString(value: unknown): string | undefined {
@@ -383,12 +414,12 @@ export async function sendMessageWithSettings(
     if (messageCount > 0) {
       // التحقق إذا كان يجب أخذ استراحة
       if (messageCount % settings.messages_before_break === 0) {
-        const waitMs = Math.max(settings.break_duration || 0, ACCOUNT_PROTECTION_MIN_DELAY_MS)
+        const waitMs = Math.max(coerceToNumber(settings.break_duration), ACCOUNT_PROTECTION_MIN_DELAY_MS)
         console.log(`Taking break after ${messageCount} messages for ${waitMs}ms`)
         await new Promise(resolve => setTimeout(resolve, waitMs))
       } else {
-        // تأخير عادي مع jitter (مع حد أدنى آمن لتفادي rate limit)
-        const delay = getSafeDelayMs(settings.delay_between_messages, settings.jitter_factor)
+        // تأخير عشوائي (لتجنب نمط ثابت) مع حد أدنى آمن لتفادي rate limit
+        const delay = getSafeRandomDelayMs(settings.delay_between_messages, settings.jitter_factor)
         console.log(`Waiting ${delay}ms before sending message`)
         await new Promise(resolve => setTimeout(resolve, delay))
       }
@@ -434,11 +465,11 @@ export async function sendMediaWithSettings(
     // إضافة تأخير بناءً على عدد الرسائل المرسلة
     if (messageCount > 0) {
       if (messageCount % settings.messages_before_break === 0) {
-        const waitMs = Math.max(settings.break_duration || 0, ACCOUNT_PROTECTION_MIN_DELAY_MS)
+        const waitMs = Math.max(coerceToNumber(settings.break_duration), ACCOUNT_PROTECTION_MIN_DELAY_MS)
         console.log(`Taking break after ${messageCount} messages for ${waitMs}ms`)
         await new Promise(resolve => setTimeout(resolve, waitMs))
       } else {
-        const delay = getSafeDelayMs(settings.delay_between_messages, settings.jitter_factor)
+        const delay = getSafeRandomDelayMs(settings.delay_between_messages, settings.jitter_factor)
         console.log(`Waiting ${delay}ms before sending media`)
         await new Promise(resolve => setTimeout(resolve, delay))
       }
@@ -630,11 +661,11 @@ export async function sendBulkMedia(
       // نفس منطق التأخير الموجود في sendMediaWithSettings ولكن بدون إعادة جلب الإعدادات كل مرة
       if (messageIndex > 0) {
         if (messageIndex % settings.messages_before_break === 0) {
-          const waitMs = Math.max(settings.break_duration || 0, ACCOUNT_PROTECTION_MIN_DELAY_MS)
+          const waitMs = Math.max(coerceToNumber(settings.break_duration), ACCOUNT_PROTECTION_MIN_DELAY_MS)
           console.log(`Taking break after ${messageIndex} messages for ${waitMs}ms`)
           await new Promise(resolve => setTimeout(resolve, waitMs))
         } else {
-          const delay = getSafeDelayMs(settings.delay_between_messages, settings.jitter_factor)
+          const delay = getSafeRandomDelayMs(settings.delay_between_messages, settings.jitter_factor)
           console.log(`Waiting ${delay}ms before sending media`)
           await new Promise(resolve => setTimeout(resolve, delay))
         }
