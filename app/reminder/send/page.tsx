@@ -361,7 +361,7 @@ export default function ReminderSendPage() {
     }
 
     setIsLoading(true)
-    toast.info(`جاري إرسال ${customersWithPhone.length} رسالة...`)
+  toast.info(`جاري إرسال ${customersWithPhone.length} رسالة رمز تحقق...`)
 
     try {
       // إنشاء رسائل من القالب
@@ -402,7 +402,7 @@ export default function ReminderSendPage() {
       }
     } catch (error) {
       console.error("Error sending reminders:", error)
-      toast.error("حدث خطأ أثناء إرسال الرسائل")
+      toast.error("حدث خطأ أثناء إرسال رسائل رمز التحقق")
     } finally {
       setIsLoading(false)
     }
@@ -1032,7 +1032,7 @@ export default function ReminderSendPage() {
                   size="lg"
                 >
                   <Send className="h-5 w-5" />
-                  إرسال رسائل تذكير
+                  إرسال رسائل رمز التحقق
                 </Button>
 
                 <Button
@@ -1067,6 +1067,11 @@ export default function ReminderSendPage() {
                   <Phone className="h-5 w-5" />
                   {isPhoneOnlySelected ? "إلغاء تحديد ذوي الأرقام فقط" : "تحديد ذوي الأرقام فقط"}
                 </Button>
+              </div>
+
+              <div className="mt-3 text-xs text-muted-foreground text-right">
+                ملاحظة: زر <span className="font-medium">إرسال رسائل رمز التحقق</span> يولّد رمزًا مختلفًا لكل عميل.
+                لإرسال رسالة تكتبها بنفسك استخدم <span className="font-medium">إرسال رسالة جماعية</span>.
               </div>
 
               {/* مربع البحث */}
