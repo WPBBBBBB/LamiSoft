@@ -360,6 +360,12 @@ export default function ReminderSendPage() {
       return
     }
 
+    // حماية ضد الإرسال غير المقصود (قد يحدث بسبب submit تلقائي إذا كانت الصفحة ضمن <form> في أي مكان)
+    const ok = window.confirm(
+      `سيتم إرسال رسالة رمز تحقق (OTP) إلى ${customersWithPhone.length} عميل. هل تريد المتابعة؟`
+    )
+    if (!ok) return
+
     setIsLoading(true)
   toast.info(`جاري إرسال ${customersWithPhone.length} رسالة رمز تحقق...`)
 
@@ -953,6 +959,7 @@ export default function ReminderSendPage() {
                   />
                   <Button
                     size="lg"
+                    type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isLoading}
                     className="gap-2"
@@ -1001,6 +1008,7 @@ export default function ReminderSendPage() {
                   />
                   <Button
                     variant="outline"
+                    type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isLoading}
                     className="gap-2"
@@ -1026,6 +1034,7 @@ export default function ReminderSendPage() {
             <CardContent className="p-4">
               <div className="flex flex-wrap gap-3">
                 <Button
+                  type="button"
                   onClick={handleSendReminders}
                   disabled={isLoading || selectedRows.size === 0}
                   className="gap-2"
@@ -1036,6 +1045,7 @@ export default function ReminderSendPage() {
                 </Button>
 
                 <Button
+                  type="button"
                   onClick={() => setIsBulkTextDialogOpen(true)}
                   disabled={isLoading || selectedRows.size === 0}
                   variant="outline"
@@ -1047,6 +1057,7 @@ export default function ReminderSendPage() {
                 </Button>
 
                 <Button
+                  type="button"
                   onClick={handleSendMedia}
                   disabled={isLoading || selectedRows.size === 0}
                   variant="secondary"
@@ -1058,6 +1069,7 @@ export default function ReminderSendPage() {
                 </Button>
 
                 <Button
+                  type="button"
                   onClick={toggleSelectOnlyCustomersWithPhones}
                   disabled={isLoading || customers.length === 0}
                   variant="outline"
@@ -1269,12 +1281,14 @@ export default function ReminderSendPage() {
           <DialogFooter className="flex gap-2">
             <Button
               variant="outline"
+              type="button"
               onClick={() => setIsMediaDialogOpen(false)}
               disabled={isLoading}
             >
               إلغاء
             </Button>
             <Button
+              type="button"
               onClick={handleSendCampaign}
               disabled={isLoading || selectedImages.length === 0}
               className="gap-2"
@@ -1325,12 +1339,14 @@ export default function ReminderSendPage() {
           <DialogFooter className="flex gap-2">
             <Button
               variant="outline"
+              type="button"
               onClick={() => setIsBulkTextDialogOpen(false)}
               disabled={isLoading}
             >
               إلغاء
             </Button>
             <Button
+              type="button"
               onClick={handleSendBulkText}
               disabled={isLoading || selectedRows.size === 0 || bulkTextMessage.trim().length === 0}
               className="gap-2"
@@ -1444,6 +1460,7 @@ export default function ReminderSendPage() {
           <DialogFooter className="flex gap-2">
             <Button
               variant="outline"
+              type="button"
               onClick={() => {
                 setIsBulkTextProgressOpen(false)
                 resetBulkTextProgress()
@@ -1567,6 +1584,7 @@ export default function ReminderSendPage() {
           <DialogFooter className="flex gap-2">
             <Button
               variant="outline"
+              type="button"
               onClick={() => {
                 setIsCampaignProgressOpen(false)
                 resetCampaignProgress()
