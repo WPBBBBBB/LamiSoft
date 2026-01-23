@@ -124,31 +124,138 @@ export async function sendTextMessage(
   message: string
 ): Promise<{ success: boolean; data?: unknown; error?: string }> {
   try {
-    const response = await fetch("https://api.wasenderapi.com/api/v1/messages/text", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        phone: phoneNumber,
-        message: message,
-      }),
-    })
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-    const data = await response.json()
+    const formattedPhone = formatIraqiPhoneNumber(phoneNumber)
+    const formattedNoPlus = formattedPhone.startsWith("+") ? formattedPhone.slice(1) : formattedPhone
+    const phoneCandidates = Array.from(new Set([formattedPhone, formattedNoPlus].filter(Boolean)))
 
-    if (!response.ok) {
-      console.error("Failed to send message:", data)
+    if (!formattedPhone || formattedPhone === "+964") {
       return {
         success: false,
-        error: data.message || "Failed to send message",
+        error: "رقم هاتف غير صالح. يرجى إدخال رقم عراقي صحيح مثل: 077xxxxxxxx أو 9647xxxxxxxx",
       }
     }
 
+    // المسار المعتمد حالياً في هذا المشروع (والمستخدم للصور أيضاً)
+    const sendMessageEndpoint = "https://wasenderapi.com/api/send-message"
+
+    // مسار قديم/بديل (بعض الحسابات أو النسخ كانت تستخدمه)
+    const legacyTextEndpoint = "https://api.wasenderapi.com/api/v1/messages/text"
+
+    const trySendViaSendMessage = async (to: string) => {
+      const response = await fetch(sendMessageEndpoint, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to,
+          text: message,
+        }),
+      })
+
+      let data: unknown = null
+      try {
+        data = await response.json()
+      } catch {
+        // ignore
+      }
+
+      return { response, data }
+    }
+
+    const trySendViaLegacy = async (to: string) => {
+      const response = await fetch(legacyTextEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          phone: to,
+          message,
+        }),
+      })
+
+      let data: unknown = null
+      try {
+        data = await response.json()
+      } catch {
+        // ignore
+      }
+
+      return { response, data }
+    }
+
+    let lastData: unknown = null
+    let lastResponse: Response | null = null
+
+    for (const candidate of phoneCandidates) {
+      const res = await trySendViaSendMessage(candidate)
+      lastResponse = res.response
+      lastData = res.data
+
+      if (lastResponse.ok) {
+        return { success: true, data: lastData }
+      }
+
+      const messageText =
+        (lastData as { message?: string; error?: string; msg?: string } | null)?.message ||
+        (lastData as { message?: string; error?: string; msg?: string } | null)?.error ||
+        (lastData as { message?: string; error?: string; msg?: string } | null)?.msg
+
+      const msgLower = String(messageText || "").toLowerCase()
+      const isRateLimited =
+        msgLower.includes("account protection") ||
+        msgLower.includes("only send 1 message") ||
+        msgLower.includes("every 5")
+
+      // في حالة rate-limit: انتظر ثم أعد محاولة واحدة على نفس المسار
+      if (!lastResponse.ok && isRateLimited) {
+        const retryAfterSeconds = (lastData as { retry_after?: number } | null)?.retry_after
+        const waitMs =
+          typeof retryAfterSeconds === "number" && retryAfterSeconds > 0
+            ? Math.ceil(retryAfterSeconds * 1000) + 200
+            : ACCOUNT_PROTECTION_MIN_DELAY_MS
+
+        console.warn(`[sendTextMessage] Rate limited. Waiting ${waitMs}ms then retrying...`)
+        await sleep(waitMs)
+        const retryRes = await trySendViaSendMessage(candidate)
+        lastResponse = retryRes.response
+        lastData = retryRes.data
+        if (lastResponse.ok) {
+          return { success: true, data: lastData }
+        }
+      }
+
+      // إذا كان 404 route not found على هذا المسار، نجرب المسار القديم كـ fallback
+      if (!lastResponse.ok && lastResponse.status === 404) {
+        const legacyRes = await trySendViaLegacy(candidate)
+        lastResponse = legacyRes.response
+        lastData = legacyRes.data
+        if (lastResponse.ok) {
+          return { success: true, data: lastData }
+        }
+      }
+
+      // إذا الخطأ ليس متعلقاً بصيغة الرقم/الوجود على واتساب، لا داعي لتجربة صيغ أخرى
+      const isJidProblem = msgLower.includes("jid") || msgLower.includes("exist on whatsapp")
+      if (!isJidProblem) break
+    }
+
+    const detailed =
+      (lastData as { message?: string; error?: string; msg?: string } | null)?.message ||
+      (lastData as { message?: string; error?: string; msg?: string } | null)?.error ||
+      (lastData as { message?: string; error?: string; msg?: string } | null)?.msg ||
+      (lastData ? JSON.stringify(lastData) : null) ||
+      (lastResponse ? `HTTP ${lastResponse.status}` : "No response")
+
+    console.error("Failed to send message:", lastData)
     return {
-      success: true,
-      data: data,
+      success: false,
+      error: detailed,
     }
   } catch (error) {
     console.error("Error sending text message:", error)

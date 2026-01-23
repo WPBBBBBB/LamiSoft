@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress"
 import { Upload, Send, Image as ImageIcon, FileSpreadsheet, Phone, Search, X } from "lucide-react"
 import { toast } from "sonner"
 import * as XLSX from "xlsx"
-import Image from "next/image"
+import NextImage from "next/image"
 
 interface CustomerData {
   id: number
@@ -47,6 +47,25 @@ type CampaignProgressState = {
   totalSuccess: number
   totalFailed: number
   customers: CampaignCustomerProgress[]
+}
+
+type BulkTextCustomerProgress = {
+  customerId: number
+  name: string
+  phone: string
+  status: "pending" | "sending" | "done" | "error"
+  success: boolean
+  lastError?: string
+}
+
+type BulkTextProgressState = {
+  phase: "idle" | "sending" | "done" | "error"
+  statusText: string
+  totalCustomers: number
+  doneCustomers: number
+  totalSuccess: number
+  totalFailed: number
+  customers: BulkTextCustomerProgress[]
 }
 
 export default function ReminderSendPage() {
@@ -92,6 +111,20 @@ export default function ReminderSendPage() {
   const [isPhoneOnlySelected, setIsPhoneOnlySelected] = useState(false)
   const previousSelectionRef = useRef<Set<number> | null>(null)
 
+  // إرسال رسالة جماعية (مخصصة)
+  const [isBulkTextDialogOpen, setIsBulkTextDialogOpen] = useState(false)
+  const [bulkTextMessage, setBulkTextMessage] = useState("")
+  const [isBulkTextProgressOpen, setIsBulkTextProgressOpen] = useState(false)
+  const [bulkTextProgress, setBulkTextProgress] = useState<BulkTextProgressState>({
+    phase: "idle",
+    statusText: "",
+    totalCustomers: 0,
+    doneCustomers: 0,
+    totalSuccess: 0,
+    totalFailed: 0,
+    customers: [],
+  })
+
   const normalizedSearch = searchQuery.trim().toLowerCase()
   const filteredCustomers = normalizedSearch
     ? customers.filter((c) => {
@@ -122,6 +155,18 @@ export default function ReminderSendPage() {
       doneCustomers: 0,
       totalMessages: 0,
       attemptedMessages: 0,
+      totalSuccess: 0,
+      totalFailed: 0,
+      customers: [],
+    })
+  }
+
+  const resetBulkTextProgress = () => {
+    setBulkTextProgress({
+      phase: "idle",
+      statusText: "",
+      totalCustomers: 0,
+      doneCustomers: 0,
       totalSuccess: 0,
       totalFailed: 0,
       customers: [],
@@ -374,6 +419,148 @@ export default function ReminderSendPage() {
     setIsMediaDialogOpen(true)
   }
 
+  // إرسال رسالة جماعية للأرقام المحددة
+  const handleSendBulkText = async () => {
+    const message = bulkTextMessage.trim()
+
+    if (selectedRows.size === 0) {
+      toast.error("يرجى اختيار عميل واحد على الأقل")
+      return
+    }
+
+    if (!message) {
+      toast.error("يرجى كتابة الرسالة")
+      return
+    }
+
+    const selectedCustomers = customers.filter(c => selectedRows.has(c.id))
+    if (selectedCustomers.length === 0) {
+      toast.error("لا يوجد عملاء محددين")
+      return
+    }
+
+    setIsLoading(true)
+    setIsBulkTextDialogOpen(false)
+    setIsBulkTextProgressOpen(true)
+    resetBulkTextProgress()
+
+    try {
+      const progressCustomers: BulkTextCustomerProgress[] = selectedCustomers.map(c => ({
+        customerId: c.id,
+        name: c.name || "(بدون اسم)",
+        phone: c.phone || "",
+        status: "pending",
+        success: false,
+      }))
+
+      setBulkTextProgress({
+        phase: "sending",
+        statusText: "بدء الإرسال...",
+        totalCustomers: progressCustomers.length,
+        doneCustomers: 0,
+        totalSuccess: 0,
+        totalFailed: 0,
+        customers: progressCustomers,
+      })
+
+      let totalSuccess = 0
+      let totalFailed = 0
+
+      for (let i = 0; i < selectedCustomers.length; i++) {
+        const customer = selectedCustomers[i]
+        const phone = (customer.phone || "").trim()
+
+        setBulkTextProgress(prev => ({
+          ...prev,
+          statusText: `جاري الإرسال إلى: ${customer.name || phone || "(بدون رقم)"}`,
+          customers: prev.customers.map(pc =>
+            pc.customerId === customer.id ? { ...pc, status: "sending" } : pc
+          ),
+        }))
+
+        // إذا لا يوجد رقم، اعتبرها فشل بدون استدعاء API
+        if (!phone) {
+          totalFailed += 1
+          setBulkTextProgress(prev => ({
+            ...prev,
+            doneCustomers: prev.doneCustomers + 1,
+            totalFailed: prev.totalFailed + 1,
+            customers: prev.customers.map(pc =>
+              pc.customerId === customer.id
+                ? { ...pc, status: "error", success: false, lastError: "بدون رقم هاتف" }
+                : pc
+            ),
+          }))
+          continue
+        }
+
+        const resp = await fetch("/api/reminder-whatsapp/send-message", {
+          method: "POST",
+          headers: buildHeaders(),
+          body: JSON.stringify({
+            phoneNumber: phone,
+            message,
+            messageCount: i,
+          }),
+        })
+
+        let data: any = null
+        try {
+          data = await resp.json()
+        } catch {
+          // ignore
+        }
+
+        if (resp.ok) {
+          totalSuccess += 1
+          setBulkTextProgress(prev => ({
+            ...prev,
+            doneCustomers: prev.doneCustomers + 1,
+            totalSuccess: prev.totalSuccess + 1,
+            customers: prev.customers.map(pc =>
+              pc.customerId === customer.id
+                ? { ...pc, status: "done", success: true }
+                : pc
+            ),
+          }))
+        } else {
+          totalFailed += 1
+          const errMsg = String(data?.error || data?.details || "فشل الإرسال")
+          setBulkTextProgress(prev => ({
+            ...prev,
+            doneCustomers: prev.doneCustomers + 1,
+            totalFailed: prev.totalFailed + 1,
+            customers: prev.customers.map(pc =>
+              pc.customerId === customer.id
+                ? { ...pc, status: "error", success: false, lastError: errMsg }
+                : pc
+            ),
+          }))
+        }
+      }
+
+      setBulkTextProgress(prev => ({
+        ...prev,
+        phase: "done",
+        statusText: "اكتمل الإرسال",
+      }))
+
+      toast.success(`اكتمل الإرسال الجماعي: نجاح ${totalSuccess} / فشل ${totalFailed}`)
+      setBulkTextMessage("")
+    } catch (error) {
+      console.error("Error sending bulk text:", error)
+      const errorMessage = error instanceof Error ? error.message : "خطأ غير معروف"
+      setBulkTextProgress(prev => ({
+        ...prev,
+        phase: "error",
+        statusText: `فشل الإرسال: ${errorMessage}`,
+      }))
+      toast.error(`حدث خطأ أثناء الإرسال الجماعي: ${errorMessage}`, { duration: 8000 })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // اختيار الصور
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -439,15 +626,87 @@ export default function ReminderSendPage() {
           reader.readAsDataURL(file)
         })
 
+      // ضغط الصور لتفادي 413 (Content Too Large) على بعض الاستضافات/الأجهزة
+      const compressImageToJpegDataUrl = async (file: File): Promise<string> => {
+        // fallback لو كانت ليست صورة
+        if (!file.type?.startsWith("image/")) {
+          return await fileToDataUrl(file)
+        }
+
+        const objectUrl = URL.createObjectURL(file)
+        try {
+          const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const el = new Image()
+            el.onload = () => resolve(el)
+            el.onerror = () => reject(new Error("فشل تحميل الصورة"))
+            el.src = objectUrl
+          })
+
+          // حد أقصى للأبعاد (يحافظ على النسبة)
+          const MAX_DIM = 1280
+          const w = img.naturalWidth || img.width
+          const h = img.naturalHeight || img.height
+          const ratio = w && h ? Math.min(1, MAX_DIM / Math.max(w, h)) : 1
+          const targetW = Math.max(1, Math.round(w * ratio))
+          const targetH = Math.max(1, Math.round(h * ratio))
+
+          const canvas = document.createElement("canvas")
+          canvas.width = targetW
+          canvas.height = targetH
+          const ctx = canvas.getContext("2d")
+          if (!ctx) {
+            return await fileToDataUrl(file)
+          }
+
+          // خلفية بيضاء لصور PNG الشفافة عند التحويل إلى JPEG
+          ctx.fillStyle = "#ffffff"
+          ctx.fillRect(0, 0, targetW, targetH)
+          ctx.drawImage(img, 0, 0, targetW, targetH)
+
+          // حاول تقليل الجودة تدريجياً لتقليل الحجم
+          const MAX_DATAURL_LENGTH = 1_250_000 // تقريباً ~0.9MB base64 بدون احتساب overhead كثير
+          let quality = 0.85
+          let dataUrl = canvas.toDataURL("image/jpeg", quality)
+
+          while (dataUrl.length > MAX_DATAURL_LENGTH && quality > 0.55) {
+            quality = Math.max(0.55, quality - 0.1)
+            dataUrl = canvas.toDataURL("image/jpeg", quality)
+          }
+
+          return dataUrl
+        } finally {
+          try {
+            URL.revokeObjectURL(objectUrl)
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      const safeReadResponse = async (resp: Response): Promise<{ json: any | null; text: string }> => {
+        const text = await resp.text()
+        if (!text) return { json: null, text: "" }
+        try {
+          return { json: JSON.parse(text), text }
+        } catch {
+          return { json: null, text }
+        }
+      }
+
       setCampaignProgress(prev => ({
         ...prev,
         phase: "preparing",
-        statusText: "تجهيز الصور (قراءة الملفات)...",
+        statusText: "تجهيز الصور (ضغط/تحسين)...",
         totalCustomers: customersWithPhone.length,
         doneCustomers: 0,
       }))
 
-      const dataUrls = await Promise.all(selectedImages.map((img) => fileToDataUrl(img.file)))
+      const dataUrls: string[] = []
+      for (let i = 0; i < selectedImages.length; i++) {
+        const img = selectedImages[i]
+        const dataUrl = await compressImageToJpegDataUrl(img.file)
+        dataUrls.push(dataUrl)
+      }
 
       setCampaignProgress(prev => ({
         ...prev,
@@ -455,20 +714,36 @@ export default function ReminderSendPage() {
         statusText: "رفع الصور إلى مزود الخدمة...",
       }))
 
-      const prepareResp = await fetch("/api/reminder-whatsapp/prepare-media", {
-        method: "POST",
-        headers: buildHeaders(),
-        body: JSON.stringify({ mediaUrls: dataUrls }),
-      })
+      // نرفع كل صورة على حدة لتقليل حجم الطلب وتفادي 413
+      const publicUrls: string[] = []
+      for (let i = 0; i < dataUrls.length; i++) {
+        setCampaignProgress(prev => ({
+          ...prev,
+          statusText: `رفع الصورة ${i + 1}/${dataUrls.length}...`,
+        }))
 
-      const prepareData = await prepareResp.json()
-      if (!prepareResp.ok) {
-        throw new Error(prepareData?.error || prepareData?.details || "فشل تجهيز الصور")
-      }
+        const prepareResp = await fetch("/api/reminder-whatsapp/prepare-media", {
+          method: "POST",
+          headers: buildHeaders(),
+          body: JSON.stringify({ mediaUrls: [dataUrls[i]] }),
+        })
 
-      const publicUrls: string[] = Array.isArray(prepareData?.publicUrls) ? prepareData.publicUrls : []
-      if (!publicUrls.length) {
-        throw new Error("فشل تجهيز الصور: لم يتم إرجاع روابط الصور")
+        const { json: prepareData, text } = await safeReadResponse(prepareResp)
+
+        if (!prepareResp.ok) {
+          if (prepareResp.status === 413) {
+            throw new Error(
+              "حجم الصورة كبير جداً (413). جرّب تصغير/ضغط الصورة قبل الإرسال، أو استخدم صور أقل حجماً."
+            )
+          }
+          throw new Error(prepareData?.error || prepareData?.details || text || "فشل تجهيز الصور")
+        }
+
+        const url = Array.isArray(prepareData?.publicUrls) ? String(prepareData.publicUrls[0] || "") : ""
+        if (!url) {
+          throw new Error("فشل تجهيز الصور: لم يتم إرجاع رابط للصورة")
+        }
+        publicUrls.push(url)
       }
 
       const perCustomer: CampaignCustomerProgress[] = customersWithPhone.map(c => ({
@@ -761,6 +1036,17 @@ export default function ReminderSendPage() {
                 </Button>
 
                 <Button
+                  onClick={() => setIsBulkTextDialogOpen(true)}
+                  disabled={isLoading || selectedRows.size === 0}
+                  variant="outline"
+                  className="gap-2"
+                  size="lg"
+                >
+                  <Send className="h-5 w-5" />
+                  إرسال رسالة جماعية
+                </Button>
+
+                <Button
                   onClick={handleSendMedia}
                   disabled={isLoading || selectedRows.size === 0}
                   variant="secondary"
@@ -939,7 +1225,7 @@ export default function ReminderSendPage() {
               <div className="grid grid-cols-3 gap-3">
                 {selectedImages.map((img, index) => (
                   <div key={index} className="relative group">
-                    <Image
+                    <NextImage
                       src={img.preview}
                       alt={`صورة ${index + 1}`}
                       width={150}
@@ -999,6 +1285,167 @@ export default function ReminderSendPage() {
                   إرسال الحملة
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog إرسال رسالة جماعية */}
+      <Dialog open={isBulkTextDialogOpen} onOpenChange={setIsBulkTextDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="text-right">إرسال رسالة جماعية</DialogTitle>
+            <DialogDescription className="text-right">
+              اكتب الرسالة لإرسالها إلى العملاء المحددين ({selectedRows.size} عميل)
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">الرسالة</label>
+              <Textarea
+                placeholder="اكتب الرسالة هنا..."
+                value={bulkTextMessage}
+                onChange={(e) => setBulkTextMessage(e.target.value)}
+                rows={5}
+                className="text-right"
+                dir="rtl"
+              />
+              <p className="text-xs text-muted-foreground text-right">
+                سيتم الإرسال تسلسلياً مع تأخير عشوائي بين الرسائل حسب إعدادات النظام.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsBulkTextDialogOpen(false)}
+              disabled={isLoading}
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleSendBulkText}
+              disabled={isLoading || selectedRows.size === 0 || bulkTextMessage.trim().length === 0}
+              className="gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
+                  جاري الإرسال...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  إرسال
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog تقدم الإرسال الجماعي */}
+      <Dialog
+        open={isBulkTextProgressOpen}
+        onOpenChange={(open) => {
+          if (bulkTextProgress.phase === "sending") return
+          setIsBulkTextProgressOpen(open)
+          if (!open) resetBulkTextProgress()
+        }}
+      >
+        <DialogContent className="sm:max-w-[720px]">
+          <DialogHeader>
+            <DialogTitle className="text-right">تقدم الإرسال الجماعي</DialogTitle>
+            <DialogDescription className="text-right">
+              {bulkTextProgress.statusText || "..."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-md border p-3">
+                <div className="text-muted-foreground text-right">النجاح</div>
+                <div className="text-right font-semibold" dir="ltr">{bulkTextProgress.totalSuccess}</div>
+              </div>
+              <div className="rounded-md border p-3">
+                <div className="text-muted-foreground text-right">الفشل</div>
+                <div className="text-right font-semibold" dir="ltr">{bulkTextProgress.totalFailed}</div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground" dir="ltr">
+                  {bulkTextProgress.doneCustomers}/{bulkTextProgress.totalCustomers} عميل
+                </span>
+                <span className="font-medium text-right">تقدم الإرسال</span>
+              </div>
+              <Progress
+                value={
+                  bulkTextProgress.totalCustomers > 0
+                    ? (bulkTextProgress.doneCustomers / bulkTextProgress.totalCustomers) * 100
+                    : 0
+                }
+                indicatorClassName={
+                  bulkTextProgress.phase === "sending"
+                    ? "bg-emerald-500 animate-pulse"
+                    : "bg-emerald-500"
+                }
+              />
+            </div>
+
+            <div className="rounded-md border p-3 max-h-[300px] overflow-auto">
+              <div className="space-y-3">
+                {bulkTextProgress.customers.map((c) => {
+                  const statusLabel =
+                    c.status === "pending" ? "بانتظار" :
+                    c.status === "sending" ? "جاري" :
+                    c.status === "done" ? "مكتمل" :
+                    "به أخطاء"
+
+                  const statusClass =
+                    c.status === "done"
+                      ? "text-emerald-600"
+                      : c.status === "error"
+                        ? "text-red-600"
+                        : "text-muted-foreground"
+
+                  return (
+                    <div key={c.customerId} className="space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="text-right">
+                          <div className="font-medium">{c.name}</div>
+                          <div className="text-xs text-muted-foreground" dir="ltr">{c.phone || "-"}</div>
+                        </div>
+                        <div className="text-right text-xs">
+                          <div className={statusClass}>{statusLabel}</div>
+                        </div>
+                      </div>
+
+                      {c.lastError && c.status === "error" && (
+                        <div className="text-xs text-red-600 text-right">
+                          آخر خطأ: {c.lastError}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsBulkTextProgressOpen(false)
+                resetBulkTextProgress()
+              }}
+              disabled={bulkTextProgress.phase === "sending"}
+            >
+              إغلاق
             </Button>
           </DialogFooter>
         </DialogContent>
