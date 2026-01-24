@@ -29,7 +29,7 @@ export function AppShell({
 }) {
   const pathname = usePathname()
   const isLoginPage = pathname === "/login" || pathname === "/forgot-password"
-  const isWelcomePage = pathname === "/welcome"
+  const isWelcomePage = pathname === "/welcome" || pathname === "/"
   const isReminderLoginPage = pathname === "/reminder-login"
   const isReminderPage = pathname?.startsWith("/reminder")
 

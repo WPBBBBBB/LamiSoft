@@ -21,11 +21,14 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
       <div className="flex h-14 items-center px-6">
         <div className="flex-1">
-          <nav className="hidden md:flex items-center gap-4">
-            <Link href="/welcome" className="text-sm font-semibold opacity-80 hover:opacity-100">التعريف</Link>
-            <a href="#features" className="text-sm font-semibold opacity-80 hover:opacity-100">المميزات</a>
-            <a href="#faq" className="text-sm font-semibold opacity-80 hover:opacity-100">الأسئلة</a>
-          </nav>
+          {/* عرض أزرار التنقل فقط إذا كان المستخدم غير مسجل دخول */}
+          {!currentUser && (
+            <nav className="hidden md:flex items-center gap-4">
+              <Link href="/welcome" className="text-sm font-semibold opacity-80 hover:opacity-100">التعريف</Link>
+              <a href="#features" className="text-sm font-semibold opacity-80 hover:opacity-100">المميزات</a>
+              <a href="#faq" className="text-sm font-semibold opacity-80 hover:opacity-100">الأسئلة</a>
+            </nav>
+          )}
         </div>
         <div className="flex items-center gap-4">
           {/* Login button when not authenticated */}

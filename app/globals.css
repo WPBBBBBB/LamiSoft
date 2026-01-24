@@ -337,3 +337,16 @@ html {
 .backdrop-blur-md {
   backdrop-filter: blur(6px);
 }
+
+/* 3D perspective for book animation */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}

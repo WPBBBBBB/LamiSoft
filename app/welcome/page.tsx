@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, CheckCircle, BarChart3, ShoppingCart, Package, Bell, Users, Shield, Sparkles, Send, Instagram, Phone } from "lucide-react"
-import ThreeCanvas from "@/components/welcome/ThreeCanvas"
+import Book3D from "@/components/welcome/Book3D"
 import ScrollReveal from "@/components/welcome/ScrollReveal"
 import Logo from "@/components/welcome/Logo"
 
@@ -155,7 +155,7 @@ export default function WelcomePage() {
             >
               <Card className="p-6 backdrop-blur-sm bg-card/50 overflow-hidden relative">
                 <div className="absolute inset-0 bg-linear-to-br from-primary/10 via-transparent to-primary/5" />
-                <ThreeCanvas className="w-full h-[400px] relative z-10" />
+                <Book3D className="w-full relative z-10" />
                 <motion.div 
                   className="text-center space-y-2 mt-4 relative z-10"
                   initial={{ opacity: 0, y: 20 }}
@@ -296,13 +296,11 @@ export default function WelcomePage() {
                     <Card className="h-full group hover:shadow-xl transition-all duration-300 backdrop-blur-sm bg-card/80">
                       <CardHeader>
                         <motion.div
-                          whileHover={{ 
-                            scale: 1.2,
-                            rotate: 360,
-                            transition: { duration: 0.5 }
-                          }}
+                          className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4"
+                          whileHover={{ rotate: 360 }}
+                          transition={{ duration: 0.6 }}
                         >
-                          <Icon className="h-8 w-8 mb-3 transition-colors group-hover:scale-110" style={{ color: "var(--theme-primary)" }} />
+                          <Icon className="h-6 w-6" style={{ color: "var(--theme-primary)" }} />
                         </motion.div>
                         <CardTitle className="text-lg">{service.title}</CardTitle>
                       </CardHeader>
