@@ -10,9 +10,13 @@ import { ArrowLeft, CheckCircle, BarChart3, ShoppingCart, Package, Bell, Users, 
 import Book3D from "@/components/welcome/Book3D"
 import ScrollReveal from "@/components/welcome/ScrollReveal"
 import Logo from "@/components/welcome/Logo"
+import SettingsMenu from "@/components/welcome/SettingsMenu"
+import { useSettings } from "@/components/providers/settings-provider"
+import { t } from "@/lib/translations"
 
 export default function WelcomePage() {
   const router = useRouter()
+  const { currentLanguage } = useSettings()
   const featuresRef = useRef<HTMLDivElement | null>(null)
   const servicesRef = useRef<HTMLDivElement | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -57,17 +61,18 @@ export default function WelcomePage() {
           <div className="flex items-center gap-3">
             <Logo className="scale-75" />
             <Separator orientation="vertical" className="h-6" />
-            <Badge variant="secondary" className="text-xs">نظام إدارة متكامل</Badge>
+            <Badge variant="secondary" className="text-xs">{t('alLamiSoft', currentLanguage.code)}</Badge>
           </div>
           <div className="flex items-center gap-2">
+            <SettingsMenu />
             <Button variant="ghost" size="sm" onClick={() => scrollTo(featuresRef.current)}>
-              المميزات
+              {t('features', currentLanguage.code)}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => scrollTo(servicesRef.current)}>
-              الخدمات
+              {t('services', currentLanguage.code)}
             </Button>
             <Button onClick={() => router.push("/login")} className="gap-2">
-              تسجيل الدخول
+              {t('login', currentLanguage.code)}
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </div>
@@ -91,7 +96,7 @@ export default function WelcomePage() {
               >
                 <Badge variant="outline" className="w-fit gap-2">
                   <Sparkles className="h-3 w-3" />
-                  إصدار 2026
+                  {t('latestVersion', currentLanguage.code)}
                 </Badge>
               </motion.div>
               
@@ -102,7 +107,7 @@ export default function WelcomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.6 }}
               >
-                مرحباً في AL-LamiSoft
+                {t('welcomeTitle', currentLanguage.code)}
               </motion.h1>
               
               <motion.p 
@@ -111,7 +116,7 @@ export default function WelcomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.6 }}
               >
-                نظام متكامل لإدارة المبيعات، المشتريات، المخزون، والتقارير — أداء سريع وتجربة أوفلاين مميزة.
+                {t('welcomeSubtitle', currentLanguage.code)}
               </motion.p>
               
               <motion.div 
@@ -121,11 +126,11 @@ export default function WelcomePage() {
                 transition={{ delay: 0.5, duration: 0.6 }}
               >
                 <Button size="lg" onClick={() => router.push("/login")} className="gap-2 group">
-                  ابدأ الآن
+                  {t('startNow', currentLanguage.code)}
                   <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => scrollTo(featuresRef.current)}>
-                  اطّلع على المميزات
+                <Button size="lg" variant="outline" onClick={() => scrollTo(featuresRef.current)} className="gap-2">
+                  {t('learnMore', currentLanguage.code)}
                 </Button>
               </motion.div>
               
@@ -142,7 +147,7 @@ export default function WelcomePage() {
                   className="gap-2 w-full sm:w-auto group"
                 >
                   <Bell className="h-4 w-4 transition-transform group-hover:rotate-12" />
-                  أو ابدأ مع التذكير التلقائي
+                  {t('autoReminderStart', currentLanguage.code)}
                 </Button>
               </motion.div>
             </motion.div>
@@ -162,8 +167,8 @@ export default function WelcomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.8, duration: 0.5 }}
                 >
-                  <p className="text-xl font-semibold">نظام إدارة احترافي</p>
-                  <p className="text-sm text-muted-foreground">لإدارة نقاط البيع والمشتريات</p>
+                  <p className="text-xl font-semibold">{t('professionalManagementSystem', currentLanguage.code)}</p>
+                  <p className="text-sm text-muted-foreground">{t('forPOSAndPurchases', currentLanguage.code)}</p>
                 </motion.div>
               </Card>
             </motion.div>
@@ -213,20 +218,20 @@ export default function WelcomePage() {
                 transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
               >
-                <Badge className="mb-4" variant="secondary">مميزات متقدمة</Badge>
+                <Badge className="mb-4" variant="secondary">{t('advancedFeatures', currentLanguage.code)}</Badge>
               </motion.div>
-              <h2 className="text-3xl font-bold mb-4">مميزات النظام</h2>
+              <h2 className="text-3xl font-bold mb-4">{t('systemFeatures', currentLanguage.code)}</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                نظام شامل يوفر جميع الأدوات التي تحتاجها لإدارة عملك بكفاءة
+                {t('systemFeaturesDesc', currentLanguage.code)}
               </p>
             </div>
           </ScrollReveal>
           
           <div className="grid md:grid-cols-3 gap-6 relative z-10">
             {[
-              { icon: CheckCircle, title: "أوفلاين-فيرست", desc: "تخزين محلي سريع ومزامنة ذكية مع الخادم عندما يعود الاتصال", delay: 0 },
-              { icon: BarChart3, title: "تقارير متقدمة", desc: "تقارير شاملة قابلة للطباعة وإجراءات تصدير سهلة", delay: 0.1 },
-              { icon: Shield, title: "تحكم بالصلاحيات", desc: "نظام صلاحيات مرن للتحكم بالوصول حسب الدور", delay: 0.2 },
+              { icon: CheckCircle, titleKey: "offlineFirst", descKey: "offlineFirstDesc", delay: 0 },
+              { icon: BarChart3, titleKey: "advancedReports", descKey: "advancedReportsDesc", delay: 0.1 },
+              { icon: Shield, titleKey: "permissionsControl", descKey: "permissionsControlDesc", delay: 0.2 },
             ].map((feature, idx) => {
               const Icon = feature.icon
               return (
@@ -247,8 +252,8 @@ export default function WelcomePage() {
                         >
                           <Icon className="h-6 w-6" style={{ color: "var(--theme-primary)" }} />
                         </motion.div>
-                        <CardTitle>{feature.title}</CardTitle>
-                        <CardDescription>{feature.desc}</CardDescription>
+                        <CardTitle>{t(feature.titleKey, currentLanguage.code)}</CardTitle>
+                        <CardDescription>{t(feature.descKey, currentLanguage.code)}</CardDescription>
                       </CardHeader>
                     </Card>
                   </motion.div>
@@ -268,21 +273,21 @@ export default function WelcomePage() {
                 transition={{ duration: 0.6, type: "spring" }}
                 viewport={{ once: true }}
               >
-                <Badge className="mb-4" variant="outline">الخدمات المتكاملة</Badge>
+                <Badge className="mb-4" variant="outline">{t('integratedServices', currentLanguage.code)}</Badge>
               </motion.div>
-              <h2 className="text-3xl font-bold mb-4">الخدمات المتوفرة</h2>
+              <h2 className="text-3xl font-bold mb-4">{t('availableServices', currentLanguage.code)}</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                مجموعة شاملة من الأدوات والخدمات لتسهيل إدارة عملك
+                {t('availableServicesDesc', currentLanguage.code)}
               </p>
             </div>
           </ScrollReveal>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: ShoppingCart, title: "نقطة بيع", desc: "واجهة بيع سريعة مع طباعة الفواتير وإدارة المرتجعات", delay: 0 },
-              { icon: Package, title: "إدارة المخزون", desc: "تنبيهات المخزون والتحويل بين المخازن", delay: 0.1 },
-              { icon: BarChart3, title: "التقارير", desc: "تقارير المبيعات والمشتريات والأرباح", delay: 0.2 },
-              { icon: Bell, title: "التنبيهات", desc: "إرسال رسائل واتساب للعملاء تلقائياً", delay: 0.3 },
+              { icon: ShoppingCart, titleKey: "pointOfSale", descKey: "pointOfSaleDesc", delay: 0 },
+              { icon: Package, titleKey: "inventoryManagement", descKey: "inventoryManagementDesc", delay: 0.1 },
+              { icon: BarChart3, titleKey: "reportsService", descKey: "reportsServiceDesc", delay: 0.2 },
+              { icon: Bell, titleKey: "notificationsService", descKey: "notificationsServiceDesc", delay: 0.3 },
             ].map((service, idx) => {
               const Icon = service.icon
               return (
@@ -302,10 +307,10 @@ export default function WelcomePage() {
                         >
                           <Icon className="h-6 w-6" style={{ color: "var(--theme-primary)" }} />
                         </motion.div>
-                        <CardTitle className="text-lg">{service.title}</CardTitle>
+                        <CardTitle className="text-lg">{t(service.titleKey, currentLanguage.code)}</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <CardDescription>{service.desc}</CardDescription>
+                        <CardDescription>{t(service.descKey, currentLanguage.code)}</CardDescription>
                       </CardContent>
                     </Card>
                   </motion.div>
@@ -344,9 +349,9 @@ export default function WelcomePage() {
                     transition={{ duration: 0.5 }}
                     viewport={{ once: true }}
                   >
-                    <CardTitle className="text-2xl mb-2">جاهز لتجربة AL-LamiSoft؟</CardTitle>
+                    <CardTitle className="text-2xl mb-2">{t('readyToTry', currentLanguage.code)}</CardTitle>
                     <CardDescription className="text-base">
-                      سجل دخولك الآن وابدأ بإدارة متجرك بكفاءة واحترافية
+                      {t('readyToTryDesc', currentLanguage.code)}
                     </CardDescription>
                   </motion.div>
                 </CardHeader>
@@ -356,7 +361,7 @@ export default function WelcomePage() {
                     whileTap={{ scale: 0.95 }}
                   >
                     <Button size="lg" onClick={() => router.push("/login")} className="gap-2 group">
-                      تسجيل الدخول
+                      {t('login', currentLanguage.code)}
                       <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                     </Button>
                   </motion.div>
@@ -365,7 +370,7 @@ export default function WelcomePage() {
                     whileTap={{ scale: 0.95 }}
                   >
                     <Button size="lg" variant="outline" onClick={() => scrollTo(featuresRef.current)}>
-                      المزيد من المعلومات
+                      {t('moreInfo', currentLanguage.code)}
                     </Button>
                   </motion.div>
                 </CardContent>
@@ -390,7 +395,7 @@ export default function WelcomePage() {
                 viewport={{ once: true }}
               >
                 <p className="text-sm text-muted-foreground">
-                  © 2026 AL-LamiSoft. جميع الحقوق محفوظة.
+                  © 2026 {t('alLamiSoft', currentLanguage.code)}. {t('allRightsReserved', currentLanguage.code)}.
                 </p>
               </motion.div>
 
@@ -403,14 +408,14 @@ export default function WelcomePage() {
                 viewport={{ once: true }}
               >
                 <p className="text-sm font-semibold" style={{ color: "var(--theme-primary)" }}>
-                  برمجة وتطوير: مهدي
+                  {t('developedBy', currentLanguage.code)}
                 </p>
                 
                 <a 
                   href="tel:07849704946"
                   className="flex items-center justify-end gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
                 >
-                  <span className="group-hover:translate-x-1 transition-transform">رقم الهاتف: 07849704946</span>
+                  <span className="group-hover:translate-x-1 transition-transform">{t('phoneNumber', currentLanguage.code)}: 07849704946</span>
                   <Phone className="h-4 w-4" />
                 </a>
                 
@@ -433,11 +438,11 @@ export default function WelcomePage() {
                     className="h-9 w-9 rounded-full flex items-center justify-center bg-primary/10 hover:bg-primary/20 transition-colors"
                     whileHover={{ scale: 1.1, rotate: -5 }}
                     whileTap={{ scale: 0.95 }}
-                    title="انستغرام"
+                    title={t('instagram', currentLanguage.code)}
                   >
                     <Instagram className="h-4 w-4" style={{ color: "var(--theme-primary)" }} />
                   </motion.a>
-                  <span className="text-xs text-muted-foreground">التواصل معي</span>
+                  <span className="text-xs text-muted-foreground">{t('contactMe', currentLanguage.code)}</span>
                 </div>
               </motion.div>
             </div>
