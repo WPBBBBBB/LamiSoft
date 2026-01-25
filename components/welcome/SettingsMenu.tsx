@@ -22,7 +22,6 @@ export default function SettingsMenu() {
 
   return (
     <div className="relative">
-      {/* Settings Button */}
       <Button
         variant="ghost"
         size="icon"
@@ -32,11 +31,9 @@ export default function SettingsMenu() {
         <Settings className={`h-5 w-5 transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`} />
       </Button>
 
-      {/* Dropdown Menu */}
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -48,7 +45,6 @@ export default function SettingsMenu() {
               }}
             />
 
-            {/* Menu */}
             <motion.div
               initial={{ opacity: 0, y: -20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -60,7 +56,6 @@ export default function SettingsMenu() {
                 borderColor: 'var(--theme-border)',
               }}
             >
-              {/* Theme Mode Section */}
               <div className="p-4 border-b" style={{ borderColor: 'var(--theme-border)' }}>
                 <div className="flex items-center gap-2 mb-3">
                   <Sun className="h-4 w-4" />
@@ -85,7 +80,6 @@ export default function SettingsMenu() {
                 </div>
               </div>
 
-              {/* Language Section */}
               <div className="p-4 border-b" style={{ borderColor: 'var(--theme-border)' }}>
                 <div className="flex items-center gap-2 mb-3">
                   <Languages className="h-4 w-4" />
@@ -108,8 +102,7 @@ export default function SettingsMenu() {
                   ))}
                 </div>
               </div>
-
-              {/* Theme Selection Section */}
+              
               <div className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -159,7 +152,6 @@ export default function SettingsMenu() {
                                   : 'none',
                               }}
                             >
-                              {/* Color preview split */}
                               <div className="w-full h-full rounded-md overflow-hidden flex">
                                 <div
                                   className="w-1/2 h-full"
@@ -177,7 +169,6 @@ export default function SettingsMenu() {
                                 </div>
                               </div>
 
-                              {/* Check mark for active theme */}
                               {currentTheme.id === theme.id && (
                                 <motion.div
                                   initial={{ scale: 0 }}
@@ -194,7 +185,6 @@ export default function SettingsMenu() {
                               )}
                             </div>
 
-                            {/* Tooltip on hover */}
                             <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
                                  style={{
                                    backgroundColor: theme.colors.surface,

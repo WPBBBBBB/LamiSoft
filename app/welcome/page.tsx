@@ -64,7 +64,6 @@ export default function WelcomePage() {
             <Badge variant="secondary" className="text-xs">{t('alLamiSoft', currentLanguage.code)}</Badge>
           </div>
           <div className="flex items-center gap-2">
-            <SettingsMenu />
             <Button variant="ghost" size="sm" onClick={() => scrollTo(featuresRef.current)}>
               {t('features', currentLanguage.code)}
             </Button>
@@ -75,6 +74,7 @@ export default function WelcomePage() {
               {t('login', currentLanguage.code)}
               <ArrowLeft className="h-4 w-4" />
             </Button>
+            <SettingsMenu />
           </div>
         </div>
       </motion.header>

@@ -13,7 +13,6 @@ export default function Reveal({ children, className }: { children: ReactNode; c
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add("revealed")
-            // optionally unobserve to reveal once
             obs.unobserve(entry.target)
           }
         })
