@@ -1631,6 +1631,17 @@ export const systemTranslations = {
   "feature_63": { ar: "تصفير النظام مع حفظ الإعدادات", ku: "سفرکردنەوەی سیستەم لەگەڵ پاراستنی ڕێکخستنەکان", en: "System reset with settings backup" },
   "feature_64": { ar: "مزامنة تلقائية مع قاعدة البيانات", ku: "هاوڕێککردنی خۆکار لەگەڵ بنکەی داتا", en: "Auto sync with database" },
   
+  // Chatbot translations
+  "chatbotOpen": { ar: "افتح المساعد الذكي", ku: "یاریدەدەری زیرەک بکەرەوە", en: "Open AI Assistant" },
+  "chatbotTitle": { ar: "المساعد الذكي", ku: "یاریدەدەری زیرەک", en: "AI Assistant" },
+  "chatbotSubtitle": { ar: "أسألني عن أي ميزة في النظام", ku: "پرسیارم لێبکە لەسەر هەر تایبەتمەندییەکی سیستەم", en: "Ask me about any system feature" },
+  "chatbotWelcome": { ar: "مرحباً! أنا المساعد الذكي لنظام الـلامي سوفت. يمكنني مساعدتك في معرفة المزيد عن ميزات النظام. كيف يمكنني مساعدتك اليوم؟", ku: "بەخێربێیت! من یاریدەدەری زیرەکی سیستەمی لامی سۆفتم. دەتوانم یارمەتیت بدەم لە زانیاری زیاتر لەسەر تایبەتمەندییەکانی سیستەم. چۆن یارمەتیت بدەم ئەمڕۆ؟", en: "Hello! I'm the Al-Lami Soft smart assistant. I can help you learn more about the system features. How can I help you today?" },
+  "chatbotPlaceholder": { ar: "اكتب رسالتك هنا...", ku: "نامەکەت لێرە بنووسە...", en: "Type your message here..." },
+  "chatbotDisclaimer": { ar: "أنا مساعد ذكي متخصص فقط في ميزات نظام الـلامي سوفت", ku: "من یاریدەدەری زیرەکی تایبەتم بە تایبەتمەندییەکانی سیستەمی لامی سۆفت", en: "I'm an AI assistant specialized only in Al-Lami Soft system features" },
+  "chatbotError": { ar: "عذراً، حدث خطأ. حاول مرة أخرى.", ku: "ببورە، هەڵەیەک ڕوویدا. دووبارە هەوڵ بدەرەوە.", en: "Sorry, an error occurred. Try again." },
+  "chatbotErrorResponse": { ar: "عذراً، واجهت مشكلة في معالجة طلبك. يرجى المحاولة مرة أخرى لاحقاً.", ku: "ببورە، کێشەیەکم هەبوو لە پرۆسەکردنی داواکاریەکەت. تکایە دواتر دووبارە هەوڵ بدەرەوە.", en: "Sorry, I encountered an issue processing your request. Please try again later." },
+  "chatbotNoResponse": { ar: "لم أتمكن من الحصول على رد. تأكد من اتصالك بالإنترنت.", ku: "نەمتوانی وەڵامێک وەربگرم. دڵنیابەرەوە لە پەیوەندی ئینتەرنێت.", en: "Couldn't get a response. Check your internet connection." },
+  
 } as const
 
 export function t(key: string, lang: string = 'ar'): string {

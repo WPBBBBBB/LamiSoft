@@ -11,6 +11,7 @@ import Book3D from "@/components/welcome/Book3D"
 import ScrollReveal from "@/components/welcome/ScrollReveal"
 import Logo from "@/components/welcome/Logo"
 import SettingsMenu from "@/components/welcome/SettingsMenu"
+import ChatBot from "@/components/welcome/ChatBot"
 import { useSettings } from "@/components/providers/settings-provider"
 import { t } from "@/lib/translations"
 
@@ -449,6 +450,9 @@ export default function WelcomePage() {
           </div>
         </footer>
       </main>
+      
+      {/* AI Chatbot */}
+      <ChatBot />
     </div>
   )
 }
