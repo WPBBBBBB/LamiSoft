@@ -11,6 +11,8 @@ import { t } from "@/lib/translations"
 import { useSettings } from "@/components/providers/settings-provider"
 import { useWeather } from "@/components/providers/weather-provider"
 
+type GeoPermissionState = "unknown" | "granted" | "prompt" | "denied" | "unsupported"
+
 type HourlyForecast = {
   time: string
   temp: number
@@ -101,8 +103,11 @@ export function WeatherDialog() {
   const dialogRef = useRef<HTMLDivElement>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [errorDetails, setErrorDetails] = useState<string | null>(null)
   const [data, setData] = useState<WeatherResponse | null>(null)
   const [locationStatus, setLocationStatus] = useState<"idle" | "requesting" | "granted" | "denied">("idle")
+  const [geoPermission, setGeoPermission] = useState<GeoPermissionState>("unknown")
+  const [dismissLocationPrompt, setDismissLocationPrompt] = useState(false)
   const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([])
   const [activeLocationIndex, setActiveLocationIndex] = useState<number>(0)
   const [showSearch, setShowSearch] = useState(false)
@@ -122,6 +127,37 @@ export function WeatherDialog() {
       }
     } catch {}
   }, [])
+
+  const detectGeoPermission = async (): Promise<GeoPermissionState> => {
+    if (typeof navigator === "undefined") return "unsupported"
+    if (!("geolocation" in navigator)) return "unsupported"
+
+    const anyNavigator = navigator as unknown as { permissions?: { query?: (p: unknown) => Promise<{ state?: string; onchange?: ((this: unknown) => void) | null }> } }
+    if (!anyNavigator.permissions?.query) return "unknown"
+
+    try {
+      const status = await anyNavigator.permissions.query({ name: "geolocation" })
+      const state = (status?.state || "unknown") as GeoPermissionState
+      status.onchange = () => {
+        const next = (status?.state || "unknown") as GeoPermissionState
+        setGeoPermission(next)
+      }
+      return state
+    } catch {
+      return "unknown"
+    }
+  }
+
+  const getFriendlyWeatherError = (details?: string | null) => {
+    if (typeof navigator !== "undefined" && navigator && "onLine" in navigator && !navigator.onLine) {
+      return { summary: t("weatherOffline", currentLanguage.code), details: null }
+    }
+
+    return {
+      summary: t("weatherConnectionFailed", currentLanguage.code),
+      details: details || null,
+    }
+  }
 
   const getUserLocation = (): Promise<{ lat: number; lon: number } | null> => {
     return new Promise((resolve) => {
@@ -273,6 +309,7 @@ export function WeatherDialog() {
     try {
       setLoading(true)
       setError(null)
+      setErrorDetails(null)
 
       const url = `/api/weather?lat=${lat}&lon=${lon}`
       const res = await fetch(url, { cache: "no-store" })
@@ -283,7 +320,11 @@ export function WeatherDialog() {
       const json = (await res.json()) as WeatherResponse
       setData(json)
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("errorOccurred", currentLanguage.code))
+      const details = err instanceof Error ? err.message : String(err)
+      const friendly = getFriendlyWeatherError(details)
+      setError(friendly.summary)
+      setErrorDetails(friendly.details)
+      setData(null)
     } finally {
       setLoading(false)
     }
@@ -293,6 +334,7 @@ export function WeatherDialog() {
     try {
       setLoading(true)
       setError(null)
+      setErrorDetails(null)
 
       let coords: { lat: number; lon: number } | null = null
 
@@ -305,7 +347,8 @@ export function WeatherDialog() {
         } catch {}
       }
 
-      if (!coords || forceLocationRequest) {
+      // Do not automatically trigger permission prompts. Only request geolocation when explicitly asked.
+      if (forceLocationRequest) {
         coords = await getUserLocation()
       }
 
@@ -337,7 +380,9 @@ export function WeatherDialog() {
       setData(json)
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
-      setError(msg)
+      const friendly = getFriendlyWeatherError(msg)
+      setError(friendly.summary)
+      setErrorDetails(friendly.details)
       setData(null)
     } finally {
       setLoading(false)
@@ -345,8 +390,28 @@ export function WeatherDialog() {
   }
 
   useEffect(() => {
-    if (isWeatherOpen && !data) {
-      loadWeather(true)
+    if (!isWeatherOpen) return
+
+    let cancelled = false
+
+    ;(async () => {
+      setDismissLocationPrompt(false)
+      const permission = await detectGeoPermission()
+      if (cancelled) return
+      setGeoPermission(permission)
+
+      // If already granted, we can safely load by current location without prompting.
+      if (!data) {
+        if (permission === "granted") {
+          await loadWeather(true)
+        } else {
+          await loadWeather(false)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWeatherOpen])
@@ -423,6 +488,50 @@ export function WeatherDialog() {
                 </div>
               </div>
             </div>
+
+            {!isMinimized && activeLocationIndex === 0 && !dismissLocationPrompt && geoPermission !== "granted" && (
+              <Card className="mt-2 p-3 text-right border-primary/20 bg-background/70 backdrop-blur">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold">{t("weatherLocationPermissionTitle", currentLanguage.code)}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {geoPermission === "denied"
+                        ? `${t("locationDeniedFallback", currentLanguage.code)} ${t("locationPermissionBlockedHint", currentLanguage.code)}`
+                        : geoPermission === "unsupported"
+                          ? t("locationNotFound", currentLanguage.code)
+                          : t("weatherLocationPermissionDesc", currentLanguage.code)}
+                    </div>
+                    {locationStatus === "requesting" ? (
+                      <div className="mt-2 text-xs text-muted-foreground">{t("requestingLocationAccess", currentLanguage.code)}</div>
+                    ) : null}
+                  </div>
+
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setDismissLocationPrompt(false)
+                        loadWeather(true)
+                      }}
+                      disabled={locationStatus === "requesting" || loading}
+                    >
+                      {t("allowLocationAccess", currentLanguage.code)}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setDismissLocationPrompt(true)
+                        loadWeather(false)
+                      }}
+                      disabled={loading}
+                    >
+                      {t("useDefaultLocation", currentLanguage.code)}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )}
 
         {}
         {!isMinimized && showSearch && (
@@ -557,25 +666,20 @@ export function WeatherDialog() {
 
       {!isMinimized && (
       <div className="overflow-y-auto px-4 pb-4">
-        {locationStatus === "requesting" && (
-          <Card className="mt-4 p-4 text-right">
-            <div className="text-sm text-muted-foreground">
-              {t("requestingLocationAccess", currentLanguage.code)}
-            </div>
-          </Card>
-        )}
-
-        {locationStatus === "denied" && (
-          <Card className="mt-4 p-4 text-right border-orange-500/50">
-            <div className="text-sm text-orange-600 dark:text-orange-400">
-              {t("locationDeniedFallback", currentLanguage.code)}
-            </div>
-          </Card>
-        )}
-
         {error ? (
           <Card className="mt-4 p-4 text-right">
             <div className="text-sm text-destructive">{error}</div>
+            {errorDetails && errorDetails !== error ? (
+              <details className="mt-2 text-xs text-muted-foreground">
+                <summary className="cursor-pointer select-none">{t("connectionDetails", currentLanguage.code)}</summary>
+                <pre className="mt-2 whitespace-pre-wrap wrap-break-word text-xs">{errorDetails}</pre>
+              </details>
+            ) : null}
+            <div className="mt-3 flex justify-start">
+              <Button size="sm" variant="outline" onClick={() => loadWeather(activeLocationIndex === 0 && geoPermission === "granted")}>
+                {t("retry", currentLanguage.code)}
+              </Button>
+            </div>
           </Card>
         ) : !data ? (
           <Card className="mt-4 p-4 text-right">
