@@ -1515,7 +1515,6 @@ export const systemTranslations = {
   "latestVersion": { ar: "الإصدار الأحدث", ku: "دوایین وەشان", en: "Latest Version" },
   "systemManagement": { ar: "نظام إدارة متكامل", ku: "سیستەمی بەڕێوەبردنی تەواو", en: "Integrated Management System" },
   "show": { ar: "عرض", ku: "پیشاندان", en: "Show" },
-  "hide": { ar: "إخفاء", ku: "شاردنەوە", en: "Hide" },
   "alLamiSoft": { ar: "اللامي سوفت", ku: "لامی سۆفت", en: "AL-LamiSoft" },
   "autoReminderStart": { ar: "أو ابدأ مع التذكير التلقائي", ku: "یان دەست پێبکە لەگەڵ بیرخستنەوەی خۆکار", en: "Or start with automatic reminder" },
   "professionalManagementSystem": { ar: "نظام إدارة احترافي", ku: "سیستەمی بەڕێوەبردنی پیشەیی", en: "Professional Management System" },
@@ -1540,7 +1539,6 @@ export const systemTranslations = {
   
   "pointOfSale": { ar: "نقطة بيع", ku: "خاڵی فرۆشتن", en: "Point of Sale" },
   "pointOfSaleDesc": { ar: "واجهة بيع سريعة مع طباعة الفواتير وإدارة المرتجعات", ku: "ڕووکاری فرۆشتنی خێرا لەگەڵ چاپکردنی وەسڵ و بەڕێوەبردنی گەڕانەوە", en: "Fast sales interface with invoice printing and returns management" },
-  "inventoryManagement": { ar: "إدارة المخزون", ku: "بەڕێوەبردنی کۆگا", en: "Inventory Management" },
   "inventoryManagementDesc": { ar: "تنبيهات المخزون والتحويل بين المخازن", ku: "ئاگاداری کۆگا و گواستنەوە لە نێوان کۆگاکان", en: "Stock alerts and warehouse transfers" },
   "reportsService": { ar: "التقارير", ku: "ڕاپۆرتەکان", en: "Reports" },
   "reportsServiceDesc": { ar: "تقارير المبيعات والمشتريات والأرباح", ku: "ڕاپۆرتی فرۆشتن، کڕین و قازانج", en: "Sales, purchases and profit reports" },
@@ -1555,7 +1553,6 @@ export const systemTranslations = {
   // Footer
   "allRightsReserved": { ar: "جميع الحقوق محفوظة", ku: "هەموو مافەکان پارێزراون", en: "All Rights Reserved" },
   "developedBy": { ar: "برمجة وتطوير: مهدي", ku: "بەرنامەسازی و پەرەپێدان: مەهدی", en: "Developed by: Mahdi" },
-  "phoneNumber": { ar: "رقم الهاتف", ku: "ژمارەی تەلەفۆن", en: "Phone Number" },
   "contactMe": { ar: "التواصل معي", ku: "پەیوەندیم پێوە بکە", en: "Contact Me" },
   "telegram": { ar: "تلغرام", ku: "تێلگرام", en: "Telegram" },
   "instagram": { ar: "انستغرام", ku: "ئینستاگرام", en: "Instagram" },
