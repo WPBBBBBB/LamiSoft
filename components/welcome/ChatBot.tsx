@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { MessageCircle, X, Send, Bot } from "lucide-react"
+import { MessageCircle, X, Send } from "lucide-react"
 import { t } from "@/lib/translations"
 import { useSettings } from "@/components/providers/settings-provider"
 import Image from "next/image"
@@ -60,6 +60,11 @@ export default function ChatBot() {
     }
   }, [isOpen])
 
+  const handleNewChat = () => {
+    setMessages([])
+    localStorage.removeItem("chatbot_messages")
+  }
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
 
@@ -98,7 +103,7 @@ export default function ChatBot() {
       }
 
       setMessages((prev) => [...prev, assistantMessage])
-    } catch (error) {
+    } catch {
       const errorMessage: Message = {
         role: "assistant",
         content: t("chatbotError", currentLanguage.code),
@@ -157,22 +162,38 @@ export default function ChatBot() {
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b bg-primary/5">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Bot className="h-5 w-5 text-primary" />
+                  <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                    <Image
+                      src="/aave.svg"
+                      alt="AL-LamiSoft"
+                      width={24}
+                      height={24}
+                      className="object-contain"
+                    />
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm">{t("chatbotTitle", currentLanguage.code)}</h3>
                     <p className="text-xs text-muted-foreground">{t("chatbotSubtitle", currentLanguage.code)}</p>
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 w-8 p-0"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 px-3 text-xs"
+                    onClick={handleNewChat}
+                  >
+                    {t("chatbotNewChat", currentLanguage.code)}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
               {/* Messages Area */}
