@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Bell, RefreshCw, Eye, Menu } from "lucide-react"
 import { t } from "@/lib/translations"
 import { useSettings } from "@/components/providers/settings-provider"
@@ -23,13 +24,18 @@ export function NotificationsCard() {
   const [debtUnreadCount, setDebtUnreadCount] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isMarkingRead, setIsMarkingRead] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   const loadDebtUnreadCount = async () => {
-    const result = await getUnreadNotificationsCount()
-    if (!result.success) {
-      throw new Error(result.error || "Failed to load debt notifications count")
+    try {
+      const result = await getUnreadNotificationsCount()
+      if (!result.success) {
+        throw new Error(result.error || "Failed to load debt notifications count")
+      }
+      setDebtUnreadCount(result.count || 0)
+    } finally {
+      setIsLoading(false)
     }
-    setDebtUnreadCount(result.count || 0)
   }
 
   useEffect(() => {
@@ -74,6 +80,26 @@ export function NotificationsCard() {
   // إخفاء البطاقة إذا لم تكن الصلاحية متاحة
   if (!canViewNotifications) {
     return null
+  }
+
+  if (isLoading) {
+    return (
+      <Card className="border-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3">
+            <Skeleton className="h-9 w-9 rounded-full" />
+            <Skeleton className="h-6 w-48" />
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-16 w-full rounded-lg" />
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-24" />
+            <Skeleton className="h-9 w-32" />
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (

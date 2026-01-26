@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Plus,
   Edit,
@@ -289,9 +290,31 @@ export default function CustomersPage() {
   if (isLoading) {
     return (
       <div className="flex-1 overflow-auto">
-        <div className="container mx-auto p-6">
+        <div className="container mx-auto p-6 space-y-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10" />
+            <Skeleton className="h-9 w-48" />
+          </div>
           <Card className="p-6">
-            <p className="text-center text-muted-foreground">{t('loading', currentLanguage.code)}</p>
+            <div className="space-y-4">
+              <div className="flex gap-3">
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+              <Skeleton className="h-10 w-full" />
+              <div className="space-y-2">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
+                    <Skeleton className="h-10 w-10 rounded" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-5 w-48" />
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                    <Skeleton className="h-9 w-20" />
+                  </div>
+                ))}
+              </div>
+            </div>
           </Card>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Plus,
   Edit,
@@ -361,6 +362,68 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
         <div className="container mx-auto p-6">
           <Card className="p-6">
             <p className="text-center text-muted-foreground">{t("loading", currentLanguage.code)}</p>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto p-6 space-y-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-24" />
+          </div>
+          <div>
+            <Skeleton className="h-9 w-64 mb-2" />
+            <Skeleton className="h-5 w-96" />
+          </div>
+          <Card className="p-6">
+            <div className="space-y-4">
+              <div className="flex gap-3">
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+              <Skeleton className="h-10 w-full" />
+              <div className="space-y-2">
+                {[...Array(10)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto p-6 space-y-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-24" />
+          </div>
+          <div>
+            <Skeleton className="h-9 w-64 mb-2" />
+            <Skeleton className="h-5 w-96" />
+          </div>
+          <Card className="p-6">
+            <div className="space-y-4">
+              <div className="flex gap-3">
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+              <Skeleton className="h-10 w-full" />
+              <div className="space-y-2">
+                {[...Array(10)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            </div>
           </Card>
         </div>
       </div>

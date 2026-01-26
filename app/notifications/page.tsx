@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Bell, RefreshCw, Eye, EyeOff, Trash2, Calendar, User, Phone, AlertTriangle, Trophy } from "lucide-react"
 import { Confetti } from "@/components/ui/confetti"
@@ -232,9 +233,18 @@ export default function NotificationsPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-12">
-              <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">{t("loadingNotifications", currentLanguage.code)}</p>
+            <div className="space-y-3">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
+                  <Skeleton className="h-5 w-5 rounded" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-9 w-24" />
+                </div>
+              ))}
             </div>
           ) : notifications.length === 0 ? (
             <div className="text-center py-12">

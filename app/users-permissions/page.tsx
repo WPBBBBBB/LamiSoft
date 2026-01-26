@@ -6,8 +6,9 @@ import { t } from "@/lib/translations"
 import { useSettings } from "@/components/providers/settings-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Plus,
   Edit,
@@ -234,9 +235,28 @@ export default function UsersPermissionsPage() {
   if (isLoading) {
     return (
       <div className="flex-1 overflow-auto">
-        <div className="container mx-auto p-6">
-          <Card className="p-6">
-            <p className="text-center text-muted-foreground">{t('loading', lang)}</p>
+        <div className="container mx-auto p-6 space-y-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10" />
+            <Skeleton className="h-8 w-64" />
+          </div>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-96 mt-2" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                  <Skeleton className="h-9 w-24" />
+                </div>
+              ))}
+            </CardContent>
           </Card>
         </div>
       </div>

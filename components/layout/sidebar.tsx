@@ -246,7 +246,7 @@ function NavLink({ item, collapsed, lang, inProceduresGroup, onOpenPaymentModal 
   }
 
   const commonClasses = cn(
-    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent",
+    "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent",
     isActive
       ? "bg-accent text-accent-foreground"
       : "text-muted-foreground hover:text-foreground",

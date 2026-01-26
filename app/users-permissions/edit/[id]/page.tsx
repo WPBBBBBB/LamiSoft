@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -202,9 +203,31 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     return (
       <PermissionGuard requiredRole="مدير">
       <div className="flex-1 overflow-auto">
-        <div className="container mx-auto p-6">
+        <div className="container mx-auto p-6 space-y-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10" />
+            <Skeleton className="h-8 w-48" />
+          </div>
           <Card className="p-6">
-            <p className="text-center text-muted-foreground">{t('loading', lang)}</p>
+            <div className="space-y-6">
+              <div className="space-y-4">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-3">
+                <Skeleton className="h-5 w-40" />
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-5 rounded" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                ))}
+              </div>
+            </div>
           </Card>
         </div>
       </div>
