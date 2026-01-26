@@ -4,10 +4,12 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { MessageCircle, X, Send, Trash2, Menu, Plus } from "lucide-react"
+import { MessageCircle, X, Send, Trash2, Menu, Plus, Maximize2, Minimize2 } from "lucide-react"
 import { t } from "@/lib/translations"
 import { useSettings } from "@/components/providers/settings-provider"
 import Image from "next/image"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
 type Message = {
   role: "user" | "assistant"
@@ -21,6 +23,7 @@ type Conversation = {
   messages: Message[]
   createdAt: number
   updatedAt: number
+  titleGenerated: boolean
 }
 
 const MAX_MESSAGES = 80
@@ -28,6 +31,7 @@ const MAX_MESSAGES = 80
 export default function ChatBot() {
   const { currentLanguage } = useSettings()
   const [isOpen, setIsOpen] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
@@ -87,6 +91,7 @@ export default function ChatBot() {
       messages: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      titleGenerated: false,
     }
     setConversations(prev => [newConv, ...prev])
     setCurrentConversationId(newConv.id)
@@ -118,12 +123,33 @@ export default function ChatBot() {
     setCurrentConversationId(id)
   }
 
-  // Generate title from first user message
-  const generateTitle = (messages: Message[]): string => {
+  // Generate smart title using AI based on conversation context
+  const generateSmartTitle = async (messages: Message[]): Promise<string> => {
+    try {
+      const conversationText = messages
+        .map(m => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
+        .join("\n")
+
+      const response = await fetch("/api/chatbot/generate-title", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationText, language: currentLanguage.code }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return data.title || t("chatbotNewConversation", currentLanguage.code)
+      }
+    } catch {
+      // Fallback to simple title if API fails
+    }
+    
+    // Fallback: use first user message
     const firstUserMsg = messages.find(m => m.role === "user")
     if (firstUserMsg) {
-      const content = firstUserMsg.content
-      return content.length > 30 ? content.slice(0, 30) + "..." : content
+      return firstUserMsg.content.length > 30 
+        ? firstUserMsg.content.slice(0, 30) + "..." 
+        : firstUserMsg.content
     }
     return t("chatbotNewConversation", currentLanguage.code)
   }
@@ -139,6 +165,7 @@ export default function ChatBot() {
         messages: [],
         createdAt: Date.now(),
         updatedAt: Date.now(),
+        titleGenerated: false,
       }
       setConversations(prev => [newConv, ...prev])
       setCurrentConversationId(newConv.id)
@@ -159,8 +186,6 @@ export default function ChatBot() {
           ...conv,
           messages: newMessages,
           updatedAt: Date.now(),
-          // Update title if this is the first message
-          title: conv.messages.length === 0 ? generateTitle([userMessage]) : conv.title,
         }
       }
       return conv
@@ -195,9 +220,26 @@ export default function ChatBot() {
 
       setConversations(prev => prev.map(conv => {
         if (conv.id === currentConversationId) {
+          const updatedMessages = [...conv.messages, assistantMessage].slice(-MAX_MESSAGES)
+          
+          // Generate smart title after 3 messages or if user sent 1 message and left
+          const shouldGenerateTitle = !conv.titleGenerated && 
+            (updatedMessages.length >= 3 || (updatedMessages.length === 2 && updatedMessages[0].role === "user"))
+          
+          if (shouldGenerateTitle) {
+            // Generate title asynchronously
+            generateSmartTitle(updatedMessages).then(newTitle => {
+              setConversations(prev => prev.map(c => 
+                c.id === currentConversationId 
+                  ? { ...c, title: newTitle, titleGenerated: true }
+                  : c
+              ))
+            })
+          }
+          
           return {
             ...conv,
-            messages: [...conv.messages, assistantMessage].slice(-MAX_MESSAGES),
+            messages: updatedMessages,
             updatedAt: Date.now(),
           }
         }
@@ -222,11 +264,15 @@ export default function ChatBot() {
       }))
     } finally {
       setIsLoading(false)
+      // Re-focus input after response
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 100)
     }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !isLoading) {
       e.preventDefault()
       handleSend()
     }
@@ -266,9 +312,15 @@ export default function ChatBot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             transition={{ type: "spring", stiffness: 260, damping: 20 }}
-            className="fixed bottom-6 right-6 z-50 w-[90vw] max-w-4xl"
+            className={`fixed z-50 ${
+              isFullscreen 
+                ? "inset-0" 
+                : "bottom-6 right-6 w-[90vw] max-w-4xl"
+            }`}
           >
-            <div className="flex h-[600px] shadow-2xl rounded-lg overflow-hidden border-2">
+            <div className={`flex shadow-2xl rounded-lg overflow-hidden border-2 ${
+              isFullscreen ? "h-full" : "h-[600px]"
+            }`}>
               {/* Sidebar */}
               <AnimatePresence>
                 {isSidebarOpen && (
@@ -277,7 +329,7 @@ export default function ChatBot() {
                     animate={{ width: "280px", opacity: 1 }}
                     exit={{ width: 0, opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="border-r bg-muted/30 flex flex-col overflow-hidden"
+                    className="border-r bg-background/95 backdrop-blur-md flex flex-col overflow-hidden"
                   >
                     {/* Sidebar Header */}
                     <div className="p-3 border-b flex items-center justify-between">
@@ -364,10 +416,20 @@ export default function ChatBot() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-8 px-3 text-xs"
+                      className="h-8 px-3 text-xs gap-1.5"
                       onClick={handleNewChat}
                     >
+                      <Plus className="h-3.5 w-3.5" />
                       {t("chatbotNewChat", currentLanguage.code)}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setIsFullscreen(!isFullscreen)}
+                      title={isFullscreen ? t("chatbotMinimize", currentLanguage.code) : t("chatbotMaximize", currentLanguage.code)}
+                    >
+                      {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                     </Button>
                     <Button
                       size="sm"
@@ -433,7 +495,25 @@ export default function ChatBot() {
                             : "bg-muted rounded-tl-sm"
                         }`}
                       >
-                        {msg.content}
+                        {msg.role === "assistant" ? (
+                          <div className="prose prose-sm dark:prose-invert max-w-none">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
+                                ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>,
+                                li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                                code: ({ children }) => <code className="bg-background/50 px-1 py-0.5 rounded text-xs">{children}</code>,
+                              }}
+                            >
+                              {msg.content}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          msg.content
+                        )}
                       </div>
                     </motion.div>
                   ))}
@@ -480,7 +560,7 @@ export default function ChatBot() {
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      disabled={isLoading}
+                      disabled={false}
                       className="flex-1"
                     />
                     <Button

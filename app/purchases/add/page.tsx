@@ -1028,45 +1028,45 @@ export default function PurchaseAddPage() {
             </h2>
           </div>
           <div className="rounded-lg border overflow-x-auto w-full max-h-[1200px] overflow-y-auto">
-            <Table>
+            <Table className="border-collapse border border-gray-300">
               <TableHeader>
                 <TableRow
                   style={{
                     background: "linear-gradient(to right, var(--theme-surface), var(--theme-accent))",
                   }}
                 >
-                  <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>{t("rowNumber", lang)}</TableHead>
-                  <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>{t("delete", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("productCode", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("productName", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("quantity", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("unit", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("purchasePriceIQDShort", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("purchasePriceUSDShort", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("sellPriceIQDShort", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("sellPriceUSDShort", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("notes", lang)}</TableHead>
+                  <TableHead className="text-center border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("rowNumber", lang)}</TableHead>
+                  <TableHead className="text-center border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("delete", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("productCode", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("productName", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("quantity", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("unit", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("purchasePriceIQDShort", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("purchasePriceUSDShort", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("sellPriceIQDShort", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("sellPriceUSDShort", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("notes", lang)}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
 
                 {!isViewMode && (
-                <TableRow style={{ backgroundColor: "var(--theme-accent)", opacity: 0.9 }}>
-                  <TableCell className="text-center font-bold" style={{ color: "var(--theme-text)" }}>
+                <TableRow className="bg-background" style={{ minHeight: '48px' }}>
+                  <TableCell className="text-center font-bold border border-gray-300 p-0" style={{ color: "var(--theme-text)" }}>
                     {t("new", lang)}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center border border-gray-300 p-0">
                     <Plus className="h-5 w-5 theme-success mx-auto" />
                   </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <div className="relative flex-1">
+                  <TableCell className="border border-gray-300 p-0">
+                    <div className="flex gap-1" style={{ height: '100%' }}>
+                      <div className="relative flex-1" style={{ height: '100%' }}>
                         <Input
                           value={newItem.productcode1}
                           onChange={(e) => updateNewItem("productcode1", e.target.value)}
                           onKeyPress={(e) => handleNewItemKeyPress(e, "productcode1")}
                           placeholder={t("productCode", lang)}
-                          className="bg-green-50 dark:bg-green-950/20 h-8 pl-7"
+                          className="h-full w-full border-0 rounded-none bg-background text-foreground pl-7 px-2"
                           title={newItem.productcode1}
                         />
                         {!isViewMode && (
@@ -1095,14 +1095,14 @@ export default function PurchaseAddPage() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
+                  <TableCell className="border border-gray-300 p-0">
+                    <div className="flex gap-1" style={{ height: '100%' }}>
                       <Input
                         value={newItem.nameofproduct}
                         onChange={(e) => updateNewItem("nameofproduct", e.target.value)}
                         onKeyPress={(e) => handleNewItemKeyPress(e, "nameofproduct")}
                         placeholder={t("productName", lang)}
-                        className="bg-green-50 dark:bg-green-950/20 h-8 flex-1"
+                        className="h-full w-full border-0 rounded-none bg-background text-foreground flex-1 px-2"
                         title={newItem.nameofproduct}
                       />
                       {newItem.nameofproduct && newItem.nameofproduct.length > 15 && (
@@ -1117,24 +1117,24 @@ export default function PurchaseAddPage() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border border-gray-300 p-0">
                     <Input
                       type="number"
                       value={newItem.quantity || ""}
                       onChange={(e) => updateNewItem("quantity", parseFloat(e.target.value) || 0)}
                       onKeyPress={(e) => handleNewItemKeyPress(e, "quantity")}
                       placeholder="0"
-                      className="bg-green-50 dark:bg-green-950/20 h-8"
+                      className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border border-gray-300 p-0">
                     <Select
                       value={newItem.unit}
                       onValueChange={(v: "كارتون" | "قطعة" | "لتر" | "كغم") =>
                         updateNewItem("unit", v)
                       }
                     >
-                      <SelectTrigger className="bg-green-50 dark:bg-green-950/20 h-8">
+                      <SelectTrigger className="h-full w-full border-0 rounded-none bg-background">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1145,54 +1145,54 @@ export default function PurchaseAddPage() {
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border border-gray-300 p-0">
                     <Input
                       type="number"
                       value={newItem.purchasesinglepriceiqd || ""}
                       onChange={(e) => updateNewItem("purchasesinglepriceiqd", parseFloat(e.target.value) || 0)}
                       onKeyPress={(e) => handleNewItemKeyPress(e, "purchasesinglepriceiqd")}
                       placeholder="0"
-                      className="bg-green-50 dark:bg-green-950/20 h-8"
+                      className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border border-gray-300 p-0">
                     <Input
                       type="number"
                       value={newItem.purchasesinglepriceusd || ""}
                       onChange={(e) => updateNewItem("purchasesinglepriceusd", parseFloat(e.target.value) || 0)}
                       onKeyPress={(e) => handleNewItemKeyPress(e, "purchasesinglepriceusd")}
                       placeholder="0"
-                      className="bg-green-50 dark:bg-green-950/20 h-8"
+                      className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border border-gray-300 p-0">
                     <Input
                       type="number"
                       value={newItem.sellsinglepriceiqd || ""}
                       onChange={(e) => updateNewItem("sellsinglepriceiqd", parseFloat(e.target.value) || 0)}
                       onKeyPress={(e) => handleNewItemKeyPress(e, "sellsinglepriceiqd")}
                       placeholder="0"
-                      className="bg-green-50 dark:bg-green-950/20 h-8"
+                      className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border border-gray-300 p-0">
                     <Input
                       type="number"
                       value={newItem.sellsinglepriceusd || ""}
                       onChange={(e) => updateNewItem("sellsinglepriceusd", parseFloat(e.target.value) || 0)}
                       onKeyPress={(e) => handleNewItemKeyPress(e, "sellsinglepriceusd")}
                       placeholder="0"
-                      className="bg-green-50 dark:bg-green-950/20 h-8"
+                      className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                     />
                   </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
+                  <TableCell className="border border-gray-300 p-0">
+                    <div className="flex gap-1" style={{ height: '100%' }}>
                       <Input
                         value={newItem.details || ""}
                         onChange={(e) => updateNewItem("details", e.target.value)}
                         onKeyPress={(e) => handleNewItemKeyPress(e, "details")}
                         placeholder={t("notePlaceholder", lang)}
-                        className="bg-green-50 dark:bg-green-950/20 h-8 flex-1"
+                        className="h-full w-full border-0 rounded-none bg-background text-foreground flex-1 px-2"
                         title={newItem.details}
                       />
                       {newItem.details && newItem.details.length > 15 && (
@@ -1211,11 +1211,11 @@ export default function PurchaseAddPage() {
                 )}
 
                 {products.map((product, index) => (
-                    <TableRow key={product.tempId} style={{ backgroundColor: "var(--theme-background)" }}>
-                      <TableCell className="text-center" style={{ color: "var(--theme-text)" }}>
+                    <TableRow key={product.tempId} className="bg-background" style={{ minHeight: '48px' }}>
+                      <TableCell className="text-center border border-gray-300 p-0" style={{ color: "var(--theme-text)" }}>
                         {index + 1}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center border border-gray-300 p-0">
                         {!isViewMode && (
                           <Button
                             variant="ghost"
@@ -1226,15 +1226,15 @@ export default function PurchaseAddPage() {
                           </Button>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
+                      <TableCell className="border border-gray-300 p-0">
+                        <div className="flex gap-1" style={{ height: '100%' }}>
                           <Input
                             value={product.productcode1}
                             onChange={(e) =>
                               updateProduct(product.tempId, "productcode1", e.target.value)
                             }
                             placeholder={t("productCode", lang)}
-                            className="bg-amber-50 dark:bg-amber-950/20 h-8 flex-1"
+                            className="h-full w-full border-0 rounded-none bg-background text-foreground flex-1 px-2"
                             title={product.productcode1}
                           />
                           {product.productcode1 && product.productcode1.length > 10 && (
@@ -1249,15 +1249,15 @@ export default function PurchaseAddPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
+                      <TableCell className="border border-gray-300 p-0">
+                        <div className="flex gap-1" style={{ height: '100%' }}>
                           <Input
                             value={product.nameofproduct}
                             onChange={(e) =>
                               updateProduct(product.tempId, "nameofproduct", e.target.value)
                             }
                             placeholder={t("productName", lang)}
-                            className="h-8 flex-1"
+                            className="h-full w-full border-0 rounded-none bg-background text-foreground flex-1 px-2"
                             title={product.nameofproduct}
                           />
                           {product.nameofproduct && product.nameofproduct.length > 15 && (
@@ -1272,7 +1272,7 @@ export default function PurchaseAddPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border border-gray-300 p-0">
                         <Input
                           type="number"
                           value={product.quantity || ""}
@@ -1284,17 +1284,17 @@ export default function PurchaseAddPage() {
                             )
                           }
                           placeholder="0"
-                          className="h-8"
+                          className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border border-gray-300 p-0">
                         <Select
                           value={product.unit}
                           onValueChange={(v: "كارتون" | "قطعة" | "لتر" | "كغم") =>
                             updateProduct(product.tempId, "unit", v)
                           }
                         >
-                          <SelectTrigger className="h-8">
+                          <SelectTrigger className="h-full w-full border-0 rounded-none bg-background">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -1305,7 +1305,7 @@ export default function PurchaseAddPage() {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border border-gray-300 p-0">
                         <Input
                           type="number"
                           value={product.purchasesinglepriceiqd || ""}
@@ -1317,10 +1317,10 @@ export default function PurchaseAddPage() {
                             )
                           }
                           placeholder="0"
-                          className="h-8"
+                          className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border border-gray-300 p-0">
                         <Input
                           type="number"
                           value={product.purchasesinglepriceusd || ""}
@@ -1332,10 +1332,10 @@ export default function PurchaseAddPage() {
                             )
                           }
                           placeholder="0"
-                          className="h-8"
+                          className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border border-gray-300 p-0">
                         <Input
                           type="number"
                           value={product.sellsinglepriceiqd || ""}
@@ -1347,10 +1347,10 @@ export default function PurchaseAddPage() {
                             )
                           }
                           placeholder="0"
-                          className="h-8"
+                          className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border border-gray-300 p-0">
                         <Input
                           type="number"
                           value={product.sellsinglepriceusd || ""}
@@ -1362,18 +1362,18 @@ export default function PurchaseAddPage() {
                             )
                           }
                           placeholder="0"
-                          className="h-8"
+                          className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                         />
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
+                      <TableCell className="border border-gray-300 p-0">
+                        <div className="flex gap-1" style={{ height: '100%' }}>
                           <Input
                             value={product.details}
                             onChange={(e) =>
                               updateProduct(product.tempId, "details", e.target.value)
                             }
                             placeholder={t("notes", lang)}
-                            className="flex-1 h-8"
+                            className="flex-1 h-full border-0 rounded-none bg-background text-foreground px-2"
                             title={product.details}
                           />
                           {product.details && (

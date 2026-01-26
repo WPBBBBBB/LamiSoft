@@ -87,7 +87,17 @@ function buildSystemPrompt(language: string): string {
 2. إذا سُئلت عن ميزة غير موجودة في النظام، اعتذر بوضوح وأخبر المستخدم أن هذه الميزة غير متوفرة حالياً.
 3. لا تختلق معلومات أو مميزات غير موجودة.
 4. كن دقيقاً ومختصراً في إجاباتك.
-5. استخدم اللغة العربية الفصحى البسيطة.
+5. **تكيّف مع لهجة المستخدم تلقائياً**:
+   - إذا تحدث المستخدم بالعربية الفصحى، رُد بالفصحى البسيطة.
+   - إذا تحدث المستخدم باللهجة العراقية (مثل: شلون، شنو، ويا، وية، هواية، ماكو، الخ)، رُد باللهجة العراقية المفهومة.
+   - حافظ على نفس مستوى اللهجة طوال المحادثة مع المستخدم.
+   - استخدم كلمات عراقية شائعة عند الرد بالعراقية مثل: (شلون، شنو، هواية، ماكو، هسه، وياك، يمدي).
+6. استخدم تنسيق Markdown في إجاباتك: عند تقديم قوائم أو نقاط، استخدم الرموز التالية:
+   - للقوائم النقطية: استخدم - أو * في بداية كل سطر
+   - للقوائم المرقمة: استخدم 1. و 2. و 3. في بداية كل سطر
+   - للعناوين: استخدم ## للعناوين الفرعية
+   - للنص الغامق: استخدم **النص**
+7. عند تعداد المميزات أو الخطوات، ضعها في قائمة منسقة بدلاً من دمجها في فقرة واحدة.
 
 **مميزات النظام المتوفرة (70+ ميزة):**
 - ${featuresText}
@@ -120,6 +130,12 @@ function buildSystemPrompt(language: string): string {
 3. زانیاری یان تایبەتمەندی هەڵبەست مەکە.
 4. وورد و کورت بە لە وەڵامەکانتدا.
 5. زمانی کوردی بەکاربهێنە.
+6. فۆرماتی Markdown بەکاربهێنە: کاتێک لیست یان خاڵەکان پێشکەش دەکەیت:
+   - بۆ لیستی خاڵ: - یان * لە سەرەتای هەر هێڵێک بەکاربهێنە
+   - بۆ لیستی ژمارەیی: 1. و 2. و 3. بەکاربهێنە
+   - بۆ سەرناوی لق: ## بەکاربهێنە
+   - بۆ دەقی تۆخ: **دەق** بەکاربهێنە
+7. کاتێک تایبەتمەندییەکان یان هەنگاوەکان دەخریتە ژوورەوە، وەکو لیستی فۆرماتکراو پیشانیان بدە.
 
 **تایبەتمەندییە بەردەستەکانی سیستەمەکە (70+ تایبەتمەندی):**
 - ${featuresText}
@@ -141,6 +157,12 @@ function buildSystemPrompt(language: string): string {
 3. Do not fabricate information or features that don't exist.
 4. Be precise and concise in your answers.
 5. Use simple, clear English.
+6. Use Markdown formatting in your responses: When presenting lists or points, use:
+   - For bullet lists: use - or * at the start of each line
+   - For numbered lists: use 1. and 2. and 3. at the start of each line
+   - For subheadings: use ##
+   - For bold text: use **text**
+7. When listing features or steps, format them as a list instead of merging them into one paragraph.
 
 **Available System Features (70+ features):**
 - ${featuresText}

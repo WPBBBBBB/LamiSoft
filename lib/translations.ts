@@ -1560,7 +1560,7 @@ export const systemTranslations = {
   
   // Footer
   "allRightsReserved": { ar: "جميع الحقوق محفوظة", ku: "هەموو مافەکان پارێزراون", en: "All Rights Reserved" },
-  "developedBy": { ar: "برمجة وتطوير: مهدي", ku: "بەرنامەسازی و پەرەپێدان: مەهدی", en: "Developed by: Mahdi" },
+  "developedBy": { ar: "برمجة وتطوير: مهدي رشيد ", ku: "بەرنامەسازی و پەرەپێدان: مەهدی", en: "Developed by: Mahdi Rasheid" },
   "contactMe": { ar: "التواصل معي", ku: "پەیوەندیم پێوە بکە", en: "Contact Me" },
   "telegram": { ar: "تلغرام", ku: "تێلگرام", en: "Telegram" },
   "instagram": { ar: "انستغرام", ku: "ئینستاگرام", en: "Instagram" },
@@ -1646,6 +1646,8 @@ export const systemTranslations = {
   "chatbotError": { ar: "عذراً، حدث خطأ. حاول مرة أخرى.", ku: "ببورە، هەڵەیەک ڕوویدا. دووبارە هەوڵ بدەرەوە.", en: "Sorry, an error occurred. Try again." },
   "chatbotErrorResponse": { ar: "عذراً، واجهت مشكلة في معالجة طلبك. يرجى المحاولة مرة أخرى لاحقاً.", ku: "ببورە، کێشەیەکم هەبوو لە پرۆسەکردنی داواکاریەکەت. تکایە دواتر دووبارە هەوڵ بدەرەوە.", en: "Sorry, I encountered an issue processing your request. Please try again later." },
   "chatbotNoResponse": { ar: "لم أتمكن من الحصول على رد. تأكد من اتصالك بالإنترنت.", ku: "نەمتوانی وەڵامێک وەربگرم. دڵنیابەرەوە لە پەیوەندی ئینتەرنێت.", en: "Couldn't get a response. Check your internet connection." },
+  "chatbotMaximize": { ar: "توسيع", ku: "فراوانکردن", en: "Maximize" },
+  "chatbotMinimize": { ar: "تصغير", ku: "بچووککردنەوە", en: "Minimize" },
   
 } as const
 

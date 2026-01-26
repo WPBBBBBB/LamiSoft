@@ -45,7 +45,6 @@ export default function WelcomePage() {
         }}
       />
       
-      {/* Animated Background Gradient */}
       <motion.div
         className="fixed inset-0 -z-10 opacity-30 pointer-events-none"
         style={{ y: backgroundY }}
@@ -59,20 +58,20 @@ export default function WelcomePage() {
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <Logo className="scale-75" />
-            <Separator orientation="vertical" className="h-6" />
-            <Badge variant="secondary" className="text-xs">{t('alLamiSoft', currentLanguage.code)}</Badge>
+          <div className="flex items-center gap-2 md:gap-3">
+            <Logo className="scale-75 md:scale-100" />
+            <Separator orientation="vertical" className="h-6 hidden sm:block" />
+            <Badge variant="secondary" className="text-xs hidden sm:inline-flex">{t('alLamiSoft', currentLanguage.code)}</Badge>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => scrollTo(featuresRef.current)}>
+          <div className="flex items-center gap-1 md:gap-2">
+            <Button variant="ghost" size="sm" onClick={() => scrollTo(featuresRef.current)} className="hidden md:inline-flex">
               {t('features', currentLanguage.code)}
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => scrollTo(servicesRef.current)}>
+            <Button variant="ghost" size="sm" onClick={() => scrollTo(servicesRef.current)} className="hidden md:inline-flex">
               {t('services', currentLanguage.code)}
             </Button>
-            <Button onClick={() => router.push("/login")} className="gap-2">
-              {t('login', currentLanguage.code)}
+            <Button onClick={() => router.push("/login")} className="gap-2" size="sm">
+              <span className="hidden sm:inline">{t('login', currentLanguage.code)}</span>
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <SettingsMenu />
@@ -82,16 +81,24 @@ export default function WelcomePage() {
 
       <main>
         {/* Hero Section */}
-        <section className="container mx-auto px-4 py-16 lg:py-24 relative">
-          <div className="grid gap-8 lg:grid-cols-2 lg:gap-12 items-center">
+        <section className="container mx-auto px-4 py-8 md:py-12 lg:py-16 xl:py-24 relative">
+          <div className="grid gap-6 md:gap-8 lg:grid-cols-2 lg:gap-12 items-center">
             <motion.div 
-              className="space-y-6 relative z-10"
+              className="space-y-4 md:space-y-6 relative z-10 order-2 lg:order-1"
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+              >
+               
+              </motion.div>
+              
               <motion.h1 
-                className="text-4xl font-bold tracking-tight lg:text-6xl" 
+                className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight lg:text-6xl" 
                 style={{ color: "var(--theme-primary)" }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -101,7 +108,7 @@ export default function WelcomePage() {
               </motion.h1>
               
               <motion.p 
-                className="text-lg text-muted-foreground leading-relaxed"
+                className="text-base md:text-lg text-muted-foreground leading-relaxed"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.6 }}
@@ -146,19 +153,21 @@ export default function WelcomePage() {
               initial={{ opacity: 0, scale: 0.8, rotateY: -30 }}
               animate={{ opacity: 1, scale: 1, rotateY: 0 }}
               transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
-              className="relative"
+              className="relative order-1 lg:order-2"
             >
-              <Card className="p-6 backdrop-blur-sm bg-card/50 overflow-hidden relative">
+              <Card className="p-4 md:p-6 backdrop-blur-sm bg-card/50 overflow-hidden relative">
                 <div className="absolute inset-0 bg-linear-to-br from-primary/10 via-transparent to-primary/5" />
-                <Book3D className="w-full relative z-10" />
+                <div className="w-full max-w-md mx-auto relative z-10">
+                  <Book3D className="w-full" />
+                </div>
                 <motion.div 
                   className="text-center space-y-2 mt-4 relative z-10"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.8, duration: 0.5 }}
                 >
-                  <p className="text-xl font-semibold">{t('professionalManagementSystem', currentLanguage.code)}</p>
-                  <p className="text-sm text-muted-foreground">{t('forPOSAndPurchases', currentLanguage.code)}</p>
+                  <p className="text-lg md:text-xl font-semibold">{t('professionalManagementSystem', currentLanguage.code)}</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">{t('forPOSAndPurchases', currentLanguage.code)}</p>
                 </motion.div>
               </Card>
             </motion.div>
@@ -166,7 +175,7 @@ export default function WelcomePage() {
           
           {/* Floating Elements */}
           <motion.div
-            className="absolute top-20 right-10 w-20 h-20 rounded-full blur-3xl opacity-30"
+            className="hidden md:block absolute top-20 right-10 w-20 h-20 rounded-full blur-3xl opacity-30"
             style={{ background: "var(--theme-primary)" }}
             animate={{
               y: [0, -20, 0],
@@ -179,7 +188,7 @@ export default function WelcomePage() {
             }}
           />
           <motion.div
-            className="absolute bottom-20 left-10 w-32 h-32 rounded-full blur-3xl opacity-20"
+            className="hidden md:block absolute bottom-20 left-10 w-32 h-32 rounded-full blur-3xl opacity-20"
             style={{ background: "var(--theme-primary)" }}
             animate={{
               y: [0, 20, 0],

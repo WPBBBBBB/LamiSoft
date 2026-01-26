@@ -50,7 +50,7 @@ export default function SettingsMenu() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
               transition={{ type: "spring", duration: 0.3 }}
-              className="absolute left-0 mt-2 w-80 z-50 rounded-xl border shadow-2xl overflow-hidden"
+              className="absolute ltr:right-0 rtl:left-0 mt-2 w-80 z-50 rounded-xl border shadow-2xl overflow-hidden"
               style={{
                 backgroundColor: 'var(--theme-surface)',
                 borderColor: 'var(--theme-border)',

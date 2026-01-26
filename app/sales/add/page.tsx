@@ -87,8 +87,8 @@ export default function SaleAddPage() {
 
   const [discountEnabled, setDiscountEnabled] = useState(false)
   const [discountCurrency, setDiscountCurrency] = useState<"دينار" | "دولار">("دينار")
-  const [discountIQD, setDiscountIQD] = useState<number | "">(0)
-  const [discountUSD, setDiscountUSD] = useState<number | "">(0)
+  const [discountIQD, setDiscountIQD] = useState<number | "">("")
+  const [discountUSD, setDiscountUSD] = useState<number | "">("")
 
   const [stores, setStores] = useState<Store[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -1241,37 +1241,37 @@ export default function SaleAddPage() {
             
             
             <div className="rounded-lg border overflow-auto w-full" style={{ maxHeight: "1200px" }}>
-            <Table>
+            <Table className="border-collapse border border-gray-300">
               <TableHeader>
                 <TableRow
                   style={{
                     background: "linear-gradient(to right, var(--theme-surface), var(--theme-accent))",
                   }}
                 >
-                  <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>#</TableHead>
-                  <TableHead className="text-center" style={{ color: "var(--theme-text)" }}>{t("delete", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("productCode", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("productName", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("quantity", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("saleRetailPriceIQD", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("saleRetailPriceUSD", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("totalIQD", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("totalUSD", lang)}</TableHead>
-                  <TableHead className="text-right" style={{ color: "var(--theme-text)" }}>{t("notes", lang)}</TableHead>
+                  <TableHead className="text-center border border-gray-300" style={{ color: "var(--theme-text)" }}>#</TableHead>
+                  <TableHead className="text-center border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("delete", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("productCode", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("productName", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("quantity", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("saleRetailPriceIQD", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("saleRetailPriceUSD", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("totalIQD", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("totalUSD", lang)}</TableHead>
+                  <TableHead className="text-right border border-gray-300" style={{ color: "var(--theme-text)" }}>{t("notes", lang)}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
 
                 {!isViewMode && (
-                <TableRow style={{ backgroundColor: "var(--theme-accent)", opacity: 0.9 }}>
-                  <TableCell className="text-center font-bold" style={{ color: "var(--theme-text)" }}>
+                <TableRow className="bg-background">
+                  <TableCell className="text-center font-bold border border-gray-300 p-0" style={{ color: "var(--theme-text)" }}>
                     {t("new", lang)}
                   </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center border border-gray-300 p-0">
                       <Plus className="h-5 w-5 theme-success mx-auto" />
                     </TableCell>
-                    <TableCell>
-                      <div style={{ minWidth: '120px', width: '120px', position: 'relative' }}>
+                    <TableCell className="border border-gray-300 p-0">
+                      <div style={{ minWidth: '120px', width: '120px', position: 'relative', height: '100%' }}>
                         <Input
                           ref={codeInputRef}
                           value={productSearchCode}
@@ -1281,12 +1281,12 @@ export default function SaleAddPage() {
                             updateSuggestionPosition(codeInputRef)
                           }}
                           placeholder={t("productCode", lang)}
-                          className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
+                          className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                         />
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div style={{ minWidth: '150px', width: '150px', position: 'relative' }}>
+                    <TableCell className="border border-gray-300 p-0">
+                      <div style={{ minWidth: '150px', width: '150px', position: 'relative', height: '100%' }}>
                         <Input
                           ref={nameInputRef}
                           value={productSearchName}
@@ -1296,11 +1296,11 @@ export default function SaleAddPage() {
                             updateSuggestionPosition(nameInputRef)
                           }}
                           placeholder={t("productName", lang)}
-                          className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
+                          className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                         />
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-gray-300 p-0">
                       <Input
                         type="number"
                         value={newItem.quantity || ""}
@@ -1309,10 +1309,10 @@ export default function SaleAddPage() {
                         }
                         onKeyPress={(e) => handleNewItemKeyPress(e)}
                         placeholder="0"
-                        className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
+                        className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-gray-300 p-0">
                       <Input
                         type="number"
                         value={newItem.unitpriceiqd || ""}
@@ -1321,10 +1321,10 @@ export default function SaleAddPage() {
                         }
                         onKeyPress={(e) => handleNewItemKeyPress(e)}
                         placeholder="0"
-                        className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
+                        className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-gray-300 p-0">
                       <Input
                         type="number"
                         value={newItem.unitpriceusd || ""}
@@ -1333,41 +1333,41 @@ export default function SaleAddPage() {
                         }
                         onKeyPress={(e) => handleNewItemKeyPress(e)}
                         placeholder="0"
-                        className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
+                        className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-gray-300 p-0">
                       <Input
                         type="number"
                         value={newItem.totalpriceiqd.toFixed(2)}
                         readOnly
-                        className="h-8 bg-muted text-foreground"
+                        className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-gray-300 p-0">
                       <Input
                         type="number"
                         value={newItem.totalpriceusd.toFixed(2)}
                         readOnly
-                        className="h-8 bg-muted text-foreground"
+                        className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-gray-300 p-0">
                       <Input
                         value={newItem.notes}
                         onChange={(e) => updateNewItem("notes", e.target.value)}
                         onKeyPress={(e) => handleNewItemKeyPress(e)}
                         placeholder={t("notes", lang)}
-                        className="h-8 bg-green-50 dark:bg-green-950/20 text-foreground"
+                        className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                       />
                     </TableCell>
                   </TableRow>
                 )}
 
                 {products.map((product, index) => (
-                  <TableRow key={product.tempId} className="bg-background">
-                    <TableCell className="text-center text-foreground">{index + 1}</TableCell>
-                    <TableCell className="text-center">
+                  <TableRow key={product.tempId} className="bg-background" style={{ minHeight: '48px' }}>
+                    <TableCell className="text-center text-foreground border border-gray-300 p-0">{index + 1}</TableCell>
+                    <TableCell className="text-center border border-gray-300 p-0">
                       {!isViewMode && (
                         <Button
                           variant="ghost"
@@ -1379,12 +1379,12 @@ export default function SaleAddPage() {
                         </Button>
                       )}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
+                    <TableCell className="border border-gray-300 p-0">
+                      <div className="flex gap-1 h-full">
                         <Input
                           value={product.productcode}
                           readOnly
-                          className="flex-1 h-8 bg-muted text-center text-foreground"
+                          className="flex-1 h-full border-0 rounded-none bg-background text-center text-foreground px-2"
                           title={product.productcode}
                         />
                         {product.productcode.length > 10 && (
@@ -1399,12 +1399,12 @@ export default function SaleAddPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
+                    <TableCell className="border border-gray-300 p-0">
+                      <div className="flex gap-1 h-full">
                         <Input
                           value={product.productname}
                           readOnly
-                          className="flex-1 h-8 bg-muted text-foreground"
+                          className="flex-1 h-full border-0 rounded-none bg-background text-foreground px-2"
                           title={product.productname}
                         />
                         {product.productname.length > 15 && (
@@ -1419,7 +1419,7 @@ export default function SaleAddPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-gray-300 p-0">
                       <Input
                         type="number"
                         value={product.quantity}
@@ -1431,10 +1431,10 @@ export default function SaleAddPage() {
                           )
                         }
                         placeholder="0"
-                        className="h-8 text-foreground"
+                        className="h-full w-full border-0 rounded-none text-foreground px-2"
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-gray-300 p-0">
                       <Input
                         type="number"
                         value={product.unitpriceiqd}
@@ -1446,10 +1446,10 @@ export default function SaleAddPage() {
                           )
                         }
                         placeholder="0"
-                        className="h-8 text-foreground"
+                        className="h-full w-full border-0 rounded-none text-foreground px-2"
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-gray-300 p-0">
                       <Input
                         type="number"
                         value={product.unitpriceusd}
@@ -1461,34 +1461,34 @@ export default function SaleAddPage() {
                           )
                         }
                         placeholder="0"
-                        className="h-8 text-foreground"
+                        className="h-full w-full border-0 rounded-none text-foreground px-2"
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-gray-300 p-0">
                       <Input
                         type="number"
                         value={product.totalpriceiqd.toFixed(2)}
                         readOnly
-                        className="h-8 bg-muted text-foreground"
+                        className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-gray-300 p-0">
                       <Input
                         type="number"
                         value={product.totalpriceusd.toFixed(2)}
                         readOnly
-                        className="h-8 bg-muted text-foreground"
+                        className="h-full w-full border-0 rounded-none bg-background text-foreground px-2"
                       />
                     </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
+                    <TableCell className="border border-gray-300 p-0">
+                      <div className="flex gap-1 h-full">
                         <Input
                           value={product.notes}
                           onChange={(e) =>
                             updateProduct(product.tempId, "notes", e.target.value)
                           }
                           placeholder={t("notes", lang)}
-                          className="flex-1 h-8 text-foreground"
+                          className="flex-1 h-full border-0 rounded-none text-foreground px-2"
                           title={product.notes}
                         />
                         {product.notes && (
