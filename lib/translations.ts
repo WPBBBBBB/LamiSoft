@@ -1632,8 +1632,8 @@ export const systemTranslations = {
   "feature_64": { ar: "مزامنة تلقائية مع قاعدة البيانات", ku: "هاوڕێککردنی خۆکار لەگەڵ بنکەی داتا", en: "Auto sync with database" },
   
   // Chatbot translations
-  "chatbotOpen": { ar: "افتح المساعد الذكي", ku: "یاریدەدەری زیرەک بکەرەوە", en: "Open AI Assistant" },
-  "chatbotTitle": { ar: "المساعد الذكي", ku: "یاریدەدەری زیرەک", en: "AI Assistant" },
+  "chatbotOpen": { ar: "افتح المساعد الذكي", ku: "یاریدەدەری زیرەک بکەرەوە", en: "Open Al-Lami Soft" },
+  "chatbotTitle": { ar: "المساعد الذكي", ku: "یاریدەدەری زیرەک", en: "Al-Lami Soft" },
   "chatbotSubtitle": { ar: "أسألني عن أي ميزة في النظام", ku: "پرسیارم لێبکە لەسەر هەر تایبەتمەندییەکی سیستەم", en: "Ask me about any system feature" },
   "chatbotWelcome": { ar: "مرحباً! أنا المساعد الذكي لنظام الـلامي سوفت. يمكنني مساعدتك في معرفة المزيد عن ميزات النظام. كيف يمكنني مساعدتك اليوم؟", ku: "بەخێربێیت! من یاریدەدەری زیرەکی سیستەمی لامی سۆفتم. دەتوانم یارمەتیت بدەم لە زانیاری زیاتر لەسەر تایبەتمەندییەکانی سیستەم. چۆن یارمەتیت بدەم ئەمڕۆ؟", en: "Hello! I'm the Al-Lami Soft smart assistant. I can help you learn more about the system features. How can I help you today?" },
   "chatbotPlaceholder": { ar: "اكتب رسالتك هنا...", ku: "نامەکەت لێرە بنووسە...", en: "Type your message here..." },
