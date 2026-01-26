@@ -90,17 +90,6 @@ export default function WelcomePage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-              >
-                <Badge variant="outline" className="w-fit gap-2">
-                  <Sparkles className="h-3 w-3" />
-                  {t('latestVersion', currentLanguage.code)}
-                </Badge>
-              </motion.div>
-              
               <motion.h1 
                 className="text-4xl font-bold tracking-tight lg:text-6xl" 
                 style={{ color: "var(--theme-primary)" }}
