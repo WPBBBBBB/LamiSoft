@@ -53,8 +53,9 @@ function ThemePreview({
         backgroundColor: theme.colors.background,
         color: theme.colors.text,
         borderColor: !isFullscreen ? theme.colors.primary : undefined,
-        aspectRatio: !isFullscreen ? '16/11' : undefined,
-        minHeight: !isFullscreen ? '500px' : undefined
+        aspectRatio: !isFullscreen ? '16/10' : undefined,
+        minHeight: !isFullscreen ? '280px' : undefined,
+        maxWidth: !isFullscreen ? '100%' : undefined
       }}
       onClick={handleClick}
     >
@@ -89,14 +90,14 @@ function ThemePreview({
         }}
       >
         
-        <div className={cn(isFullscreen ? "" : "scale-[0.8] origin-right")}>
+        <div className={cn(isFullscreen ? "" : "scale-[0.5] sm:scale-[0.6] md:scale-[0.7] lg:scale-[0.8] origin-right")}>
           <Sidebar />
         </div>
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header />
           <main className="flex-1 overflow-auto">
-            <div className={cn("mx-auto", isFullscreen ? "container p-4 sm:p-6" : "p-3")}>
-              <div className={isFullscreen ? "" : "scale-[0.7] origin-top-right"}>
+            <div className={cn("mx-auto", isFullscreen ? "container p-4 sm:p-6" : "p-2 sm:p-3")}>
+              <div className={isFullscreen ? "" : "scale-[0.45] sm:scale-[0.55] md:scale-[0.65] lg:scale-[0.7] origin-top-right"}>
                 <HomePage />
               </div>
             </div>
@@ -461,10 +462,10 @@ export default function AppearancePage() {
           <CardDescription>{t('coloredThemesDescription', currentLanguage.code).replace('{count}', themes.length.toString())}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-4 sm:gap-6">
+          <div className="flex flex-col lg:grid lg:grid-cols-[350px_1fr] gap-4 sm:gap-6">
 
-            <div className="order-2 lg:order-1">
-              <ScrollArea className="h-[400px] sm:h-[500px] pr-2 sm:pr-4">
+            <div className="order-1 lg:order-1">
+              <ScrollArea className="h-[300px] sm:h-[400px] lg:h-[500px] pr-2 sm:pr-4">
                 <div className="space-y-2">
                   {themes.map((theme) => (
                     <button
@@ -517,10 +518,12 @@ export default function AppearancePage() {
               </ScrollArea>
             </div>
 
-            <div className="order-1 lg:order-2">
-              <div className="sticky top-4 sm:top-8">
+            <div className="order-2 lg:order-2 w-full">
+              <div className="lg:sticky lg:top-8">
                 <h3 className="text-sm font-medium mb-2 sm:mb-3 text-muted-foreground">{t('themePreview', currentLanguage.code)}</h3>
-                <ThemePreview theme={previewTheme} lang={currentLanguage.code} onMaximize={() => setIsFullscreenPreview(true)} />
+                <div className="w-full">
+                  <ThemePreview theme={previewTheme} lang={currentLanguage.code} onMaximize={() => setIsFullscreenPreview(true)} />
+                </div>
               </div>
             </div>
           </div>
