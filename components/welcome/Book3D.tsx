@@ -145,17 +145,27 @@ export default function Book3D({ className = "" }: { className?: string }) {
   const totalPages = features.length
   const pagesRead = currentPage
   const pagesRemaining = totalPages - currentPage - 2 // Subtract 2 because we show 2 pages at once
-  const maxLayersToShow = 20 // Maximum layers to display
+  
+  // Reduce layers on mobile for performance
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+  
+  const maxLayersToShow = isMobile ? 5 : 20 // Maximum layers to display
 
   return (
-    <div className={`relative w-full h-[450px] flex items-center justify-center ${className}`}>
-      {/* Enhanced book base shadow with multiple layers */}
-      <div className="absolute w-[520px] h-12 bg-black/30 blur-3xl" style={{ bottom: '15px' }} />
-      <div className="absolute w-[500px] h-8 bg-black/20 blur-2xl" style={{ bottom: '18px' }} />
+    <div className={`relative w-full h-[250px] sm:h-[350px] md:h-[400px] lg:h-[450px] flex items-center justify-center ${className}`}>
+      {/* Enhanced book base shadow with multiple layers - hidden on mobile */}
+      <div className="hidden md:block absolute w-[520px] h-12 bg-black/30 blur-3xl" style={{ bottom: '15px' }} />
+      <div className="hidden md:block absolute w-[500px] h-8 bg-black/20 blur-2xl" style={{ bottom: '18px' }} />
 
-      {/* Book container */}
+      {/* Book container - responsive sizing */}
       <div 
-        className="relative w-[600px] h-[400px]"
+        className="relative w-[90vw] sm:w-[500px] md:w-[550px] lg:w-[600px] h-[200px] sm:h-[300px] md:h-[350px] lg:h-[400px]"
         style={{
           perspective: '2500px',
           transformStyle: 'preserve-3d',
@@ -164,10 +174,10 @@ export default function Book3D({ className = "" }: { className?: string }) {
         {/* Book spine and back cover */}
         <div className="absolute inset-0" style={{ transformStyle: 'preserve-3d' }}>
           {/* Left side page layers (pages read) with realistic thickness */}
-          <div className="absolute top-0 left-0 w-[300px] h-full" style={{ transformStyle: 'preserve-3d' }}>
+          <div className="absolute top-0 left-0 w-1/2 h-full" style={{ transformStyle: 'preserve-3d' }}>
             {[...Array(Math.min(Math.max(0, pagesRead), maxLayersToShow))].map((_, i) => {
               const layerIndex = pagesRead - i
-              const offset = i * 1.2 // Increased thickness
+              const offset = i * (isMobile ? 0.8 : 1.2) // Reduced thickness on mobile
               const zOffset = i * 0.5
               return (
                 <motion.div
@@ -215,9 +225,9 @@ export default function Book3D({ className = "" }: { className?: string }) {
           </div>
 
           {/* Right side page layers (pages remaining) with realistic thickness */}
-          <div className="absolute top-0 left-[300px] w-[300px] h-full" style={{ transformStyle: 'preserve-3d' }}>
+          <div className="absolute top-0 left-1/2 w-1/2 h-full" style={{ transformStyle: 'preserve-3d' }}>
             {[...Array(Math.min(Math.max(0, pagesRemaining), maxLayersToShow))].map((_, i) => {
-              const offset = i * 1.2 // Increased thickness
+              const offset = i * (isMobile ? 0.8 : 1.2) // Reduced thickness on mobile
               const zOffset = i * 0.5
               return (
                 <motion.div
@@ -266,17 +276,19 @@ export default function Book3D({ className = "" }: { className?: string }) {
 
           {/* Back cover with leather texture */}
           <div 
-            className="absolute top-0 right-0 w-[300px] h-full rounded-r-lg"
+            className="absolute top-0 right-0 w-1/2 h-full rounded-r-lg"
             style={{
               background: 'linear-gradient(135deg, #8B4513 0%, #6B3410 50%, #5a2d0e 100%)',
               transform: 'rotateY(0deg)',
               transformOrigin: 'left',
-              boxShadow: `
-                inset -8px 0 15px rgba(0,0,0,0.4),
-                inset 0 8px 15px rgba(0,0,0,0.3),
-                inset 0 -8px 15px rgba(0,0,0,0.3),
-                -8px 0 20px rgba(0,0,0,0.3)
-              `,
+              boxShadow: isMobile 
+                ? 'inset -4px 0 8px rgba(0,0,0,0.3), -4px 0 10px rgba(0,0,0,0.2)'
+                : `
+                  inset -8px 0 15px rgba(0,0,0,0.4),
+                  inset 0 8px 15px rgba(0,0,0,0.3),
+                  inset 0 -8px 15px rgba(0,0,0,0.3),
+                  -8px 0 20px rgba(0,0,0,0.3)
+                `,
             }}
           >
             {/* Leather texture overlay */}
@@ -308,7 +320,7 @@ export default function Book3D({ className = "" }: { className?: string }) {
 
           {/* Spine with enhanced detail */}
           <div 
-            className="absolute top-0 left-[300px] w-5 h-full"
+            className="absolute top-0 left-1/2 w-3 md:w-5 h-full"
             style={{
               background: `
                 linear-gradient(90deg, 
@@ -321,36 +333,44 @@ export default function Book3D({ className = "" }: { className?: string }) {
               `,
               transform: 'rotateY(-90deg)',
               transformOrigin: 'left',
-              boxShadow: `
-                inset 0 0 15px rgba(0,0,0,0.6),
-                inset 0 5px 10px rgba(0,0,0,0.4),
-                inset 0 -5px 10px rgba(0,0,0,0.4)
-              `,
+              boxShadow: isMobile
+                ? 'inset 0 0 8px rgba(0,0,0,0.5)'
+                : `
+                  inset 0 0 15px rgba(0,0,0,0.6),
+                  inset 0 5px 10px rgba(0,0,0,0.4),
+                  inset 0 -5px 10px rgba(0,0,0,0.4)
+                `,
             }}
           >
-            {/* Spine bands for detail */}
-            <div className="absolute top-[15%] left-0 right-0 h-1 bg-linear-to-r from-amber-900/50 via-amber-700/50 to-amber-900/50" />
-            <div className="absolute top-[30%] left-0 right-0 h-1 bg-linear-to-r from-amber-900/50 via-amber-700/50 to-amber-900/50" />
-            <div className="absolute top-[70%] left-0 right-0 h-1 bg-linear-to-r from-amber-900/50 via-amber-700/50 to-amber-900/50" />
-            <div className="absolute top-[85%] left-0 right-0 h-1 bg-linear-to-r from-amber-900/50 via-amber-700/50 to-amber-900/50" />
+            {/* Spine bands for detail - hidden on mobile */}
+            {!isMobile && (
+              <>
+                <div className="absolute top-[15%] left-0 right-0 h-1 bg-linear-to-r from-amber-900/50 via-amber-700/50 to-amber-900/50" />
+                <div className="absolute top-[30%] left-0 right-0 h-1 bg-linear-to-r from-amber-900/50 via-amber-700/50 to-amber-900/50" />
+                <div className="absolute top-[70%] left-0 right-0 h-1 bg-linear-to-r from-amber-900/50 via-amber-700/50 to-amber-900/50" />
+                <div className="absolute top-[85%] left-0 right-0 h-1 bg-linear-to-r from-amber-900/50 via-amber-700/50 to-amber-900/50" />
+              </>
+            )}
           </div>
 
           {/* Static Right Page (Revealed Underneath) */}
           <div 
-            className="absolute top-0 left-[300px] w-[300px] h-full rounded-r-lg overflow-hidden"
+            className="absolute top-0 left-1/2 w-1/2 h-full rounded-r-lg overflow-hidden"
             style={{
               background: 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)',
-              boxShadow: 'inset -5px 0 15px rgba(0,0,0,0.1), 5px 0 20px rgba(0,0,0,0.2)',
+              boxShadow: isMobile
+                ? 'inset -3px 0 8px rgba(0,0,0,0.08), 3px 0 10px rgba(0,0,0,0.15)'
+                : 'inset -5px 0 15px rgba(0,0,0,0.1), 5px 0 20px rgba(0,0,0,0.2)',
             }}
           >
             {/* Page content */}
-            <div className="relative h-full flex flex-col items-center justify-center p-8 gap-6">
+            <div className="relative h-full flex flex-col items-center justify-center p-4 md:p-6 lg:p-8 gap-3 md:gap-6">
               <motion.div
-                className={`bg-linear-to-br ${hiddenRightFeature.gradient} p-6 rounded-2xl shadow-lg`}
+                className={`bg-linear-to-br ${hiddenRightFeature.gradient} p-3 md:p-4 lg:p-6 rounded-xl md:rounded-2xl shadow-lg`}
               >
-                <HiddenRightIcon className="w-16 h-16 text-white" strokeWidth={2} />
+                <HiddenRightIcon className="w-8 h-8 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 text-white" strokeWidth={2} />
               </motion.div>
-              <p className="text-lg font-bold text-center leading-relaxed text-gray-800">
+              <p className="text-sm sm:text-base md:text-lg font-bold text-center leading-relaxed text-gray-800 px-2">
                 {t(hiddenRightFeature.key, currentLanguage.code)}
               </p>
             </div>
@@ -367,17 +387,19 @@ export default function Book3D({ className = "" }: { className?: string }) {
             </div>
 
             {/* Page number */}
-            <div className="absolute bottom-4 right-8 text-xs text-gray-400">
+            <div className="absolute bottom-2 md:bottom-4 right-4 md:right-8 text-[10px] md:text-xs text-gray-400">
               {hiddenRightPageIndex + 1}
             </div>
           </div>
 
           {/* Front cover (left page - static) */}
           <div 
-            className="absolute top-0 left-0 w-[300px] h-full rounded-l-lg overflow-hidden"
+            className="absolute top-0 left-0 w-1/2 h-full rounded-l-lg overflow-hidden"
             style={{
               background: 'linear-gradient(135deg, #f5f5dc 0%, #e8e8d0 100%)',
-              boxShadow: 'inset 5px 0 15px rgba(0,0,0,0.1), -5px 0 20px rgba(0,0,0,0.3)',
+              boxShadow: isMobile
+                ? 'inset 3px 0 8px rgba(0,0,0,0.08), -3px 0 10px rgba(0,0,0,0.2)'
+                : 'inset 5px 0 15px rgba(0,0,0,0.1), -5px 0 20px rgba(0,0,0,0.3)',
             }}
           >
             {/* Paper texture */}
@@ -388,9 +410,9 @@ export default function Book3D({ className = "" }: { className?: string }) {
             />
 
             {/* Left page content */}
-            <div className="relative h-full flex flex-col items-center justify-center p-8 gap-6">
+            <div className="relative h-full flex flex-col items-center justify-center p-4 md:p-6 lg:p-8 gap-3 md:gap-6">
               <motion.div
-                  className={`bg-linear-to-br ${leftFeature.gradient} p-6 rounded-2xl shadow-lg`}
+                  className={`bg-linear-to-br ${leftFeature.gradient} p-3 md:p-4 lg:p-6 rounded-xl md:rounded-2xl shadow-lg`}
                 animate={{
                   rotate: [0, 5, -5, 0],
                   scale: [1, 1.05, 1],
@@ -401,33 +423,35 @@ export default function Book3D({ className = "" }: { className?: string }) {
                   ease: "easeInOut",
                 }}
               >
-                <LeftIcon className="w-16 h-16 text-white" strokeWidth={2} />
+                <LeftIcon className="w-8 h-8 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 text-white" strokeWidth={2} />
               </motion.div>
-              <p className="text-lg font-bold text-center leading-relaxed text-gray-800">
+              <p className="text-sm sm:text-base md:text-lg font-bold text-center leading-relaxed text-gray-800 px-2">
                 {t(leftFeature.key, currentLanguage.code)}
               </p>
             </div>
 
-            {/* Page lines */}
-            <div className="absolute inset-0 pointer-events-none">
-              {[...Array(20)].map((_, i) => (
-                <div 
-                  key={i} 
-                  className="absolute left-8 right-8 h-px bg-blue-200/30"
-                  style={{ top: `${30 + i * 17}px` }}
-                />
-              ))}
-            </div>
+            {/* Page lines - hidden on mobile */}
+            {!isMobile && (
+              <div className="absolute inset-0 pointer-events-none">
+                {[...Array(20)].map((_, i) => (
+                  <div 
+                    key={i} 
+                    className="absolute left-8 right-8 h-px bg-blue-200/30"
+                    style={{ top: `${30 + i * 17}px` }}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* Page number */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-gray-400">
+            <div className="absolute bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 text-[10px] md:text-xs text-gray-400">
               {leftPageIndex + 1}
             </div>
           </div>
 
           {/* Right page (flipping page) */}
           <motion.div 
-            className="absolute top-0 left-[300px] w-[300px] h-full origin-left"
+            className="absolute top-0 left-1/2 w-1/2 h-full origin-left"
             style={{
               transformStyle: 'preserve-3d',
             }}
@@ -446,8 +470,12 @@ export default function Book3D({ className = "" }: { className?: string }) {
                 backfaceVisibility: 'hidden',
                 background: 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)',
                 boxShadow: isFlipping 
-                  ? 'inset -15px 0 30px rgba(0,0,0,0.3), 10px 0 30px rgba(0,0,0,0.4)' 
-                  : 'inset -5px 0 15px rgba(0,0,0,0.1), 5px 0 20px rgba(0,0,0,0.2)',
+                  ? (isMobile 
+                    ? 'inset -8px 0 15px rgba(0,0,0,0.2), 5px 0 15px rgba(0,0,0,0.3)'
+                    : 'inset -15px 0 30px rgba(0,0,0,0.3), 10px 0 30px rgba(0,0,0,0.4)') 
+                  : (isMobile
+                    ? 'inset -3px 0 8px rgba(0,0,0,0.08), 3px 0 10px rgba(0,0,0,0.15)'
+                    : 'inset -5px 0 15px rgba(0,0,0,0.1), 5px 0 20px rgba(0,0,0,0.2)'),
                 transition: 'box-shadow 0.5s ease',
               }}
             >
