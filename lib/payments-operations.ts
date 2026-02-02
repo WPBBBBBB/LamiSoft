@@ -185,11 +185,11 @@ export async function createPayment(payment: Omit<Payment, 'id' | 'created_at'>)
       }
     }
 
-    // ????? ???? ?????? ??? ??? ?????
+    // تحديث رصيد الزبون في حال وجود زبون
     if (payment.customer_id) {
-      // ???: ???? ?? ???? ?????? (??? ???)
-      // ???: ???? ??? ???? ?????? (????? ??)
-      const multiplier = payment.transaction_type === "???" ? -1 : 1
+      // قبض: نقص من رصيد الزبون (يسدد لنا)
+      // صرف: إضافة إلى رصيد الزبون (ندفع له)
+      const multiplier = payment.transaction_type === "قبض" ? -1 : 1
 
       if (payment.currency_type === "IQD") {
         const { error: updateError } = await supabase.rpc('update_customer_balance_iqd', {
@@ -198,7 +198,7 @@ export async function createPayment(payment: Omit<Payment, 'id' | 'created_at'>)
         })
 
         if (updateError) {
-          // ??? ??? ??????? ???? RPC? ?????? ????? ??????
+          // في حال فشلت الدالة RPC، نستخدم التحديث المباشر
           const { data: customerData } = await supabase
             .from("customers")
             .select("balanceiqd")
@@ -235,9 +235,9 @@ export async function createPayment(payment: Omit<Payment, 'id' | 'created_at'>)
       }
     }
 
-    // ????? ???? ?????? ??? ??? ?????
+    // تحديث رصيد المورد في حال وجود مورد
     if (payment.supplierid) {
-      const multiplier = payment.transaction_type === "???" ? -1 : 1
+      const multiplier = payment.transaction_type === "قبض" ? -1 : 1
 
       if (payment.currency_type === "IQD") {
         const { data: supplierData } = await supabase
