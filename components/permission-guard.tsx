@@ -21,24 +21,19 @@ export function PermissionGuard({
   const router = useRouter()
   const { currentUser, isLoading } = useAuth()
 
-  // دالة التحقق من الصلاحيات
   const checkAccess = (): boolean => {
     if (!currentUser) return false
 
-    // المدير لديه صلاحية الوصول لكل شيء
     if (currentUser.permission_type === 'مدير') return true
 
-    // التحقق من الدور المطلوب
     if (requiredRole) {
       return currentUser.permission_type === requiredRole
     }
 
-    // التحقق من الأدوار المسموحة
     if (allowedRoles && allowedRoles.length > 0) {
       return allowedRoles.includes(currentUser.permission_type)
     }
 
-    // التحقق من الصلاحية المطلوبة
     if (requiredPermission) {
       if (!currentUser.permissions) return false
       return currentUser.permissions[requiredPermission as keyof typeof currentUser.permissions] === true

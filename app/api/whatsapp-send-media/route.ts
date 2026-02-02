@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getWhatsAppSettings } from "@/lib/whatsapp-settings-operations"
-import { formatIraqiPhoneNumber, delay, calculateDelay } from "@/lib/whatsapp-messaging-utils"
+import { sendMediaMessage } from "@/lib/wasender-api-operations"
 
 interface SendMediaRequest {
   customers: Array<{
@@ -10,6 +10,32 @@ interface SendMediaRequest {
   }>
   image: string
   caption?: string
+}
+
+// حسب توثيق WasenderAPI: عند تفعيل Account Protection يصبح الحد 1 طلب لكل 5 ثواني.
+// نستخدم حد أدنى آمن مشابه لنظام التذكير التلقائي لتجنب الحظر.
+const ACCOUNT_PROTECTION_MIN_DELAY_MS = 5200
+
+function coerceToNumber(value: unknown): number {
+  const n = typeof value === "number" ? value : Number(value)
+  return Number.isFinite(n) ? n : 0
+}
+
+function getSafeRandomDelayMs(baseDelay: unknown, jitter: unknown): number {
+  const base = Math.max(coerceToNumber(baseDelay), ACCOUNT_PROTECTION_MIN_DELAY_MS)
+  const j = Math.max(coerceToNumber(jitter), 0)
+  // إذا لم يتم ضبط jitter، نضع عشوائية صغيرة لتجنب نمط ثابت.
+  const effectiveJitter = j > 0 ? j : 500
+  const min = base
+  const max = base + effectiveJitter
+  const safeMin = Math.ceil(min)
+  const safeMax = Math.floor(max)
+  if (!Number.isFinite(safeMin) || !Number.isFinite(safeMax) || safeMax <= safeMin) return safeMin
+  return Math.floor(Math.random() * (safeMax - safeMin + 1)) + safeMin
+}
+
+async function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 export async function POST(request: NextRequest) {
@@ -32,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
     
     const settings = await getWhatsAppSettings()
-    
+
     if (!settings || !settings.api_key) {
       return NextResponse.json(
         { error: "مفتاح WASender API غير موجود في الإعدادات. يرجى إضافته من صفحة إعدادات الواتساب." },
@@ -52,64 +78,38 @@ export async function POST(request: NextRequest) {
       const customer = customers[i]
       
       try {
-        const formattedPhone = formatIraqiPhoneNumber(customer.phone_number)
-        
-        if (!formattedPhone || formattedPhone === '+964') {
-          results.failed++
-          results.errors.push({
-            customer: customer.customer_name,
-            error: 'رقم هاتف غير صالح'
-          })
-          continue
-        }
-        
-        const messageData: { to: string; text: string; image: string } = {
-          to: formattedPhone,
-          text: caption || 'صورة',
-          image: '',
-        }
-        
-        if (image.startsWith('data:image')) {
-          messageData.image = image
-        } else {
-          messageData.image = image
-        }
-        
-        const wasenderResponse = await fetch('https://wasenderapi.com/api/send-message', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(messageData),
-        })
-        
-        if (wasenderResponse.ok) {
+        // نستخدم نفس منطق إرسال الوسائط الموجود في نظام التذكير التلقائي:
+        // - رفع media إلى Wasender ثم الإرسال عبر imageUrl
+        // - تعامل أفضل مع rate-limit
+        const sendResult = await sendMediaMessage(
+          apiKey,
+          customer.phone_number,
+          image,
+          caption || ""
+        )
+
+        if (sendResult.success) {
           results.success++
         } else {
-          let errorMessage = 'فشل الإرسال'
-          try {
-            const errorDetails = await wasenderResponse.json()
-            errorMessage = errorDetails.message || errorDetails.error || errorDetails.msg || `خطأ ${wasenderResponse.status}`
-          } catch {
-            errorMessage = `خطأ ${wasenderResponse.status}: ${wasenderResponse.statusText}`
-          }
           results.failed++
           results.errors.push({
             customer: customer.customer_name,
-            error: errorMessage
+            error: sendResult.error || "فشل الإرسال",
           })
         }
-        
+
+        // التأخير بين الرسائل/الوسائط لتجنب الحظر (مشابه لنظام التذكير التلقائي)
         if (i < customers.length - 1) {
-          const delayTime = calculateDelay(
+          const delayMs = getSafeRandomDelayMs(
             settings.per_message_base_delay_ms,
             settings.per_message_jitter_ms
           )
-          await delay(delayTime)
-          
-          if ((i + 1) % settings.batch_size === 0) {
-            await delay(settings.batch_pause_ms)
+          await sleep(delayMs)
+
+          const batchSize = Math.max(1, coerceToNumber(settings.batch_size) || 1)
+          if ((i + 1) % batchSize === 0) {
+            const pauseMs = Math.max(coerceToNumber(settings.batch_pause_ms), ACCOUNT_PROTECTION_MIN_DELAY_MS)
+            await sleep(pauseMs)
           }
         }
         

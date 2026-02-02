@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Progress } from "@/components/ui/progress"
 import {
   Table,
   TableBody,
@@ -38,6 +39,80 @@ interface Customer {
   balanceusd: number
 }
 
+type SendCustomerProgress = {
+  customerId: string
+  name: string
+  phone: string
+  status: "pending" | "sending" | "done" | "error"
+  success: boolean
+  lastError?: string
+  totalItems?: number
+  doneItems?: number
+}
+
+type SendProgressState = {
+  phase: "idle" | "preparing" | "sending" | "done" | "error"
+  statusText: string
+  totalCustomers: number
+  doneCustomers: number
+  totalSuccess: number
+  totalFailed: number
+  customers: SendCustomerProgress[]
+  totalMessages?: number
+  attemptedMessages?: number
+}
+
+type WhatsAppDelaySettings = {
+  per_message_base_delay_ms: number
+  per_message_jitter_ms: number
+  batch_size: number
+  batch_pause_ms: number
+}
+
+const ACCOUNT_PROTECTION_MIN_DELAY_MS = 5200
+
+function safeNumber(value: unknown, fallback = 0) {
+  const n = typeof value === "number" ? value : Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
+function getSafeRandomDelayMs(baseDelayMs: number, jitterMs: number): number {
+  const base = Math.max(safeNumber(baseDelayMs, 0), ACCOUNT_PROTECTION_MIN_DELAY_MS)
+  const jitter = Math.max(safeNumber(jitterMs, 0), 0)
+  const effectiveJitter = jitter > 0 ? jitter : 500
+  const min = Math.ceil(base)
+  const max = Math.floor(base + effectiveJitter)
+  if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return min
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+async function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function safeReadJson(resp: Response): Promise<any | null> {
+  try {
+    return await resp.json()
+  } catch {
+    return null
+  }
+}
+
+function mapStatusLabel(status: SendCustomerProgress["status"], lang: string) {
+  switch (status) {
+    case "pending":
+      return t("whatsappProgressStatusPending", lang)
+    case "sending":
+      return t("whatsappProgressStatusSending", lang)
+    case "done":
+      return t("whatsappProgressStatusDone", lang)
+    case "error":
+      return t("whatsappProgressStatusError", lang)
+    default:
+      return status
+  }
+}
+
 export default function WhatsappManagementPage() {
   const router = useRouter()
   const { currentLanguage } = useSettings()
@@ -58,10 +133,34 @@ export default function WhatsappManagementPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [pendingCustomers, setPendingCustomers] = useState<Customer[]>([])
   const [showMediaDialog, setShowMediaDialog] = useState(false)
-  const [selectedImage, setSelectedImage] = useState<File | null>(null)
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string>('')
+  const [selectedImages, setSelectedImages] = useState<File[]>([])
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([])
   const [imageDescription, setImageDescription] = useState('')
   const [isSendingMedia, setIsSendingMedia] = useState(false)
+
+  const [isSendProgressOpen, setIsSendProgressOpen] = useState(false)
+  const [sendProgress, setSendProgress] = useState<SendProgressState>({
+    phase: "idle",
+    statusText: "",
+    totalCustomers: 0,
+    doneCustomers: 0,
+    totalSuccess: 0,
+    totalFailed: 0,
+    customers: [],
+  })
+
+  const [isMediaProgressOpen, setIsMediaProgressOpen] = useState(false)
+  const [mediaProgress, setMediaProgress] = useState<SendProgressState>({
+    phase: "idle",
+    statusText: "",
+    totalCustomers: 0,
+    doneCustomers: 0,
+    totalSuccess: 0,
+    totalFailed: 0,
+    customers: [],
+    totalMessages: 0,
+    attemptedMessages: 0,
+  })
 
   useEffect(() => {
     loadMessagePreview()
@@ -143,72 +242,197 @@ export default function WhatsappManagementPage() {
       setIsSending(true)
       toast.info(t("whatsappSendingMessagesInfo", lang))
 
-      const response = await fetch("/api/whatsapp-send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          customers: pendingCustomers,
-        }),
+      const selected = pendingCustomers
+      if (!selected || selected.length === 0) {
+        toast.error(t("whatsappSelectAtLeastOneCustomer", lang))
+        return
+      }
+
+      setIsSendProgressOpen(true)
+      const progressCustomers: SendCustomerProgress[] = selected.map((c) => ({
+        customerId: c.id,
+        name: c.customer_name || "(بدون اسم)",
+        phone: c.phone_number || "",
+        status: "pending",
+        success: false,
+      }))
+
+      setSendProgress({
+        phase: "sending",
+        statusText: t("whatsappProgressStarting", lang),
+        totalCustomers: progressCustomers.length,
+        doneCustomers: 0,
+        totalSuccess: 0,
+        totalFailed: 0,
+        customers: progressCustomers,
       })
 
-      if (response.ok) {
-        const result = await response.json()
-        
-        if (result.failed === 0) {
-          toast.success(t("whatsappMessagesSentSuccess", lang).replace("{count}", String(result.success)))
-        } else {
-          toast.warning(
-            t("whatsappMessagesSentWithFailures", lang)
-              .replace("{success}", String(result.success))
-              .replace("{failed}", String(result.failed))
-          )
-        }
-        
-        if (result.errors && result.errors.length > 0) {
-          setSendErrors(result.errors)
-          setShowErrorDialog(true)
-        }
-        
-        setSelectedIds([])
-      } else {
-        toast.error(t("whatsappSendMessagesFailed", lang))
+      // نجلب الإعدادات مرة واحدة لاستخدامها في التأخير الآمن (مثل نظام التذكير)
+      const settingsResp = await fetch("/api/whatsapp-settings")
+      const settingsData = await safeReadJson(settingsResp)
+      const delaySettings: WhatsAppDelaySettings = {
+        per_message_base_delay_ms: safeNumber(settingsData?.per_message_base_delay_ms, 0),
+        per_message_jitter_ms: safeNumber(settingsData?.per_message_jitter_ms, 0),
+        batch_size: Math.max(1, safeNumber(settingsData?.batch_size, 1) || 1),
+        batch_pause_ms: safeNumber(settingsData?.batch_pause_ms, 0),
       }
+
+      const errors: Array<{ customer: string; error: string }> = []
+
+      for (let i = 0; i < selected.length; i++) {
+        const customer = selected[i]
+        const displayName = customer.customer_name || customer.phone_number || "(بدون رقم)"
+
+        setSendProgress((prev) => ({
+          ...prev,
+          statusText: t("whatsappProgressSendingTo", lang).replace("{name}", String(displayName)),
+          customers: prev.customers.map((pc) =>
+            pc.customerId === customer.id ? { ...pc, status: "sending" } : pc
+          ),
+        }))
+
+        const response = await fetch("/api/whatsapp-send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ customers: [customer] }),
+        })
+
+        const result = await safeReadJson(response)
+
+        // /api/whatsapp-send يرجع {success, failed, errors[]} حتى لو HTTP 200
+        const failedCount = safeNumber(result?.failed, response.ok ? 0 : 1)
+        const succeededCount = safeNumber(result?.success, 0)
+        const firstErr =
+          Array.isArray(result?.errors) && result.errors.length > 0
+            ? String(result.errors[0]?.error || result.errors[0]?.message || "")
+            : (!response.ok ? String(result?.error || result?.message || `HTTP ${response.status}`) : "")
+
+        if (response.ok && failedCount === 0 && succeededCount > 0) {
+          setSendProgress((prev) => ({
+            ...prev,
+            doneCustomers: prev.doneCustomers + 1,
+            totalSuccess: prev.totalSuccess + 1,
+            customers: prev.customers.map((pc) =>
+              pc.customerId === customer.id ? { ...pc, status: "done", success: true } : pc
+            ),
+          }))
+        } else {
+          const errMsg = firstErr || t("whatsappSendMessagesFailed", lang)
+          errors.push({ customer: customer.customer_name, error: errMsg })
+          setSendProgress((prev) => ({
+            ...prev,
+            doneCustomers: prev.doneCustomers + 1,
+            totalFailed: prev.totalFailed + 1,
+            customers: prev.customers.map((pc) =>
+              pc.customerId === customer.id
+                ? { ...pc, status: "error", success: false, lastError: errMsg }
+                : pc
+            ),
+          }))
+        }
+
+        // تأخير آمن بين الرسائل (لا نؤخر بعد آخر رسالة)
+        if (i < selected.length - 1) {
+          const delayMs = getSafeRandomDelayMs(
+            delaySettings.per_message_base_delay_ms,
+            delaySettings.per_message_jitter_ms
+          )
+          await sleep(delayMs)
+
+          if ((i + 1) % delaySettings.batch_size === 0) {
+            const pauseMs = Math.max(delaySettings.batch_pause_ms, ACCOUNT_PROTECTION_MIN_DELAY_MS)
+            await sleep(pauseMs)
+          }
+        }
+      }
+
+      setSendProgress((prev) => ({
+        ...prev,
+        phase: "done",
+        statusText: t("whatsappProgressCompleted", lang),
+      }))
+
+      if (errors.length === 0) {
+        toast.success(t("whatsappMessagesSentSuccess", lang).replace("{count}", String(selected.length)))
+      } else {
+        toast.warning(
+          t("whatsappMessagesSentWithFailures", lang)
+            .replace("{success}", String(selected.length - errors.length))
+            .replace("{failed}", String(errors.length))
+        )
+        setSendErrors(errors)
+        setShowErrorDialog(true)
+      }
+
+      setSelectedIds([])
     } catch {
       toast.error(t("whatsappSendMessagesError", lang))
+      setSendProgress((prev) => ({
+        ...prev,
+        phase: "error",
+        statusText: t("whatsappSendMessagesError", lang),
+      }))
     } finally {
       setIsSending(false)
+      setPendingCustomers([])
     }
   }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
 
-    if (!file.type.startsWith('image/')) {
+    const imageFiles = files.filter(f => f.type?.startsWith('image/'))
+    if (imageFiles.length === 0) {
       toast.error(t("whatsappChooseImageOnly", lang))
       return
     }
 
-    setSelectedImage(file)
-    
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setImagePreviewUrl(reader.result as string)
+    const remaining = Math.max(0, 2 - selectedImages.length)
+    if (remaining <= 0) {
+      toast.error("الحد الأقصى هو صورتين فقط")
+      return
     }
-    reader.readAsDataURL(file)
+
+    const toAdd = imageFiles.slice(0, remaining)
+    if (imageFiles.length > remaining) {
+      toast.warning("تم اختيار أكثر من صورتين، سيتم استخدام أول صورتين فقط")
+    }
+
+    setSelectedImages(prev => [...prev, ...toAdd])
+
+    // previews
+    toAdd.forEach((file) => {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreviewUrls(prev => [...prev, String(reader.result || "")])
+      }
+      reader.readAsDataURL(file)
+    })
+
+    // reset input value so selecting same file again triggers change
+    e.target.value = ""
   }
 
   function clearImageSelection() {
-    setSelectedImage(null)
-    setImagePreviewUrl('')
+    setSelectedImages([])
+    setImagePreviewUrls([])
     setImageDescription('')
   }
 
+  function removeSelectedImage(index: number) {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index))
+    setImagePreviewUrls(prev => prev.filter((_, i) => i !== index))
+  }
+
   async function handleSendMedia() {
-    if (!selectedImage) {
+    if (!selectedImages || selectedImages.length === 0) {
       toast.error(t("whatsappSelectImage", lang))
+      return
+    }
+
+    if (selectedImages.length > 2) {
+      toast.error("الحد الأقصى هو صورتين فقط")
       return
     }
 
@@ -219,103 +443,213 @@ export default function WhatsappManagementPage() {
 
     const selectedCustomers = customers.filter(c => selectedIds.includes(c.id))
 
+    const fileToDataUrl = (file: File) =>
+      new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result || ""))
+        reader.onerror = () => reject(new Error("فشل قراءة الصورة"))
+        reader.readAsDataURL(file)
+      })
+
     try {
       setIsSendingMedia(true)
       toast.info(t("whatsappSendingMediaInfo", lang))
 
-      const reader = new FileReader()
-      reader.readAsDataURL(selectedImage)
-      
-      reader.onloadend = async () => {
-        const base64Image = reader.result as string
+      setShowMediaDialog(false)
+      setIsMediaProgressOpen(true)
 
-        const response = await fetch("/api/whatsapp-send-media", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            customers: selectedCustomers,
-            image: base64Image,
-            caption: imageDescription,
-          }),
-        })
+      const progressCustomers: SendCustomerProgress[] = selectedCustomers.map((c) => ({
+        customerId: c.id,
+        name: c.customer_name || "(بدون اسم)",
+        phone: c.phone_number || "",
+        status: "pending",
+        success: false,
+        totalItems: selectedImages.length,
+        doneItems: 0,
+      }))
 
-        if (response.ok) {
-          const result = await response.json()
-          
-          if (result.failed === 0) {
-            toast.success(t("whatsappImageSentSuccess", lang).replace("{count}", String(result.success)))
-          } else {
-            toast.warning(
-              t("whatsappImageSentWithFailures", lang)
-                .replace("{success}", String(result.success))
-                .replace("{failed}", String(result.failed))
-            )
-          }
-          
-          if (result.errors && result.errors.length > 0) {
-            setSendErrors(result.errors)
-            setShowErrorDialog(true)
-          }
-          
-          setSelectedIds([])
-          setShowMediaDialog(false)
-          clearImageSelection()
-        } else {
-          let errorMessage = t("whatsappSendImageFailed", lang)
-          let errorDetails = ""
-          
-          try {
-            const responseText = await response.text()
-            if (responseText && responseText.trim()) {
-              try {
-                const errorData = JSON.parse(responseText)
-                
-                errorMessage = errorData.error || 
-                               errorData.message || 
-                               errorData.msg || 
-                               errorData.detail ||
-                               errorData.description ||
-                               (typeof errorData === 'string' ? errorData : null) ||
-                               errorMessage
-                
-                errorDetails = JSON.stringify(errorData, null, 2)
-                } catch {
-                errorMessage = responseText.substring(0, 200)
-                errorDetails = responseText
-              }
-            } else {
-              errorMessage = t("whatsappHttpError", lang)
-                .replace("{status}", String(response.status))
-                .replace("{statusText}", String(response.statusText))
-              errorDetails = `HTTP ${response.status} - ${response.statusText}\n${t("whatsappServerReturnedNoContent", lang)}`
-            }
-          } catch (e) {
-            errorMessage = t("whatsappHttpErrorShort", lang)
-              .replace("{status}", String(response.status))
-              .replace("{statusText}", String(response.statusText))
-            errorDetails = `HTTP ${response.status} - ${response.statusText}\n${t("whatsappReadError", lang)}: ${e}`
-          }
-          
-          toast.error(errorMessage)
-          
-          setSendErrors([{
-            customer: t("whatsappErrorDetailsCustomer", lang),
-            error: `${errorMessage}\n\n${t("whatsappDetailsLabel", lang)}\n${errorDetails}`
-          }])
-          setShowErrorDialog(true)
-        }
+      setMediaProgress({
+        phase: "preparing",
+        statusText: t("whatsappProgressPreparingMedia", lang),
+        totalCustomers: progressCustomers.length,
+        doneCustomers: 0,
+        totalSuccess: 0,
+        totalFailed: 0,
+        customers: progressCustomers,
+        totalMessages: progressCustomers.length * selectedImages.length,
+        attemptedMessages: 0,
+      })
+
+      const settingsResp = await fetch("/api/whatsapp-settings")
+      const settingsData = await safeReadJson(settingsResp)
+      const delaySettings: WhatsAppDelaySettings = {
+        per_message_base_delay_ms: safeNumber(settingsData?.per_message_base_delay_ms, 0),
+        per_message_jitter_ms: safeNumber(settingsData?.per_message_jitter_ms, 0),
+        batch_size: Math.max(1, safeNumber(settingsData?.batch_size, 1) || 1),
+        batch_pause_ms: safeNumber(settingsData?.batch_pause_ms, 0),
       }
+
+      const base64Images = await Promise.all(selectedImages.map(fileToDataUrl))
+
+      // رفع الصور مرة واحدة ثم نرسل الـ publicUrls للجميع (مثل نظام التذكير)
+      setMediaProgress((prev) => ({
+        ...prev,
+        phase: "preparing",
+        statusText: t("whatsappProgressUploadingMedia", lang),
+      }))
+
+      const prepareResp = await fetch("/api/whatsapp-prepare-media", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ images: base64Images }),
+      })
+
+      const prepareData = await safeReadJson(prepareResp)
+      if (!prepareResp.ok) {
+        const errMsg = String(prepareData?.error || prepareData?.message || `HTTP ${prepareResp.status}`)
+        throw new Error(errMsg)
+      }
+
+      const publicUrls: string[] = Array.isArray(prepareData?.publicUrls)
+        ? prepareData.publicUrls.map((x: any) => String(x || "")).filter((x: string) => x)
+        : [String(prepareData?.publicUrl || "")].filter(Boolean)
+
+      if (!publicUrls || publicUrls.length === 0) {
+        throw new Error("فشل تجهيز الصور: publicUrls فارغ")
+      }
+
+      if (publicUrls.length > 2) {
+        throw new Error("فشل تجهيز الصور: تم إرجاع أكثر من صورتين")
+      }
+
+      setMediaProgress((prev) => ({
+        ...prev,
+        phase: "sending",
+        statusText: t("whatsappProgressStarting", lang),
+      }))
+
+      const errors: Array<{ customer: string; error: string }> = []
+
+      for (let i = 0; i < selectedCustomers.length; i++) {
+        const customer = selectedCustomers[i]
+        const displayName = customer.customer_name || customer.phone_number || "(بدون رقم)"
+        let customerFailed = 0
+
+        setMediaProgress((prev) => ({
+          ...prev,
+          statusText: t("whatsappProgressSendingTo", lang).replace("{name}", String(displayName)),
+          customers: prev.customers.map((pc) =>
+            pc.customerId === customer.id ? { ...pc, status: "sending" } : pc
+          ),
+        }))
+
+        for (let imgIdx = 0; imgIdx < publicUrls.length; imgIdx++) {
+          const caption = imgIdx === 0 ? imageDescription : ""
+
+          const resp = await fetch("/api/whatsapp-send-media", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              customers: [customer],
+              image: publicUrls[imgIdx],
+              caption,
+            }),
+          })
+
+          const result = await safeReadJson(resp)
+          const failedCount = safeNumber(result?.failed, resp.ok ? 0 : 1)
+          const succeededCount = safeNumber(result?.success, 0)
+          const firstErr =
+            Array.isArray(result?.errors) && result.errors.length > 0
+              ? String(result.errors[0]?.error || result.errors[0]?.message || "")
+              : (!resp.ok ? String(result?.error || result?.message || `HTTP ${resp.status}`) : "")
+
+          setMediaProgress((prev) => ({
+            ...prev,
+            attemptedMessages: (prev.attemptedMessages || 0) + 1,
+          }))
+
+          if (resp.ok && failedCount === 0 && succeededCount > 0) {
+            setMediaProgress((prev) => ({
+              ...prev,
+              totalSuccess: prev.totalSuccess + 1,
+              customers: prev.customers.map((pc) => {
+                if (pc.customerId !== customer.id) return pc
+                const doneItems = Math.min(pc.totalItems || publicUrls.length, (pc.doneItems || 0) + 1)
+                return { ...pc, doneItems }
+              }),
+            }))
+          } else {
+            customerFailed += 1
+            const errMsg = firstErr || t("whatsappSendImageFailed", lang)
+            errors.push({ customer: customer.customer_name, error: errMsg })
+            setMediaProgress((prev) => ({
+              ...prev,
+              totalFailed: prev.totalFailed + 1,
+              customers: prev.customers.map((pc) => {
+                if (pc.customerId !== customer.id) return pc
+                const doneItems = Math.min(pc.totalItems || publicUrls.length, (pc.doneItems || 0) + 1)
+                return { ...pc, doneItems, lastError: errMsg }
+              }),
+            }))
+          }
+
+          // تأخير آمن بين كل رسالة (أي بين كل صورة أيضاً)
+          const isLastMessage = i === selectedCustomers.length - 1 && imgIdx === publicUrls.length - 1
+          if (!isLastMessage) {
+            const delayMs = getSafeRandomDelayMs(
+              delaySettings.per_message_base_delay_ms,
+              delaySettings.per_message_jitter_ms
+            )
+            await sleep(delayMs)
+            const messageIndex = i * publicUrls.length + imgIdx
+            if ((messageIndex + 1) % delaySettings.batch_size === 0) {
+              const pauseMs = Math.max(delaySettings.batch_pause_ms, ACCOUNT_PROTECTION_MIN_DELAY_MS)
+              await sleep(pauseMs)
+            }
+          }
+        }
+
+        setMediaProgress((prev) => ({
+          ...prev,
+          doneCustomers: prev.doneCustomers + 1,
+          customers: prev.customers.map((pc) =>
+            pc.customerId === customer.id
+              ? { ...pc, status: customerFailed > 0 ? "error" : "done", success: customerFailed === 0 }
+              : pc
+          ),
+        }))
+      }
+
+      setMediaProgress((prev) => ({
+        ...prev,
+        phase: "done",
+        statusText: t("whatsappProgressCompleted", lang),
+      }))
+
+      if (errors.length === 0) {
+        toast.success(t("whatsappImageSentSuccess", lang).replace("{count}", String(selectedCustomers.length)))
+      } else {
+        toast.warning(
+          t("whatsappImageSentWithFailures", lang)
+            .replace("{success}", String(selectedCustomers.length - errors.length))
+            .replace("{failed}", String(errors.length))
+        )
+        setSendErrors(errors)
+        setShowErrorDialog(true)
+      }
+
+      setSelectedIds([])
+      clearImageSelection()
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : t("whatsappUnexpectedError", lang)
-      
       toast.error(t("whatsappSendImageErrorWithMessage", lang).replace("{error}", String(errorMsg)))
-      
-      setSendErrors([{
-        customer: t("whatsappSystem", lang),
-        error: errorMsg
-      }])
+      setMediaProgress((prev) => ({
+        ...prev,
+        phase: "error",
+        statusText: String(errorMsg),
+      }))
+      setSendErrors([{ customer: t("whatsappSystem", lang), error: String(errorMsg) }])
       setShowErrorDialog(true)
     } finally {
       setIsSendingMedia(false)
@@ -712,7 +1046,7 @@ export default function WhatsappManagementPage() {
                   <span className="text-lg font-bold text-primary">{selectedIds.length}</span>
                 </div>
               </Card>
-              {!selectedImage ? (
+              {selectedImages.length === 0 ? (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">{t("whatsappChooseImageLabel", lang)}</label>
                   <label htmlFor="image-upload" className="block">
@@ -723,6 +1057,7 @@ export default function WhatsappManagementPage() {
                           <p className="font-medium">{t("whatsappClickToChooseImage", lang)}</p>
                           <p className="text-sm text-muted-foreground mt-1">
                             {t("whatsappImageFormatsSupported", lang)}
+                            <span className="block">الحد الأقصى: صورتين</span>
                           </p>
                         </div>
                       </div>
@@ -731,6 +1066,7 @@ export default function WhatsappManagementPage() {
                       id="image-upload"
                       type="file"
                       accept="image/*"
+                      multiple
                       className="hidden"
                       onChange={handleImageChange}
                     />
@@ -749,30 +1085,60 @@ export default function WhatsappManagementPage() {
                       <Trash2 className="h-3 w-3" />
                       {t("remove", lang)}
                     </Button>
+                    {selectedImages.length < 2 && (
+                      <label htmlFor="image-upload-add" className="ml-auto">
+                        <Button variant="outline" size="sm" className="gap-1" asChild>
+                          <span>
+                            <Upload className="h-3 w-3" />
+                            إضافة صورة
+                          </span>
+                        </Button>
+                        <input
+                          id="image-upload-add"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleImageChange}
+                        />
+                      </label>
+                    )}
                   </div>
                   
                   <Card className="p-4 bg-muted/50">
-                    <div className="flex items-start gap-4">
-                      {imagePreviewUrl && (
-                        <div className="relative w-48 h-48 shrink-0 rounded-lg overflow-hidden border-2 border-primary/20">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={imagePreviewUrl}
-                            alt={t("whatsappImagePreviewAlt", lang)}
-                            className="w-full h-full object-cover"
-                          />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedImages.map((file, idx) => (
+                        <div key={`${file.name}-${idx}`} className="flex items-start gap-3">
+                          {imagePreviewUrls[idx] && (
+                            <div className="relative w-40 h-40 shrink-0 rounded-lg overflow-hidden border-2 border-primary/20">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={imagePreviewUrls[idx]}
+                                alt={t("whatsappImagePreviewAlt", lang)}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <div>
+                                <p className="text-sm text-muted-foreground">{t("whatsappFileNameLabel", lang)}</p>
+                                <p className="font-medium break-all">{file.name}</p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeSelectedImage(idx)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">{t("whatsappFileSizeLabel", lang)}</p>
+                              <p className="font-medium">{(file.size / 1024).toFixed(2)} KB</p>
+                            </div>
+                          </div>
                         </div>
-                      )}
-                      <div className="flex-1 space-y-2">
-                        <div>
-                          <p className="text-sm text-muted-foreground">{t("whatsappFileNameLabel", lang)}</p>
-                          <p className="font-medium">{selectedImage.name}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">{t("whatsappFileSizeLabel", lang)}</p>
-                          <p className="font-medium">{(selectedImage.size / 1024).toFixed(2)} KB</p>
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </Card>
 
@@ -802,7 +1168,7 @@ export default function WhatsappManagementPage() {
               <Button
                 className="flex-1 gap-2"
                 onClick={handleSendMedia}
-                disabled={!selectedImage || isSendingMedia}
+                disabled={selectedImages.length === 0 || isSendingMedia}
               >
                 {isSendingMedia ? (
                   <>
@@ -817,6 +1183,192 @@ export default function WhatsappManagementPage() {
                 )}
               </Button>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Progress: Text messages */}
+        <Dialog
+          open={isSendProgressOpen}
+          onOpenChange={(open) => {
+            // اسمح بالإغلاق في أي وقت، لكن لا نعيد التهيئة أثناء الإرسال حتى لا نفقد التفاصيل.
+            setIsSendProgressOpen(open)
+            if (!open && (sendProgress.phase === "done" || sendProgress.phase === "error")) {
+              setSendProgress({
+                phase: "idle",
+                statusText: "",
+                totalCustomers: 0,
+                doneCustomers: 0,
+                totalSuccess: 0,
+                totalFailed: 0,
+                customers: [],
+              })
+            }
+          }}
+        >
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>{t("whatsappProgressDialogTitleMessages", lang)}</DialogTitle>
+              <DialogDescription>{t("whatsappProgressDialogDescription", lang)}</DialogDescription>
+            </DialogHeader>
+
+            <Card className="p-4 bg-muted/40">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm text-muted-foreground">{sendProgress.statusText}</div>
+                  <div className="text-sm" dir="ltr">
+                    {sendProgress.doneCustomers}/{sendProgress.totalCustomers}
+                  </div>
+                </div>
+                <Progress
+                  value={
+                    sendProgress.totalCustomers > 0
+                      ? Math.round((sendProgress.doneCustomers / sendProgress.totalCustomers) * 100)
+                      : 0
+                  }
+                  indicatorClassName="bg-green-600"
+                />
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div className="p-2 rounded-md bg-background/60 border">
+                    <div className="text-muted-foreground">{t("whatsappProgressSuccessLabel", lang)}</div>
+                    <div className="font-semibold" dir="ltr">{sendProgress.totalSuccess}</div>
+                  </div>
+                  <div className="p-2 rounded-md bg-background/60 border">
+                    <div className="text-muted-foreground">{t("whatsappProgressFailedLabel", lang)}</div>
+                    <div className="font-semibold" dir="ltr">{sendProgress.totalFailed}</div>
+                  </div>
+                  <div className="p-2 rounded-md bg-background/60 border">
+                    <div className="text-muted-foreground">{t("whatsappProgressDoneLabel", lang)}</div>
+                    <div className="font-semibold" dir="ltr">{sendProgress.doneCustomers}</div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <div className="space-y-2 max-h-[420px] overflow-y-auto">
+              {sendProgress.customers.map((c) => (
+                <Card
+                  key={c.customerId}
+                  className={`p-3 ${c.status === "error" ? "bg-destructive/10" : "bg-muted/30"}`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="font-semibold">{c.name}</div>
+                      <div className="text-sm text-muted-foreground" dir="ltr">
+                        {c.phone || "-"}
+                      </div>
+                    </div>
+                    <div className="text-sm whitespace-nowrap">
+                      {mapStatusLabel(c.status, lang)}
+                    </div>
+                  </div>
+                  {c.lastError && (
+                    <div className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">{c.lastError}</div>
+                  )}
+                </Card>
+              ))}
+            </div>
+
+            <Button onClick={() => setIsSendProgressOpen(false)} className="w-full">
+              {t("close", lang)}
+            </Button>
+          </DialogContent>
+        </Dialog>
+
+        {/* Progress: Media */}
+        <Dialog
+          open={isMediaProgressOpen}
+          onOpenChange={(open) => {
+            setIsMediaProgressOpen(open)
+            if (!open && (mediaProgress.phase === "done" || mediaProgress.phase === "error")) {
+              setMediaProgress({
+                phase: "idle",
+                statusText: "",
+                totalCustomers: 0,
+                doneCustomers: 0,
+                totalSuccess: 0,
+                totalFailed: 0,
+                customers: [],
+                totalMessages: 0,
+                attemptedMessages: 0,
+              })
+            }
+          }}
+        >
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>{t("whatsappProgressDialogTitleMedia", lang)}</DialogTitle>
+              <DialogDescription>{t("whatsappProgressDialogDescription", lang)}</DialogDescription>
+            </DialogHeader>
+
+            <Card className="p-4 bg-muted/40">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm text-muted-foreground">{mediaProgress.statusText}</div>
+                  <div className="text-sm" dir="ltr">
+                    {typeof mediaProgress.attemptedMessages === "number" && typeof mediaProgress.totalMessages === "number" && mediaProgress.totalMessages > 0
+                      ? `${mediaProgress.attemptedMessages}/${mediaProgress.totalMessages}`
+                      : `${mediaProgress.doneCustomers}/${mediaProgress.totalCustomers}`}
+                  </div>
+                </div>
+                <Progress
+                  value={
+                    typeof mediaProgress.attemptedMessages === "number" && typeof mediaProgress.totalMessages === "number" && mediaProgress.totalMessages > 0
+                      ? Math.round((mediaProgress.attemptedMessages / mediaProgress.totalMessages) * 100)
+                      : (mediaProgress.totalCustomers > 0
+                          ? Math.round((mediaProgress.doneCustomers / mediaProgress.totalCustomers) * 100)
+                          : 0)
+                  }
+                  indicatorClassName="bg-green-600"
+                />
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div className="p-2 rounded-md bg-background/60 border">
+                    <div className="text-muted-foreground">{t("whatsappProgressSuccessLabel", lang)}</div>
+                    <div className="font-semibold" dir="ltr">{mediaProgress.totalSuccess}</div>
+                  </div>
+                  <div className="p-2 rounded-md bg-background/60 border">
+                    <div className="text-muted-foreground">{t("whatsappProgressFailedLabel", lang)}</div>
+                    <div className="font-semibold" dir="ltr">{mediaProgress.totalFailed}</div>
+                  </div>
+                  <div className="p-2 rounded-md bg-background/60 border">
+                    <div className="text-muted-foreground">{t("whatsappProgressDoneLabel", lang)}</div>
+                    <div className="font-semibold" dir="ltr">{mediaProgress.doneCustomers}</div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <div className="space-y-2 max-h-[420px] overflow-y-auto">
+              {mediaProgress.customers.map((c) => (
+                <Card
+                  key={c.customerId}
+                  className={`p-3 ${c.status === "error" ? "bg-destructive/10" : "bg-muted/30"}`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="font-semibold">{c.name}</div>
+                      <div className="text-sm text-muted-foreground" dir="ltr">
+                        {c.phone || "-"}
+                      </div>
+                      {typeof c.doneItems === "number" && typeof c.totalItems === "number" && c.totalItems > 0 && (
+                        <div className="text-sm text-muted-foreground" dir="ltr">
+                          {c.doneItems}/{c.totalItems}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-sm whitespace-nowrap">
+                      {mapStatusLabel(c.status, lang)}
+                    </div>
+                  </div>
+                  {c.lastError && (
+                    <div className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">{c.lastError}</div>
+                  )}
+                </Card>
+              ))}
+            </div>
+
+            <Button onClick={() => setIsMediaProgressOpen(false)} className="w-full">
+              {t("close", lang)}
+            </Button>
           </DialogContent>
         </Dialog>
       </div>

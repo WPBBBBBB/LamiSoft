@@ -5,6 +5,7 @@ export interface DebtNotification {
   customer_id: string
   customer_name: string
   customer_phone?: string
+  customer_avatar?: string | null
   notification_type: 'تنبيه_قبل_3_ايام' | 'تنبيه_مرور_شهر' | 'تنبيه_عام'
   metadata?: unknown
   message: string
