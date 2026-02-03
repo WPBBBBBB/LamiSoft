@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
-import { Send, Image as ImageIcon, Megaphone, Eye, FileText, X, RefreshCw, Edit, Upload, Trash2 } from "lucide-react"
+import { Send, Image as ImageIcon, Megaphone, Eye, FileText, X, RefreshCw, Edit, Upload, Trash2, MessageCircle } from "lucide-react"
 import { toast } from "sonner"
 import { Textarea } from "@/components/ui/textarea"
 import { PermissionGuard } from "@/components/permission-guard"
@@ -90,7 +90,7 @@ async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function safeReadJson(resp: Response): Promise<any | null> {
+async function safeReadJson(resp: Response): Promise<unknown | null> {
   try {
     return await resp.json()
   } catch {
@@ -166,6 +166,25 @@ export default function WhatsappManagementPage() {
     loadMessagePreview()
     loadCustomers()
   }, [])
+
+  function handleOpenWhatsApp(phoneNumber: string) {
+    const clean = String(phoneNumber || "").replace(/\D/g, "")
+    if (!clean) {
+      toast.error(t("whatsappSelectCustomers", lang))
+      return
+    }
+    const whatsappAppUrl = `whatsapp://send?phone=${clean}`
+    const whatsappWebUrl = `https://wa.me/${clean}`
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    if (isMobile) {
+      window.location.href = whatsappAppUrl
+      setTimeout(() => {
+        window.open(whatsappWebUrl, "_blank")
+      }, 800)
+    } else {
+      window.open(whatsappWebUrl, "_blank")
+    }
+  }
 
   async function loadCustomers() {
     try {
@@ -511,7 +530,9 @@ export default function WhatsappManagementPage() {
       }
 
       const publicUrls: string[] = Array.isArray(prepareData?.publicUrls)
-        ? prepareData.publicUrls.map((x: any) => String(x || "")).filter((x: string) => x)
+        ? prepareData.publicUrls
+            .map((x: unknown) => String(x || ""))
+            .filter((x: string) => x)
         : [String(prepareData?.publicUrl || "")].filter(Boolean)
 
       if (!publicUrls || publicUrls.length === 0) {
@@ -836,7 +857,30 @@ export default function WhatsappManagementPage() {
                           </div>
                         </TableCell>
                         <TableCell className="font-medium text-right">{customer.customer_name}</TableCell>
-                        <TableCell className="text-right" dir="ltr">{customer.phone_number || '-'}</TableCell>
+                        <TableCell className="text-right" dir="ltr">
+                          <div className="flex items-center gap-2 justify-end">
+                            <span>{customer.phone_number || '-'}</span>
+                            {customer.phone_number ? (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenWhatsApp(customer.phone_number)}
+                                title="فتح واتساب"
+                              >
+                                <MessageCircle className="h-4 w-4 text-green-600" />
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                disabled
+                                title="لا يوجد رقم"
+                              >
+                                <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-right" dir="ltr">
                           {customer.last_payment_date 
                             ? new Date(customer.last_payment_date).toLocaleDateString('en-US')
