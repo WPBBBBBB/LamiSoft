@@ -62,26 +62,57 @@ type RawNotificationRow = {
 }
 
 type RawCustomerRow = {
-  id: string
+  id: string | number
   customer_name?: string | null
-  phone_number?: string | null
+  phone_number?: string | number | null
   balanceiqd?: number | null
   balanceusd?: number | null
   avatar_url?: string | null
 }
 
 type RawPaymentRow = {
-  customer_id: string
+  customer_id: string | number
   pay_date?: string | null
   amount_iqd?: number | null
   amount_usd?: number | null
   transaction_type?: string | null
 }
 
-function getMetaString(metadata: unknown, key: string): string | undefined {
+function getMetaText(metadata: unknown, key: string): string | undefined {
   if (!metadata || typeof metadata !== "object") return undefined
   const v = (metadata as Record<string, unknown>)[key]
-  if (typeof v === "string" && v.trim().length > 0) return v
+  if (typeof v === "string") {
+    const s = v.trim()
+    return s.length > 0 ? s : undefined
+  }
+  if (typeof v === "number" && Number.isFinite(v)) return String(v)
+  return undefined
+}
+
+function getMetaFirstText(metadata: unknown, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const v = getMetaText(metadata, key)
+    if (v) return v
+  }
+  return undefined
+}
+
+function getMetaId(metadata: unknown, key: string): string | number | undefined {
+  if (!metadata || typeof metadata !== "object") return undefined
+  const v = (metadata as Record<string, unknown>)[key]
+  if (typeof v === "string") {
+    const s = v.trim()
+    return s.length > 0 ? s : undefined
+  }
+  if (typeof v === "number" && Number.isFinite(v)) return v
+  return undefined
+}
+
+function getMetaFirstId(metadata: unknown, keys: string[]): string | number | undefined {
+  for (const key of keys) {
+    const v = getMetaId(metadata, key)
+    if (v !== undefined) return v
+  }
   return undefined
 }
 
@@ -162,14 +193,20 @@ async function getAllDebtNotifications(includeRead: boolean = false) {
     
     // جلب معلومات الزبائن لإضافة رقم الهاتف
     const customerIds = debtNotifications
-      .map((n) => getMetaString(n.metadata, "customer_id"))
-      .filter((x): x is string => Boolean(x))
+      .map((n) =>
+        getMetaFirstId(n.metadata, [
+          "customer_id",
+          "customerId",
+          "customerID",
+          "customerid",
+        ])
+      )
+      .filter((x): x is string | number => x !== undefined)
     
     let customersMap: Record<string, RawCustomerRow> = {}
     let paymentsMap: Record<string, RawPaymentRow> = {}
     
     if (customerIds.length > 0) {
-      // جلب معلومات الزبائن
       const { data: customersData } = await supabase
         .from("customers")
         .select("id, customer_name, phone_number, balanceiqd, balanceusd, avatar_url")
@@ -178,7 +215,7 @@ async function getAllDebtNotifications(includeRead: boolean = false) {
       const customers = (customersData || []) as RawCustomerRow[]
       if (customers.length > 0) {
         customersMap = customers.reduce<Record<string, RawCustomerRow>>((acc, c) => {
-          acc[c.id] = c
+          acc[String(c.id)] = c
           return acc
         }, {})
       }
@@ -195,39 +232,66 @@ async function getAllDebtNotifications(includeRead: boolean = false) {
       if (payments.length > 0) {
         // أخذ آخر دفعة لكل زبون
         paymentsMap = payments.reduce<Record<string, RawPaymentRow>>((acc, p) => {
-          if (!acc[p.customer_id]) acc[p.customer_id] = p
+          const key = String(p.customer_id)
+          if (!acc[key]) acc[key] = p
           return acc
         }, {})
       }
     }
     
     // تحويل الإشعارات إلى التنسيق المطلوب
-    const formattedNotifications = debtNotifications.map((n) => {
-      const metaCustomerId = getMetaString(n.metadata, "customer_id")
-      const customer = metaCustomerId ? customersMap[metaCustomerId] : undefined
-      const lastPayment = metaCustomerId ? paymentsMap[metaCustomerId] : undefined
+    const formattedNotifications = await Promise.all(debtNotifications.map(async (n) => {
+      const metaCustomerId = getMetaFirstId(n.metadata, [
+        "customer_id",
+        "customerId",
+        "customerID",
+        "customerid",
+      ])
+      const customerKey = metaCustomerId !== undefined ? String(metaCustomerId) : ""
+      const customer = customerKey ? customersMap[customerKey] : undefined
+      const lastPayment = customerKey ? paymentsMap[customerKey] : undefined
+
+      // إذا لم نجد العميل في الـ map، نجلبه مباشرة من قاعدة البيانات
+      let directCustomerPhone = ""
+      if (!customer && customerKey) {
+        const { data: directCustomer } = await supabase
+          .from("customers")
+          .select("phone_number")
+          .eq("id", customerKey)
+          .single()
+        
+        if (directCustomer?.phone_number) {
+          directCustomerPhone = String(directCustomer.phone_number).trim()
+        }
+      }
       
       return {
         id: n.id,
-        customer_id: metaCustomerId || "",
+        customer_id: customerKey,
         customer_name:
           customer?.customer_name ||
-          getMetaString(n.metadata, "customer_name") ||
+          getMetaText(n.metadata, "customer_name") ||
           String(n.title || ""),
         customer_phone:
-          customer?.phone_number ||
-          getMetaString(n.metadata, "customer_phone") ||
-          getMetaString(n.metadata, "phone_number") ||
-          getMetaString(n.metadata, "customer_phone_number") ||
-          getMetaString(n.metadata, "phone") ||
-          getMetaString(n.metadata, "mobile") ||
+          directCustomerPhone ||
+          (customer?.phone_number != null && String(customer.phone_number).trim()
+            ? String(customer.phone_number).trim()
+            : "") ||
+          getMetaFirstText(n.metadata, [
+            "customer_phone",
+            "phone_number",
+            "customer_phone_number",
+            "phone",
+            "mobile",
+            "customerPhone",
+          ]) ||
           "",
         customer_avatar: customer?.avatar_url || null,
         notification_type: n.type || "تنبيه_عام",
         metadata: n.metadata,
         message: String(n.message || n.body || ""),
         last_payment_date:
-          lastPayment?.pay_date || getMetaString(n.metadata, "last_payment_date"),
+          lastPayment?.pay_date || getMetaText(n.metadata, "last_payment_date"),
         last_payment_amount_iqd:
           (lastPayment?.amount_iqd ?? getMetaNumber(n.metadata, "last_payment_iqd") ?? 0) || 0,
         last_payment_amount_usd:
@@ -240,7 +304,7 @@ async function getAllDebtNotifications(includeRead: boolean = false) {
         created_at: n.created_at,
         updated_at: n.updated_at || n.created_at,
       }
-    })
+    }))
 
     return { success: true, data: formattedNotifications }
   } catch (error) {
@@ -321,7 +385,6 @@ export default function NotificationsPage() {
       const result = await getAllDebtNotifications(showRead)
       if (result.success) {
         const allData = result.data || []
-        
         setNotifications(allData);
         
         const hasConfettiNotification = allData.some(
@@ -401,12 +464,13 @@ export default function NotificationsPage() {
   }
 
   const handleOpenWhatsApp = (phoneNumber: string) => {
-    if (!phoneNumber) {
+    const raw = String(phoneNumber || "").trim()
+    if (!raw) {
       toast.error("رقم الهاتف غير متوفر")
       return
     }
 
-    const formattedPhone = formatIraqiPhoneNumber(phoneNumber)
+    const formattedPhone = formatIraqiPhoneNumber(raw)
     const cleanPhone = formattedPhone.replace('+', '')
     
     // محاولة فتح التطبيق
@@ -415,15 +479,18 @@ export default function NotificationsPage() {
     
     // محاولة فتح التطبيق أولاً
     window.location.href = whatsappAppUrl
-    
-    // إذا لم يفتح التطبيق خلال ثانية، افتح الويب
+
+    // إذا لم يفتح التطبيق خلال أقل من ثانية، افتح الويب (بدون popups قد تُحجب)
     setTimeout(() => {
-      window.open(whatsappWebUrl, '_blank')
-    }, 1000)
+      if (!document.hidden) {
+        window.location.href = whatsappWebUrl
+      }
+    }, 900)
   }
 
   const handleSendReminder = async (notification: DebtNotification) => {
-    if (!notification.customer_phone) {
+    const phone = String(notification.customer_phone || "").trim()
+    if (!phone) {
       toast.error("رقم الهاتف غير متوفر")
       return
     }
@@ -435,7 +502,7 @@ export default function NotificationsPage() {
       const customerPayload = {
         id: customerId,
         customer_name: notification.customer_name,
-        phone_number: notification.customer_phone,
+        phone_number: phone,
         last_payment_date: notification.last_payment_date || null,
         last_payment_iqd: notification.last_payment_amount_iqd || 0,
         last_payment_usd: notification.last_payment_amount_usd || 0,
@@ -451,7 +518,7 @@ export default function NotificationsPage() {
         customer: {
           customerId,
           name: notification.customer_name || "(بدون اسم)",
-          phone: notification.customer_phone,
+          phone,
           status: "pending",
         },
       })
@@ -462,7 +529,7 @@ export default function NotificationsPage() {
               ...prev,
               statusText: t("whatsappProgressSendingTo", currentLanguage.code).replace(
                 "{name}",
-                String(notification.customer_name || notification.customer_phone)
+                String(notification.customer_name || phone)
               ),
               percent: 35,
               customer: { ...prev.customer, status: "sending" },
@@ -760,11 +827,14 @@ export default function NotificationsPage() {
                       {/* الأزرار - الجهة اليسرى */}
                       <div className="flex flex-col gap-3 min-w-[200px]">
                         <Button
-                          onClick={() => notification.customer_phone && handleOpenWhatsApp(notification.customer_phone)}
+                          onClick={() => {
+                            const phone = String(notification.customer_phone || "").trim()
+                            if (phone) handleOpenWhatsApp(phone)
+                          }}
                           className="w-full bg-green-600 hover:bg-green-700"
                           size="lg"
-                          disabled={!notification.customer_phone}
-                          title={!notification.customer_phone ? "لا يوجد رقم واتساب" : "فتح محادثة واتساب"}
+                          disabled={!String(notification.customer_phone || "").trim()}
+                          title={!String(notification.customer_phone || "").trim() ? "لا يوجد رقم واتساب" : "فتح محادثة واتساب"}
                         >
                           <MessageCircle className="h-5 w-5 mr-2" />
                           فتح واتساب
@@ -772,11 +842,11 @@ export default function NotificationsPage() {
 
                         <Button
                           onClick={() => handleSendReminder(notification)}
-                          disabled={!notification.customer_phone || sendingMessageFor === notification.id}
+                          disabled={!String(notification.customer_phone || "").trim() || sendingMessageFor === notification.id}
                           variant="outline"
                           className="w-full"
                           size="lg"
-                          title={!notification.customer_phone ? "لا يوجد رقم واتساب" : "إرسال تذكير"}
+                          title={!String(notification.customer_phone || "").trim() ? "لا يوجد رقم واتساب" : "إرسال تذكير"}
                         >
                           <Send className="h-5 w-5 mr-2" />
                           {sendingMessageFor === notification.id ? "جاري الإرسال..." : "إرسال تذكير"}
@@ -921,12 +991,12 @@ export default function NotificationsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {notification.customer_phone ? (
+                          {String(notification.customer_phone || "").trim() ? (
                             <>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => handleOpenWhatsApp(notification.customer_phone!)}
+                                onClick={() => handleOpenWhatsApp(String(notification.customer_phone || "").trim())}
                                 title="فتح واتساب"
                               >
                                 <MessageCircle className="h-4 w-4 text-green-600" />

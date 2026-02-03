@@ -39,8 +39,7 @@ export function NotificationsCard() {
   }
 
   useEffect(() => {
-    loadDebtUnreadCount().catch((error) => {
-      })
+    loadDebtUnreadCount().catch(() => {})
   }, [])
 
   // التحقق من صلاحية عرض الإشعارات
@@ -115,9 +114,16 @@ export function NotificationsCard() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--theme-surface)' }}>
-          <p className="text-sm text-muted-foreground text-center">
-            {t('youHave', currentLanguage.code)} <Badge variant="secondary" className="mx-1">{debtUnreadCount}</Badge> {t('unreadNotifications', currentLanguage.code)}
+        <div className="relative overflow-hidden rounded-lg p-4 border-2 border-red-300 bg-linear-to-r from-red-50/80 via-orange-50/80 to-rose-50/80 dark:from-red-950/20 dark:via-orange-950/20 dark:to-rose-950/20">
+          {/* أنيميشن الخلفية */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 bg-linear-to-r from-red-200 via-orange-200 to-rose-200 dark:from-red-800 dark:via-orange-800 dark:to-rose-800 animate-pulse" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(239,68,68,0.15),transparent_50%)] animate-ping" style={{ animationDuration: '3s' }} />
+          </div>
+          
+          {/* المحتوى */}
+          <p className="relative text-sm font-semibold text-center text-red-600 dark:text-red-400">
+            {t('youHave', currentLanguage.code)} <Badge variant="destructive" className="mx-1 text-base px-2 py-0.5 animate-bounce bg-red-500 hover:bg-red-600">{debtUnreadCount}</Badge> {t('unreadNotifications', currentLanguage.code)}
           </p>
         </div>
 

@@ -40,7 +40,7 @@ export async function getAllNotifications(includeRead: boolean = false): Promise
 }> {
   try {
     let query = supabase
-      .from("debt_notifications")
+      .from("notifications")
       .select("*")
       .order("created_at", { ascending: false })
 
@@ -70,7 +70,7 @@ export async function getAllNotifications(includeRead: boolean = false): Promise
 }
 
 /**
- * جلب عدد الإشعارات غير المقروءة
+ * جلب عدد الإشعارات غير المقروءة (إشعارات الديون فقط)
  */
 export async function getUnreadNotificationsCount(): Promise<{
   success: boolean
@@ -78,9 +78,10 @@ export async function getUnreadNotificationsCount(): Promise<{
   error?: string
 }> {
   try {
-    const { count, error } = await supabase
-      .from("debt_notifications")
-      .select("*", { count: "exact", head: true })
+    // جلب الإشعارات غير المقروءة المتعلقة بالديون فقط
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("id, type, title, message, is_read")
       .eq("is_read", false)
 
     if (error) {
@@ -90,9 +91,22 @@ export async function getUnreadNotificationsCount(): Promise<{
       }
     }
 
+    // تصفية الإشعارات المتعلقة بالديون فقط
+    const debtNotifications = (data || []).filter((n) => {
+      const title = String(n.title || "")
+      const message = String(n.message || "")
+      return (
+        n.type === "debt_reminder" ||
+        title.includes("دين") ||
+        title.includes("تسديد") ||
+        message.includes("دين") ||
+        message.includes("تسديد")
+      )
+    })
+
     return {
       success: true,
-      count: count || 0,
+      count: debtNotifications.length,
     }
   } catch (error) {
     return {
@@ -111,7 +125,7 @@ export async function markNotificationAsRead(notificationId: string): Promise<{
 }> {
   try {
     const { error } = await supabase
-      .from("debt_notifications")
+      .from("notifications")
       .update({ is_read: true })
       .eq("id", notificationId)
 
@@ -140,7 +154,7 @@ export async function markAllNotificationsAsRead(): Promise<{
 }> {
   try {
     const { error } = await supabase
-      .from("debt_notifications")
+      .from("notifications")
       .update({ is_read: true })
       .eq("is_read", false)
 
@@ -169,7 +183,7 @@ export async function deleteNotification(notificationId: string): Promise<{
 }> {
   try {
     const { error } = await supabase
-      .from("debt_notifications")
+      .from("notifications")
       .delete()
       .eq("id", notificationId)
 
@@ -291,7 +305,7 @@ export async function getCustomerNotifications(customerId: string): Promise<{
 }> {
   try {
     const { data, error } = await supabase
-      .from("debt_notifications")
+      .from("notifications")
       .select("*")
       .eq("customer_id", customerId)
       .order("created_at", { ascending: false })

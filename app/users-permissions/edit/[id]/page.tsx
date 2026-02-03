@@ -38,7 +38,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     age: "",
     username: "",
     password: "",
-    permissionType: "" as "" | "مدير" | "محاسب" | "موظف",
+    permissionType: "" as "" | "مدير" | "محاسب",
   })
 
   const [permissions, setPermissions] = useState({
@@ -70,7 +70,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         address: userData.address || "",
         age: userData.age ? userData.age.toString() : "",
         username: userData.username,
-        password: userData.password,
+        password: "",
         permissionType: userData.permission_type,
       })
 
@@ -128,10 +128,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       toast.error(t('pleaseEnterUsername', lang))
       return
     }
-    if (!formData.password.trim()) {
-      toast.error(t('pleaseEnterPassword', lang))
-      return
-    }
     if (!formData.permissionType) {
       toast.error(t('pleaseSelectPermissionType', lang))
       return
@@ -146,27 +142,31 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     setIsSaving(true)
 
     try {
-      const userData = {
+      const userData: any = {
         full_name: formData.fullName,
         phone_number: formData.phoneNumber || undefined,
         address: formData.address || undefined,
         age: formData.age ? parseInt(formData.age) : undefined,
         username: formData.username,
-        password: formData.password,
         permission_type: formData.permissionType,
       }
 
+      // تحديث كلمة المرور فقط إذا أدخل المستخدم قيمة جديدة
+      if (formData.password.trim()) {
+        userData.password = formData.password
+      }
+
       let permissionsData = undefined
-      if (formData.permissionType === "محاسب" || formData.permissionType === "موظف") {
+      if (formData.permissionType === "محاسب") {
         permissionsData = {
           view_statistics: permissions.viewStatistics,
           view_reports: permissions.viewReports,
           view_services: permissions.viewServices,
           view_people: permissions.viewPeople,
-          view_notifications: formData.permissionType === "موظف" ? permissions.viewNotifications : false,
-          add_purchase: formData.permissionType === "موظف" ? permissions.addPurchase : false,
-          view_stores: formData.permissionType === "موظف" ? permissions.viewStores : false,
-          view_store_transfer: formData.permissionType === "موظف" ? permissions.viewStoreTransfer : false,
+          view_notifications: false,
+          add_purchase: false,
+          view_stores: false,
+          view_store_transfer: false,
         }
       }
 
@@ -190,13 +190,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     { id: "viewReports", label: t('permViewReports', lang) },
     { id: "viewServices", label: t('permViewServices', lang) },
     { id: "viewPeople", label: t('permViewPeople', lang) },
-  ]
-
-  const employeeAdditionalPermissions = [
-    { id: "viewNotifications", label: t('permViewNotificationsHome', lang) },
-    { id: "addPurchase", label: t('permShowAddPurchaseButton', lang) },
-    { id: "viewStores", label: t('permViewStores', lang) },
-    { id: "viewStoreTransfer", label: t('permViewStoreTransfer', lang) },
   ]
 
   if (isLoading) {
@@ -339,15 +332,14 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
                     <div className="space-y-2">
                       <Label htmlFor="password">
-                        {t('password', lang)} <span className="text-destructive">*</span>
+                        {t('password', lang)}
                       </Label>
                       <Input
                         id="password"
                         type="password"
                         value={formData.password}
                         onChange={(e) => handleInputChange("password", e.target.value)}
-                        placeholder={t('enterPassword', lang)}
-                        required
+                        placeholder={t('leaveEmptyToKeepCurrent', lang)}
                         dir="ltr"
                       />
                     </div>
@@ -362,7 +354,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     </Label>
                     <Select
                       value={formData.permissionType}
-                      onValueChange={(value: "مدير" | "محاسب" | "موظف") =>
+                      onValueChange={(value: "مدير" | "محاسب") =>
                         handleInputChange("permissionType", value)
                       }
                     >
@@ -370,9 +362,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                         <SelectValue placeholder={t('selectPermissionTypePlaceholder', lang)} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="مدير">{t('roleManager', lang)}</SelectItem>
-                        <SelectItem value="محاسب">{t('roleAccountant', lang)}</SelectItem>
-                        <SelectItem value="موظف">{t('roleEmployeeRegular', lang)}</SelectItem>
+                        <SelectItem value="مدير">{t('manager', lang)}</SelectItem>
+                        <SelectItem value="محاسب">{t('accountant', lang)}</SelectItem>
                       </SelectContent>
                     </Select>
                     
@@ -388,50 +379,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                       <Label className="text-base">{t('chooseAllowedSections', lang)}</Label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-muted/50 rounded-lg">
                         {accountantPermissions.map((perm) => (
-                          <div key={perm.id} className="flex items-center space-x-2 space-x-reverse">
-                            <Checkbox
-                              id={perm.id}
-                              checked={permissions[perm.id as keyof typeof permissions]}
-                              onCheckedChange={(checked) =>
-                                handlePermissionChange(perm.id, checked as boolean)
-                              }
-                            />
-                            <Label
-                              htmlFor={perm.id}
-                              className="text-sm font-normal cursor-pointer"
-                            >
-                              {perm.label}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {formData.permissionType === "موظف" && (
-                    <div className="space-y-3 pt-4">
-                      <Label className="text-base">{t('chooseAllowedSections', lang)}</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-muted/50 rounded-lg">
-
-                        {accountantPermissions.map((perm) => (
-                          <div key={perm.id} className="flex items-center space-x-2 space-x-reverse">
-                            <Checkbox
-                              id={perm.id}
-                              checked={permissions[perm.id as keyof typeof permissions]}
-                              onCheckedChange={(checked) =>
-                                handlePermissionChange(perm.id, checked as boolean)
-                              }
-                            />
-                            <Label
-                              htmlFor={perm.id}
-                              className="text-sm font-normal cursor-pointer"
-                            >
-                              {perm.label}
-                            </Label>
-                          </div>
-                        ))}
-
-                        {employeeAdditionalPermissions.map((perm) => (
                           <div key={perm.id} className="flex items-center space-x-2 space-x-reverse">
                             <Checkbox
                               id={perm.id}

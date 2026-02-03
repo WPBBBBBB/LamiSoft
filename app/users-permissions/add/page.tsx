@@ -33,7 +33,7 @@ export default function AddUserPage() {
     age: "",
     username: "",
     password: "",
-    permissionType: "" as "" | "مدير" | "محاسب" | "موظف",
+    permissionType: "" as "" | "مدير" | "محاسب",
   })
 
   const [permissions, setPermissions] = useState({
@@ -104,16 +104,16 @@ export default function AddUserPage() {
       }
 
       let permissionsData = undefined
-      if (formData.permissionType === "محاسب" || formData.permissionType === "موظف") {
+      if (formData.permissionType === "محاسب") {
         permissionsData = {
           view_statistics: permissions.viewStatistics,
           view_reports: permissions.viewReports,
           view_services: permissions.viewServices,
           view_people: permissions.viewPeople,
-          view_notifications: formData.permissionType === "موظف" ? permissions.viewNotifications : false,
-          add_purchase: formData.permissionType === "موظف" ? permissions.addPurchase : false,
-          view_stores: formData.permissionType === "موظف" ? permissions.viewStores : false,
-          view_store_transfer: formData.permissionType === "موظف" ? permissions.viewStoreTransfer : false,
+          view_notifications: false,
+          add_purchase: false,
+          view_stores: false,
+          view_store_transfer: false,
         }
       }
 
@@ -138,13 +138,6 @@ export default function AddUserPage() {
     { id: "viewReports", label: t('permViewReports', lang) },
     { id: "viewServices", label: t('permViewServices', lang) },
     { id: "viewPeople", label: t('permViewPeople', lang) },
-  ]
-
-  const employeeAdditionalPermissions = [
-    { id: "viewNotifications", label: t('permViewNotificationsHome', lang) },
-    { id: "addPurchase", label: t('permShowAddPurchaseButton', lang) },
-    { id: "viewStores", label: t('permViewStores', lang) },
-    { id: "viewStoreTransfer", label: t('permViewStoreTransfer', lang) },
   ]
 
   return (
@@ -275,17 +268,16 @@ export default function AddUserPage() {
                     </Label>
                     <Select
                       value={formData.permissionType}
-                      onValueChange={(value: "مدير" | "محاسب" | "موظف") =>
+                      onValueChange={(value: "مدير" | "محاسب") =>
                         handleInputChange("permissionType", value)
                       }
                     >
                       <SelectTrigger id="permissionType">
-                        <SelectValue placeholder={t('selectPermissionTypePlaceholder', lang)} />
+                        <SelectValue placeholder={t('selectPermissionType', lang)} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="مدير">{t('roleManager', lang)}</SelectItem>
-                        <SelectItem value="محاسب">{t('roleAccountant', lang)}</SelectItem>
-                        <SelectItem value="موظف">{t('roleEmployeeRegular', lang)}</SelectItem>
+                        <SelectItem value="مدير">{t('manager', lang)}</SelectItem>
+                        <SelectItem value="محاسب">{t('accountant', lang)}</SelectItem>
                       </SelectContent>
                     </Select>
                     
@@ -301,50 +293,6 @@ export default function AddUserPage() {
                       <Label className="text-base">{t('chooseAllowedSections', lang)}</Label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-muted/50 rounded-lg">
                         {accountantPermissions.map((perm) => (
-                          <div key={perm.id} className="flex items-center space-x-2 space-x-reverse">
-                            <Checkbox
-                              id={perm.id}
-                              checked={permissions[perm.id as keyof typeof permissions]}
-                              onCheckedChange={(checked) =>
-                                handlePermissionChange(perm.id, checked as boolean)
-                              }
-                            />
-                            <Label
-                              htmlFor={perm.id}
-                              className="text-sm font-normal cursor-pointer"
-                            >
-                              {perm.label}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {formData.permissionType === "موظف" && (
-                    <div className="space-y-3 pt-4">
-                      <Label className="text-base">{t('chooseAllowedSections', lang)}</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-muted/50 rounded-lg">
-
-                        {accountantPermissions.map((perm) => (
-                          <div key={perm.id} className="flex items-center space-x-2 space-x-reverse">
-                            <Checkbox
-                              id={perm.id}
-                              checked={permissions[perm.id as keyof typeof permissions]}
-                              onCheckedChange={(checked) =>
-                                handlePermissionChange(perm.id, checked as boolean)
-                              }
-                            />
-                            <Label
-                              htmlFor={perm.id}
-                              className="text-sm font-normal cursor-pointer"
-                            >
-                              {perm.label}
-                            </Label>
-                          </div>
-                        ))}
-
-                        {employeeAdditionalPermissions.map((perm) => (
                           <div key={perm.id} className="flex items-center space-x-2 space-x-reverse">
                             <Checkbox
                               id={perm.id}

@@ -26,10 +26,8 @@ export async function GET(request: NextRequest) {
       invoices: [],
     }
 
-    // البحث في المنتجات باستخدام PostgreSQL Full-Text Search
     if (filter === 'all' || filter === 'products') {
       try {
-        // استخدام textSearch للبحث السريع مع الفهارس
         const searchPattern = `%${query}%`
         const { data: products } = await supabase
           .from('products_with_total_quantity')
@@ -54,7 +52,6 @@ export async function GET(request: NextRequest) {
         }
     }
 
-    // البحث في الزبائن
     if (filter === 'all' || filter === 'customers') {
       try {
         const searchPattern = `%${query}%`
@@ -80,12 +77,10 @@ export async function GET(request: NextRequest) {
         }
     }
 
-    // البحث في القوائم
     if (filter === 'all' || filter === 'invoices') {
       try {
         const searchPattern = `%${query}%`
         
-        // البحث في قوائم البيع (مع تحديد الأعمدة فقط)
         const { data: sales } = await supabase
           .from('tb_salesmain')
           .select('id,numberofsale,datetime,totalsaleiqd,totalsaleusd,customers(customer_name)')
@@ -93,7 +88,6 @@ export async function GET(request: NextRequest) {
           .order('datetime', { ascending: false })
           .limit(10)
 
-        // البحث في قوائم الشراء (مع تحديد الأعمدة فقط)
         const { data: purchases } = await supabase
           .from('tb_purchasemain')
           .select('id,numberofpurchase,datetime,totalpurchaseiqd,totalpurchaseusd,customers(customer_name)')
@@ -133,7 +127,6 @@ export async function GET(request: NextRequest) {
           })
         }
 
-        // ترتيب القوائم حسب التاريخ
         results.invoices = invoices.sort((a, b) => 
           new Date(b.date).getTime() - new Date(a.date).getTime()
         )
