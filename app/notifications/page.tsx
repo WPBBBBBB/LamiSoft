@@ -6,6 +6,15 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Progress } from "@/components/ui/progress"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Bell, RefreshCw, Eye, EyeOff, Trash2, Calendar, User, Phone, AlertTriangle, Trophy, Menu, MessageCircle, Send } from "lucide-react"
 import { Confetti } from "@/components/ui/confetti"
 import { toast } from "sonner"
@@ -85,6 +94,37 @@ function getMetaNumber(metadata: unknown, key: string): number | undefined {
     if (Number.isFinite(n)) return n
   }
   return undefined
+}
+
+type ReminderProgressPhase = "sending" | "done" | "error"
+type ReminderCustomerStatus = "pending" | "sending" | "done" | "error"
+
+type ReminderCustomerProgress = {
+  customerId: string
+  name: string
+  phone: string
+  status: ReminderCustomerStatus
+  lastError?: string
+}
+
+type ReminderProgressState = {
+  phase: ReminderProgressPhase
+  statusText: string
+  percent: number
+  customer: ReminderCustomerProgress
+}
+
+function safeNumber(value: unknown, fallback = 0) {
+  const n = typeof value === "number" ? value : Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
+async function safeReadJson(resp: Response): Promise<unknown | null> {
+  try {
+    return await resp.json()
+  } catch {
+    return null
+  }
 }
 
 // دوال لجلب وتحديث إشعارات الديون
@@ -178,6 +218,9 @@ async function getAllDebtNotifications(includeRead: boolean = false) {
           customer?.phone_number ||
           getMetaString(n.metadata, "customer_phone") ||
           getMetaString(n.metadata, "phone_number") ||
+          getMetaString(n.metadata, "customer_phone_number") ||
+          getMetaString(n.metadata, "phone") ||
+          getMetaString(n.metadata, "mobile") ||
           "",
         customer_avatar: customer?.avatar_url || null,
         notification_type: n.type || "تنبيه_عام",
@@ -266,6 +309,8 @@ export default function NotificationsPage() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [viewMode, setViewMode] = useState<'table' | 'list'>('list')
   const [sendingMessageFor, setSendingMessageFor] = useState<string | null>(null)
+  const [isReminderProgressOpen, setIsReminderProgressOpen] = useState(false)
+  const [reminderProgress, setReminderProgress] = useState<ReminderProgressState | null>(null)
 
   // استخدام الأرقام الإنجليزية دائماً
   const locale = "en-US"
@@ -385,45 +430,111 @@ export default function NotificationsPage() {
 
     try {
       setSendingMessageFor(notification.id)
-      
-      // تجهيز بيانات الزبون
-      const customerData = {
+
+      const customerId = notification.customer_id || notification.id
+      const customerPayload = {
+        id: customerId,
         customer_name: notification.customer_name,
+        phone_number: notification.customer_phone,
         last_payment_date: notification.last_payment_date || null,
         last_payment_iqd: notification.last_payment_amount_iqd || 0,
         last_payment_usd: notification.last_payment_amount_usd || 0,
         balanceiqd: notification.current_balance_iqd || 0,
         balanceusd: notification.current_balance_usd || 0,
       }
-      
-      // إرسال الرسالة
+
+      setIsReminderProgressOpen(true)
+      setReminderProgress({
+        phase: "sending",
+        statusText: t("whatsappProgressStarting", currentLanguage.code),
+        percent: 5,
+        customer: {
+          customerId,
+          name: notification.customer_name || "(بدون اسم)",
+          phone: notification.customer_phone,
+          status: "pending",
+        },
+      })
+
+      setReminderProgress((prev) =>
+        prev
+          ? {
+              ...prev,
+              statusText: t("whatsappProgressSendingTo", currentLanguage.code).replace(
+                "{name}",
+                String(notification.customer_name || notification.customer_phone)
+              ),
+              percent: 35,
+              customer: { ...prev.customer, status: "sending" },
+            }
+          : prev
+      )
+
       const sendResponse = await fetch("/api/whatsapp-send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customers: [{
-            id: notification.customer_id,
-            phone_number: notification.customer_phone,
-            ...customerData
-          }]
-        })
+        body: JSON.stringify({ customers: [customerPayload] }),
       })
-      
-      if (sendResponse.ok) {
-        const result = await sendResponse.json()
-        if (result.success > 0) {
-          toast.success("تم إرسال رسالة التذكير بنجاح")
-        } else {
-          const errorMsg = result.errors?.[0]?.error || result.error || "فشل إرسال الرسالة"
-          toast.error(`فشل الإرسال: ${errorMsg}`)
-        }
+
+      const resultUnknown = await safeReadJson(sendResponse)
+      const result = (resultUnknown || {}) as {
+        success?: unknown
+        failed?: unknown
+        errors?: Array<{ error?: unknown; message?: unknown }>
+        error?: unknown
+        message?: unknown
+      }
+
+      const failedCount = safeNumber(result.failed, sendResponse.ok ? 0 : 1)
+      const succeededCount = safeNumber(result.success, 0)
+      const firstErr =
+        Array.isArray(result.errors) && result.errors.length > 0
+          ? String(result.errors[0]?.error || result.errors[0]?.message || "")
+          : (!sendResponse.ok
+              ? String(result.error || result.message || `HTTP ${sendResponse.status}`)
+              : "")
+
+      if (sendResponse.ok && failedCount === 0 && succeededCount > 0) {
+        setReminderProgress((prev) =>
+          prev
+            ? {
+                ...prev,
+                phase: "done",
+                statusText: t("whatsappProgressCompleted", currentLanguage.code),
+                percent: 100,
+                customer: { ...prev.customer, status: "done" },
+              }
+            : prev
+        )
+        toast.success("تم إرسال رسالة التذكير بنجاح")
       } else {
-        const errorData = await sendResponse.json().catch(() => ({}))
-        const errorMsg = errorData.error || errorData.message || `خطأ HTTP ${sendResponse.status}`
-        toast.error(`فشل إرسال رسالة التذكير: ${errorMsg}`)
+        const errMsg = firstErr || t("whatsappSendMessagesFailed", currentLanguage.code)
+        setReminderProgress((prev) =>
+          prev
+            ? {
+                ...prev,
+                phase: "error",
+                statusText: errMsg,
+                percent: 100,
+                customer: { ...prev.customer, status: "error", lastError: errMsg },
+              }
+            : prev
+        )
+        toast.error(`فشل إرسال رسالة التذكير: ${errMsg}`)
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error)
+      setReminderProgress((prev) =>
+        prev
+          ? {
+              ...prev,
+              phase: "error",
+              statusText: errorMsg,
+              percent: 100,
+              customer: { ...prev.customer, status: "error", lastError: errorMsg },
+            }
+          : prev
+      )
       toast.error(`حدث خطأ أثناء إرسال الرسالة: ${errorMsg}`)
     } finally {
       setSendingMessageFor(null)
@@ -648,29 +759,28 @@ export default function NotificationsPage() {
 
                       {/* الأزرار - الجهة اليسرى */}
                       <div className="flex flex-col gap-3 min-w-[200px]">
-                        {notification.customer_phone && (
-                          <>
-                            <Button
-                              onClick={() => handleOpenWhatsApp(notification.customer_phone!)}
-                              className="w-full bg-green-600 hover:bg-green-700"
-                              size="lg"
-                            >
-                              <MessageCircle className="h-5 w-5 mr-2" />
-                              فتح واتساب
-                            </Button>
-                            
-                            <Button
-                              onClick={() => handleSendReminder(notification)}
-                              disabled={sendingMessageFor === notification.id}
-                              variant="outline"
-                              className="w-full"
-                              size="lg"
-                            >
-                              <Send className="h-5 w-5 mr-2" />
-                              {sendingMessageFor === notification.id ? "جاري الإرسال..." : "إرسال تذكير"}
-                            </Button>
-                          </>
-                        )}
+                        <Button
+                          onClick={() => notification.customer_phone && handleOpenWhatsApp(notification.customer_phone)}
+                          className="w-full bg-green-600 hover:bg-green-700"
+                          size="lg"
+                          disabled={!notification.customer_phone}
+                          title={!notification.customer_phone ? "لا يوجد رقم واتساب" : "فتح محادثة واتساب"}
+                        >
+                          <MessageCircle className="h-5 w-5 mr-2" />
+                          فتح واتساب
+                        </Button>
+
+                        <Button
+                          onClick={() => handleSendReminder(notification)}
+                          disabled={!notification.customer_phone || sendingMessageFor === notification.id}
+                          variant="outline"
+                          className="w-full"
+                          size="lg"
+                          title={!notification.customer_phone ? "لا يوجد رقم واتساب" : "إرسال تذكير"}
+                        >
+                          <Send className="h-5 w-5 mr-2" />
+                          {sendingMessageFor === notification.id ? "جاري الإرسال..." : "إرسال تذكير"}
+                        </Button>
                         
                         {!notification.is_read && (
                           <Button
@@ -869,6 +979,60 @@ export default function NotificationsPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={isReminderProgressOpen} onOpenChange={setIsReminderProgressOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>إرسال تذكير واتساب</DialogTitle>
+            <DialogDescription>{reminderProgress?.statusText || ""}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Progress value={reminderProgress?.percent || 0} indicatorClassName="bg-green-600" />
+
+            {reminderProgress?.customer ? (
+              <div className="rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-semibold">{reminderProgress.customer.name}</div>
+                    <div className="text-xs text-muted-foreground">{reminderProgress.customer.phone}</div>
+                  </div>
+
+                  <Badge
+                    className={
+                      reminderProgress.customer.status === "done"
+                        ? "bg-green-600"
+                        : reminderProgress.customer.status === "error"
+                          ? "bg-red-600"
+                          : reminderProgress.customer.status === "sending"
+                            ? "bg-blue-600"
+                            : "bg-muted text-foreground"
+                    }
+                  >
+                    {reminderProgress.customer.status === "pending"
+                      ? t("whatsappProgressStatusPending", currentLanguage.code)
+                      : reminderProgress.customer.status === "sending"
+                        ? t("whatsappProgressStatusSending", currentLanguage.code)
+                        : reminderProgress.customer.status === "done"
+                          ? t("whatsappProgressStatusDone", currentLanguage.code)
+                          : t("whatsappProgressStatusError", currentLanguage.code)}
+                  </Badge>
+                </div>
+
+                {reminderProgress.customer.lastError ? (
+                  <div className="mt-2 text-sm text-red-600">{reminderProgress.customer.lastError}</div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsReminderProgressOpen(false)}>
+              إغلاق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
