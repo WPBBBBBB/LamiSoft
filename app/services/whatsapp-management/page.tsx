@@ -288,7 +288,7 @@ export default function WhatsappManagementPage() {
 
       // نجلب الإعدادات مرة واحدة لاستخدامها في التأخير الآمن (مثل نظام التذكير)
       const settingsResp = await fetch("/api/whatsapp-settings")
-      const settingsData = await safeReadJson(settingsResp)
+      const settingsData: any = await safeReadJson(settingsResp)
       const delaySettings: WhatsAppDelaySettings = {
         per_message_base_delay_ms: safeNumber(settingsData?.per_message_base_delay_ms, 0),
         per_message_jitter_ms: safeNumber(settingsData?.per_message_jitter_ms, 0),
@@ -316,7 +316,7 @@ export default function WhatsappManagementPage() {
           body: JSON.stringify({ customers: [customer] }),
         })
 
-        const result = await safeReadJson(response)
+        const result: any = await safeReadJson(response)
 
         // /api/whatsapp-send يرجع {success, failed, errors[]} حتى لو HTTP 200
         const failedCount = safeNumber(result?.failed, response.ok ? 0 : 1)
@@ -500,7 +500,7 @@ export default function WhatsappManagementPage() {
       })
 
       const settingsResp = await fetch("/api/whatsapp-settings")
-      const settingsData = await safeReadJson(settingsResp)
+      const settingsData: any = await safeReadJson(settingsResp)
       const delaySettings: WhatsAppDelaySettings = {
         per_message_base_delay_ms: safeNumber(settingsData?.per_message_base_delay_ms, 0),
         per_message_jitter_ms: safeNumber(settingsData?.per_message_jitter_ms, 0),
@@ -523,7 +523,7 @@ export default function WhatsappManagementPage() {
         body: JSON.stringify({ images: base64Images }),
       })
 
-      const prepareData = await safeReadJson(prepareResp)
+      const prepareData: any = await safeReadJson(prepareResp)
       if (!prepareResp.ok) {
         const errMsg = String(prepareData?.error || prepareData?.message || `HTTP ${prepareResp.status}`)
         throw new Error(errMsg)
@@ -577,7 +577,7 @@ export default function WhatsappManagementPage() {
             }),
           })
 
-          const result = await safeReadJson(resp)
+          const result: any = await safeReadJson(resp)
           const failedCount = safeNumber(result?.failed, resp.ok ? 0 : 1)
           const succeededCount = safeNumber(result?.success, 0)
           const firstErr =

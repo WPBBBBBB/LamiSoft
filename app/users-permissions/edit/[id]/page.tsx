@@ -71,7 +71,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         age: userData.age ? userData.age.toString() : "",
         username: userData.username,
         password: "",
-        permissionType: userData.permission_type,
+        permissionType: (userData.permission_type === "موظف" ? "محاسب" : userData.permission_type) as "" | "مدير" | "محاسب",
       })
 
       if (userData.permissions) {
