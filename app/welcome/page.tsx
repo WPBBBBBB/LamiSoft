@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, CheckCircle, BarChart3, ShoppingCart, Package, Bell, Users, Shield, Sparkles, Send, Instagram, Phone } from "lucide-react"
+import confetti from "canvas-confetti"
 import Book3D from "@/components/welcome/Book3D"
 import ScrollReveal from "@/components/welcome/ScrollReveal"
 import Logo from "@/components/welcome/Logo"
@@ -29,6 +30,15 @@ export default function WelcomePage() {
   
   const backgroundY = useTransform(scrollYProgress, [0, 1], ["0%", "100%"])
   const opacity = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [1, 0.8, 0.6, 0.4])
+
+  const handleConfetti = () => {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#667eea', '#764ba2', '#f093fb', '#4facfe']
+    })
+  }
 
   const scrollTo = (el?: HTMLElement | null) => {
     el?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -70,7 +80,14 @@ export default function WelcomePage() {
             <Button variant="ghost" size="sm" onClick={() => scrollTo(servicesRef.current)} className="hidden md:inline-flex">
               {t('services', currentLanguage.code)}
             </Button>
-            <Button onClick={() => router.push("/login")} className="gap-2" size="sm">
+            <Button 
+              onClick={() => {
+                handleConfetti()
+                setTimeout(() => router.push("/login"), 300)
+              }} 
+              className="relative overflow-visible rounded-lg hover:-translate-y-1 shadow-lg bg-white hover:bg-white/90 text-black after:content-[''] after:absolute after:rounded-lg after:inset-0 after:bg-white/40 after:z-[-1] after:transition-all after:duration-500 hover:after:scale-150 hover:after:opacity-0 border border-white/50 gap-2" 
+              size="sm"
+            >
               <span className="hidden sm:inline">{t('login', currentLanguage.code)}</span>
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -122,7 +139,14 @@ export default function WelcomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5, duration: 0.6 }}
               >
-                <Button size="lg" onClick={() => router.push("/login")} className="gap-2 group">
+                <Button 
+                  size="lg" 
+                  onClick={() => {
+                    handleConfetti()
+                    setTimeout(() => router.push("/login"), 300)
+                  }} 
+                  className="relative overflow-visible rounded-lg hover:-translate-y-1 px-12 shadow-xl bg-white hover:bg-white/90 text-black after:content-[''] after:absolute after:rounded-lg after:inset-0 after:bg-white/40 after:z-[-1] after:transition-all after:duration-500 hover:after:scale-150 hover:after:opacity-0 border-2 border-white/50 gap-2 group"
+                >
                   {t('startNow', currentLanguage.code)}
                   <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                 </Button>
@@ -356,10 +380,17 @@ export default function WelcomePage() {
                 </CardHeader>
                 <CardContent className="flex justify-center gap-4 relative z-10">
                   <motion.div
-                    whileHover={{ scale: 1.1 }}
+                    whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <Button size="lg" onClick={() => router.push("/login")} className="gap-2 group">
+                    <Button 
+                      size="lg" 
+                      onClick={() => {
+                        handleConfetti()
+                        setTimeout(() => router.push("/login"), 300)
+                      }} 
+                      className="relative overflow-visible rounded-lg hover:-translate-y-1 px-12 shadow-xl bg-white hover:bg-white/90 text-black after:content-[''] after:absolute after:rounded-lg after:inset-0 after:bg-white/40 after:z-[-1] after:transition-all after:duration-500 hover:after:scale-150 hover:after:opacity-0 border-2 border-white/50 gap-2 group"
+                    >
                       {t('login', currentLanguage.code)}
                       <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                     </Button>

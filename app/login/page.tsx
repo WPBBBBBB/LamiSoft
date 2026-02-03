@@ -302,16 +302,47 @@ export default function LoginPage() {
         {/* زر الرجوع للصفحة الرئيسية */}
         <Link 
           href="/welcome"
-          className="group fixed top-6 left-6 z-20 flex items-center gap-3 px-6 py-3 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/20"
+          className="group fixed top-6 left-6 z-20 flex items-center gap-3 px-6 py-3 rounded-lg bg-[#fec195] font-medium text-[#181818] border-[3px] border-[#fec195] shadow-[0_0_0_#fec1958c] hover:bg-transparent hover:text-[#fec195] hover:shadow-[0_0_25px_#fec1958c] transition-all duration-300 cursor-pointer overflow-visible"
         >
-          <div className="relative">
-            <Home className="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
-            <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-yellow-500 animate-pulse opacity-0 group-hover:opacity-100 transition-opacity" />
+          {/* النجوم المتحركة */}
+          <div className="star-1 absolute top-[20%] left-[20%] w-[25px] h-auto z-[-5] transition-all duration-1000 ease-[cubic-bezier(0.05,0.83,0.43,0.96)] group-hover:top-[-80%] group-hover:left-[-30%] group-hover:filter group-hover:drop-shadow-[0_0_10px_#fffdef] group-hover:z-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53" className="fill-[#fffdef]">
+              <path d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+            </svg>
           </div>
-          <span className="font-semibold text-sm bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
+          <div className="star-2 absolute top-[45%] left-[45%] w-[15px] h-auto z-[-5] transition-all duration-1000 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:top-[-25%] group-hover:left-[10%] group-hover:filter group-hover:drop-shadow-[0_0_10px_#fffdef] group-hover:z-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53" className="fill-[#fffdef]">
+              <path d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+            </svg>
+          </div>
+          <div className="star-3 absolute top-[40%] left-[40%] w-[5px] h-auto z-[-5] transition-all duration-1000 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:top-[55%] group-hover:left-[25%] group-hover:filter group-hover:drop-shadow-[0_0_10px_#fffdef] group-hover:z-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53" className="fill-[#fffdef]">
+              <path d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+            </svg>
+          </div>
+          <div className="star-4 absolute top-[20%] left-[40%] w-2 h-auto z-[-5] transition-all duration-800 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:top-[30%] group-hover:left-[80%] group-hover:filter group-hover:drop-shadow-[0_0_10px_#fffdef] group-hover:z-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53" className="fill-[#fffdef]">
+              <path d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+            </svg>
+          </div>
+          <div className="star-5 absolute top-[25%] left-[45%] w-[15px] h-auto z-[-5] transition-all duration-600 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:top-[25%] group-hover:left-[115%] group-hover:filter group-hover:drop-shadow-[0_0_10px_#fffdef] group-hover:z-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53" className="fill-[#fffdef]">
+              <path d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+            </svg>
+          </div>
+          <div className="star-6 absolute top-[5%] left-[50%] w-[5px] h-auto z-[-5] transition-all duration-800 ease-in-out group-hover:top-[5%] group-hover:left-[60%] group-hover:filter group-hover:drop-shadow-[0_0_10px_#fffdef] group-hover:z-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53" className="fill-[#fffdef]">
+              <path d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+            </svg>
+          </div>
+
+          <div className="relative">
+            <Home className="h-5 w-5 transition-all duration-300" />
+          </div>
+          <span className="font-medium text-sm">
             {t('backToHome', currentLanguage.code)}
           </span>
-          <ArrowRight className="h-4 w-4 text-primary transition-transform duration-300 group-hover:translate-x-1" />
+          <ArrowRight className="h-4 w-4 transition-all duration-300" />
         </Link>
 
         {isLoading && (
@@ -432,16 +463,47 @@ export default function LoginPage() {
       {/* زر الرجوع للصفحة الرئيسية */}
       <Link 
         href="/welcome"
-        className="group fixed top-6 left-6 z-20 flex items-center gap-3 px-6 py-3 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/20"
+        className="group fixed top-6 left-6 z-20 flex items-center gap-3 px-6 py-3 rounded-lg bg-[#fec195] font-medium text-[#181818] border-[3px] border-[#fec195] shadow-[0_0_0_#fec1958c] hover:bg-transparent hover:text-[#fec195] hover:shadow-[0_0_25px_#fec1958c] transition-all duration-300 cursor-pointer overflow-visible"
       >
-        <div className="relative">
-          <Home className="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
-          <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-yellow-500 animate-pulse opacity-0 group-hover:opacity-100 transition-opacity" />
+        {/* النجوم المتحركة */}
+        <div className="star-1 absolute top-[20%] left-[20%] w-[25px] h-auto z-[-5] transition-all duration-1000 ease-[cubic-bezier(0.05,0.83,0.43,0.96)] group-hover:top-[-80%] group-hover:left-[-30%] group-hover:filter group-hover:drop-shadow-[0_0_10px_#fffdef] group-hover:z-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53" className="fill-[#fffdef]">
+            <path d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+          </svg>
         </div>
-        <span className="font-semibold text-sm bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
+        <div className="star-2 absolute top-[45%] left-[45%] w-[15px] h-auto z-[-5] transition-all duration-1000 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:top-[-25%] group-hover:left-[10%] group-hover:filter group-hover:drop-shadow-[0_0_10px_#fffdef] group-hover:z-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53" className="fill-[#fffdef]">
+            <path d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+          </svg>
+        </div>
+        <div className="star-3 absolute top-[40%] left-[40%] w-[5px] h-auto z-[-5] transition-all duration-1000 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:top-[55%] group-hover:left-[25%] group-hover:filter group-hover:drop-shadow-[0_0_10px_#fffdef] group-hover:z-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53" className="fill-[#fffdef]">
+            <path d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+          </svg>
+        </div>
+        <div className="star-4 absolute top-[20%] left-[40%] w-2 h-auto z-[-5] transition-all duration-800 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:top-[30%] group-hover:left-[80%] group-hover:filter group-hover:drop-shadow-[0_0_10px_#fffdef] group-hover:z-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53" className="fill-[#fffdef]">
+            <path d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+          </svg>
+        </div>
+        <div className="star-5 absolute top-[25%] left-[45%] w-[15px] h-auto z-[-5] transition-all duration-600 ease-[cubic-bezier(0,0.4,0,1.01)] group-hover:top-[25%] group-hover:left-[115%] group-hover:filter group-hover:drop-shadow-[0_0_10px_#fffdef] group-hover:z-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53" className="fill-[#fffdef]">
+            <path d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+          </svg>
+        </div>
+        <div className="star-6 absolute top-[5%] left-[50%] w-[5px] h-auto z-[-5] transition-all duration-800 ease-in-out group-hover:top-[5%] group-hover:left-[60%] group-hover:filter group-hover:drop-shadow-[0_0_10px_#fffdef] group-hover:z-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784.11 815.53" className="fill-[#fffdef]">
+            <path d="M392.05 0c-20.9,210.08 -184.06,378.41 -392.05,407.78 207.96,29.37 371.12,197.68 392.05,407.74 20.93,-210.06 184.09,-378.37 392.05,-407.74 -207.98,-29.38 -371.16,-197.69 -392.06,-407.78z" />
+          </svg>
+        </div>
+
+        <div className="relative">
+          <Home className="h-5 w-5 transition-all duration-300" />
+        </div>
+        <span className="font-medium text-sm">
           {t('backToHome', currentLanguage.code)}
         </span>
-        <ArrowRight className="h-4 w-4 text-primary transition-transform duration-300 group-hover:translate-x-1" />
+        <ArrowRight className="h-4 w-4 transition-all duration-300" />
       </Link>
 
       {isLoading && (
