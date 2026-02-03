@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "sonner"
-import { ArrowRight, Eye, EyeOff, Lock, User, RefreshCw, AlertCircle, Clock } from "lucide-react"
+import { ArrowRight, Eye, EyeOff, Lock, User, RefreshCw, AlertCircle, Clock, Home, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { t } from "@/lib/translations"
 import { useSettings } from "@/components/providers/settings-provider"
@@ -298,6 +298,22 @@ export default function LoginPage() {
         style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))' }}
       >
         <LoginFloatingBackground />
+        
+        {/* زر الرجوع للصفحة الرئيسية */}
+        <Link 
+          href="/welcome"
+          className="group fixed top-6 left-6 z-20 flex items-center gap-3 px-6 py-3 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/20"
+        >
+          <div className="relative">
+            <Home className="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
+            <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-yellow-500 animate-pulse opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <span className="font-semibold text-sm bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
+            {t('backToHome', currentLanguage.code)}
+          </span>
+          <ArrowRight className="h-4 w-4 text-primary transition-transform duration-300 group-hover:translate-x-1" />
+        </Link>
+
         {isLoading && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
@@ -412,6 +428,22 @@ export default function LoginPage() {
       style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))' }}
     >
       <LoginFloatingBackground />
+      
+      {/* زر الرجوع للصفحة الرئيسية */}
+      <Link 
+        href="/welcome"
+        className="group fixed top-6 left-6 z-20 flex items-center gap-3 px-6 py-3 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/20"
+      >
+        <div className="relative">
+          <Home className="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
+          <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-yellow-500 animate-pulse opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+        <span className="font-semibold text-sm bg-linear-to-r from-primary to-accent bg-clip-text text-transparent">
+          {t('backToHome', currentLanguage.code)}
+        </span>
+        <ArrowRight className="h-4 w-4 text-primary transition-transform duration-300 group-hover:translate-x-1" />
+      </Link>
+
       {isLoading && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
