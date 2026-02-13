@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import withPWAInit from "next-pwa";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const withPWA = withPWAInit({
   dest: "public",
@@ -90,4 +91,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPWA(nextConfig);
+// Wrap with Sentry config so Sentry can instrument builds and source maps when enabled
+export default withSentryConfig(withPWA(nextConfig), {
+  silent: true,
+});

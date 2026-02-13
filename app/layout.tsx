@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
 import { PwaSwRegister } from "@/components/pwa-sw-register";
+import SentryInit from "@/components/sentry-init";
 import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +46,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <SentryInit />
         <PwaSwRegister />
         <AppShell nonce={nonce}>{children}</AppShell>
       </body>
