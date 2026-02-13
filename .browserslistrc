@@ -1,0 +1,8 @@
+> 0.5%
+last 2 versions
+not dead
+not op_mini all
+
+## Notes:
+# - This file is read by Autoprefixer/PostCSS/Tailwind and many tooling chains.
+# - Edit targets above to widen/narrow supported browsers.
