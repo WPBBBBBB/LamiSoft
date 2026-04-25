@@ -329,9 +329,14 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
       const itemsToDelete = inventory.filter(i => selectedItems.includes(i.id))
       
       await deleteInventoryItems(selectedItems)
-      
-      for (const item of itemsToDelete) {
-        await logAction(
+
+      // Refresh table immediately after deletion
+      setSelectedItems([])
+      loadStoreData()
+
+      // Log all actions in parallel (non-blocking)
+      Promise.all(itemsToDelete.map(item =>
+        logAction(
           "حذف",
           `تم حذف المادة: ${item.productname} من المخزن: ${store?.storename || 'غير معروف'}`,
           "المخزون",
@@ -345,13 +350,11 @@ export default function StoreDetailsPage({ params }: { params: Promise<{ id: str
           },
           undefined
         )
-      }
+      )).catch(() => {})
       
       toast.success(
         `${t("deletedItemsPrefix", currentLanguage.code)} ${selectedItems.length} ${t("materials", currentLanguage.code)} ${t("successfullySuffix", currentLanguage.code)}`
       )
-      setSelectedItems([])
-      loadStoreData()
     } catch (error) {
       toast.error(t("errorDeletingData", currentLanguage.code))
     }

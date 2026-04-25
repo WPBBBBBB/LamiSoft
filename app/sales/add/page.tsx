@@ -100,6 +100,7 @@ export default function SaleAddPage() {
   const [productSearchName, setProductSearchName] = useState("")
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [suggestionPosition, setSuggestionPosition] = useState<{ top: number; left: number; width: number } | null>(null)
   const codeInputRef = useRef<HTMLInputElement>(null)
   const nameInputRef = useRef<HTMLInputElement>(null)
 
@@ -171,6 +172,21 @@ export default function SaleAddPage() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    if (!showSuggestions) return
+    const handleScrollOrResize = () => {
+      const activeRef = productSearchCode ? codeInputRef : nameInputRef
+      updateSuggestionPosition(activeRef)
+    }
+    window.addEventListener('scroll', handleScrollOrResize, true)
+    window.addEventListener('resize', handleScrollOrResize)
+    return () => {
+      window.removeEventListener('scroll', handleScrollOrResize, true)
+      window.removeEventListener('resize', handleScrollOrResize)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showSuggestions, productSearchCode])
 
   const loadInitialData = async () => {
     try {
@@ -359,7 +375,18 @@ export default function SaleAddPage() {
   
   const updateSuggestionPosition = (inputRef: React.RefObject<HTMLInputElement | null>) => {
     if (inputRef.current) {
-      inputRef.current.getBoundingClientRect();
+      const rect = inputRef.current.getBoundingClientRect()
+      const dropdownWidth = Math.min(680, window.innerWidth - 16)
+      let left = rect.right - dropdownWidth
+      if (left < 8) left = 8
+      if (left + dropdownWidth > window.innerWidth - 8) {
+        left = window.innerWidth - dropdownWidth - 8
+      }
+      setSuggestionPosition({
+        top: rect.bottom + 1,
+        left,
+        width: dropdownWidth,
+      })
     }
   }
 
@@ -1574,196 +1601,75 @@ export default function SaleAddPage() {
         </Dialog>
       </div>
 
-      {isMounted && showSuggestions && filteredInventory.length > 0 && createPortal(
-        <div 
+      {isMounted && showSuggestions && filteredInventory.length > 0 && suggestionPosition && createPortal(
+        <div
           data-suggestions="true"
           style={{
             position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
+            top: suggestionPosition.top,
+            left: suggestionPosition.left,
+            width: suggestionPosition.width,
             zIndex: 9999999,
-            width: '90vw',
-            maxWidth: '1000px',
-            maxHeight: '80vh',
-            overflowY: 'auto',
-            backgroundColor: 'var(--theme-background)',
-            border: '5px solid var(--theme-primary)',
-            borderRadius: '16px',
-            boxShadow: '0 25px 80px rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'var(--background)',
+            border: '1px solid var(--border)',
+            borderRadius: '8px',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.18)',
+            overflow: 'hidden',
           }}
           onClick={(e) => e.stopPropagation()}
         >
-
-          <div style={{
-            padding: '16px 20px',
-            background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))',
-            color: 'var(--theme-background)',
-            fontWeight: 'bold',
-            fontSize: '20px',
-            textAlign: 'center',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <span>{t("availableSuggestions", lang).replace("{count}", String(filteredInventory.length))}</span>
-            <button
-              onClick={() => setShowSuggestions(false)}
-              style={{
-                background: 'rgba(255,255,255,0.2)',
-                border: 'none',
-                color: 'var(--theme-background)',
-                padding: '8px 16px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: 'bold'
-              }}
-            >
-              ✕ {t("close", lang)}
-            </button>
-          </div>
-
-          <div style={{ maxHeight: 'calc(80vh - 140px)', overflowY: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-                <tr style={{ 
-                  background: 'linear-gradient(to right, var(--theme-surface), var(--theme-accent))',
-                  borderBottom: '2px solid var(--theme-primary)'
-                }}>
-                  <th style={{ 
-                    padding: '14px 16px', 
-                    textAlign: 'right', 
-                    fontWeight: 'bold',
-                    color: 'var(--theme-text)',
-                    fontSize: '15px'
-                  }}>{t("productCode", lang)}</th>
-                  <th style={{ 
-                    padding: '14px 16px', 
-                    textAlign: 'right', 
-                    fontWeight: 'bold',
-                    color: 'var(--theme-text)',
-                    fontSize: '15px'
-                  }}>{t("productName", lang)}</th>
-                  <th style={{ 
-                    padding: '14px 16px', 
-                    textAlign: 'center', 
-                    fontWeight: 'bold',
-                    color: 'var(--theme-text)',
-                    fontSize: '15px'
-                  }}>{t("priceIQDShort", lang)}</th>
-                  <th style={{ 
-                    padding: '14px 16px', 
-                    textAlign: 'center', 
-                    fontWeight: 'bold',
-                    color: 'var(--theme-text)',
-                    fontSize: '15px'
-                  }}>{t("priceUSDShort", lang)}</th>
-                  <th style={{ 
-                    padding: '14px 16px', 
-                    textAlign: 'center', 
-                    fontWeight: 'bold',
-                    color: 'var(--theme-text)',
-                    fontSize: '15px'
-                  }}>{t("availableQuantity", lang)}</th>
+          {/* Table */}
+          <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                <tr style={{ background: 'var(--theme-surface)', borderBottom: '1px solid var(--border)' }}>
+                  <th style={{ padding: '7px 10px', textAlign: 'right', fontWeight: '600', color: 'var(--theme-text)', whiteSpace: 'nowrap' }}>{t("productCode", lang)}</th>
+                  <th style={{ padding: '7px 10px', textAlign: 'right', fontWeight: '600', color: 'var(--theme-text)' }}>{t("productName", lang)}</th>
+                  <th style={{ padding: '7px 10px', textAlign: 'center', fontWeight: '600', color: '#16a34a', whiteSpace: 'nowrap' }}>{t("priceIQDShort", lang)}</th>
+                  <th style={{ padding: '7px 10px', textAlign: 'center', fontWeight: '600', color: '#2563eb', whiteSpace: 'nowrap' }}>{t("priceUSDShort", lang)}</th>
+                  <th style={{ padding: '7px 10px', textAlign: 'center', fontWeight: '600', color: '#ea580c', whiteSpace: 'nowrap' }}>{t("availableQuantity", lang)}</th>
                 </tr>
               </thead>
               <tbody>
-              {filteredInventory.slice(0, 20).map((item, index) => (
-                <tr
-                  key={item.id}
-                  style={{
-                    backgroundColor: index % 2 === 0 ? 'var(--theme-background)' : 'var(--theme-surface)',
-                    cursor: 'pointer',
-                    borderBottom: '1px solid var(--theme-border)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--theme-accent)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'var(--theme-background)' : 'var(--theme-surface)'
-                  }}
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    selectProduct(item)
-                  }}
-                >
-                  <td style={{ 
-                    padding: '12px 16px', 
-                    fontWeight: 'bold', 
-                    color: 'var(--theme-primary)',
-                    fontSize: '14px'
-                  }}>
-                    {item.productcode}
-                  </td>
-                  <td style={{ 
-                    padding: '12px 16px', 
-                    color: 'var(--theme-text)',
-                    fontSize: '14px'
-                  }}>
-                    {item.productname}
-                  </td>
-                  <td style={{ 
-                    padding: '12px 16px', 
-                    textAlign: 'center',
-                    color: '#16a34a',
-                    fontWeight: '600',
-                    fontSize: '14px'
-                  }}>
-                    {item.sellpriceiqd?.toLocaleString() || 0}
-                  </td>
-                  <td style={{ 
-                    padding: '12px 16px', 
-                    textAlign: 'center',
-                    color: '#2563eb',
-                    fontWeight: '600',
-                    fontSize: '14px'
-                  }}>
-                    {item.sellpriceusd?.toLocaleString() || 0}
-                  </td>
-                  <td style={{ 
-                    padding: '12px 16px', 
-                    textAlign: 'center',
-                    color: '#ea580c',
-                    fontWeight: '600',
-                    fontSize: '14px'
-                  }}>
-                    {item.quantity || 0}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                {filteredInventory.slice(0, 50).map((item, index) => (
+                  <tr
+                    key={item.id}
+                    style={{
+                      backgroundColor: index % 2 === 0 ? 'var(--background)' : 'var(--theme-surface)',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid var(--border)',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'var(--background)' : 'var(--theme-surface)' }}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      selectProduct(item)
+                    }}
+                  >
+                    <td style={{ padding: '7px 10px', fontWeight: '600', color: 'var(--theme-primary)', whiteSpace: 'nowrap' }}>{item.productcode}</td>
+                    <td style={{ padding: '7px 10px', color: 'var(--theme-text)' }}>{item.productname}</td>
+                    <td style={{ padding: '7px 10px', textAlign: 'center', color: '#16a34a', fontWeight: '600' }}>{item.sellpriceiqd?.toLocaleString() || 0}</td>
+                    <td style={{ padding: '7px 10px', textAlign: 'center', color: '#2563eb', fontWeight: '600' }}>{item.sellpriceusd?.toLocaleString() || 0}</td>
+                    <td style={{ padding: '7px 10px', textAlign: 'center', color: '#ea580c', fontWeight: '600' }}>{item.quantity || 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          <div style={{ 
-            padding: '12px 20px', 
-            background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-accent))',
-            color: 'var(--theme-background)',
-            borderTop: '2px solid var(--theme-primary)',
+          {/* Footer */}
+          <div style={{
+            padding: '6px 12px',
+            borderTop: '1px solid var(--border)',
+            background: 'var(--theme-surface)',
+            fontSize: '12px',
+            color: 'var(--muted-foreground)',
             textAlign: 'center',
-            fontSize: '14px',
-            fontWeight: 'bold'
           }}>
             {t("suggestionsFooter", lang).replace("{count}", String(filteredInventory.length))}
           </div>
         </div>,
-        document.body
-      )}
-
-      {isMounted && showSuggestions && filteredInventory.length > 0 && createPortal(
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 9999998,
-          }}
-          onClick={() => setShowSuggestions(false)}
-        />,
         document.body
       )}
     </>

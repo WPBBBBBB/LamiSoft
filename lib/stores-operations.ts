@@ -194,12 +194,15 @@ export async function deleteInventoryItem(id: string): Promise<void> {
 }
 
 export async function deleteInventoryItems(ids: string[]): Promise<void> {
-  const { error } = await supabase
-    .from('tb_inventory')
-    .delete()
-    .in('id', ids)
-  
-  if (error) throw error
+  const BATCH_SIZE = 100
+  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+    const batch = ids.slice(i, i + BATCH_SIZE)
+    const { error } = await supabase
+      .from('tb_inventory')
+      .delete()
+      .in('id', batch)
+    if (error) throw error
+  }
 }
 
 export async function createStoreTransfer(

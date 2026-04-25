@@ -408,7 +408,13 @@ function getGreeting(fullName?: string, lang: string = 'ar') {
   }
 }
 
-export default function Sidebar() {
+export default function Sidebar({
+  mobileOpen = false,
+  onMobileClose,
+}: {
+  mobileOpen?: boolean
+  onMobileClose?: () => void
+}) {
   const { currentUser, logout } = useAuth()
   const {
     mainSidebarWidth,
@@ -421,6 +427,21 @@ export default function Sidebar() {
   const [sidebarControlOpen, setSidebarControlOpen] = useState(false)
   const [isHovering, setIsHovering] = useState(false)
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  // Close mobile sidebar on route change
+  const pathname = usePathname()
+  useEffect(() => {
+    if (isMobile) onMobileClose?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, isMobile])
   
   const [expandOnHover, setExpandOnHover] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -439,25 +460,19 @@ export default function Sidebar() {
   }, [expandOnHover])
 
   useEffect(() => {
+    if (isMobile) {
+      // On mobile the sidebar is an overlay – don't shift the main content
+      document.documentElement.style.setProperty("--sidebar-width", "0px")
+      return
+    }
     const isCollapsed = expandOnHover ? (mainSidebarCollapsed && !isHovering) : mainSidebarCollapsed
     const width = isCollapsed ? 80 : mainSidebarWidth
     document.documentElement.style.setProperty("--sidebar-width", `${width}px`)
-  }, [mainSidebarWidth, mainSidebarCollapsed, expandOnHover, isHovering])
+  }, [mainSidebarWidth, mainSidebarCollapsed, expandOnHover, isHovering, isMobile])
 
-  const effectiveCollapsed = expandOnHover ? !isHovering : mainSidebarCollapsed
+  const effectiveCollapsed = isMobile ? false : (expandOnHover ? !isHovering : mainSidebarCollapsed)
 
-  return (
-    <ResizableSidebar
-      defaultWidth={mainSidebarWidth}
-      minWidth={200}
-      maxWidth={500}
-      collapsed={effectiveCollapsed}
-      onWidthChange={setMainSidebarWidth}
-      className="fixed left-0 top-0 z-40 h-screen border-r bg-background"
-      side="left"
-      onMouseEnter={() => expandOnHover && setIsHovering(true)}
-      onMouseLeave={() => expandOnHover && setIsHovering(false)}
-    >
+  const sidebarContent = (
       <div className="flex h-full flex-col">
         {}
         <div className="flex h-14 items-center justify-between border-b px-4">
@@ -658,6 +673,46 @@ export default function Sidebar() {
           onOpenChange={setPaymentModalOpen}
         />
       </div>
+  )
+
+  // Mobile: overlay drawer
+  if (isMobile) {
+    return (
+      <>
+        {/* Backdrop */}
+        {mobileOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+            onClick={onMobileClose}
+          />
+        )}
+        {/* Drawer */}
+        <div
+          className={cn(
+            "fixed right-0 top-0 z-50 h-screen w-72 border-l bg-background transition-transform duration-300 md:hidden",
+            mobileOpen ? "translate-x-0" : "translate-x-full"
+          )}
+        >
+          {sidebarContent}
+        </div>
+      </>
+    )
+  }
+
+  // Desktop: resizable sidebar
+  return (
+    <ResizableSidebar
+      defaultWidth={mainSidebarWidth}
+      minWidth={200}
+      maxWidth={500}
+      collapsed={effectiveCollapsed}
+      onWidthChange={setMainSidebarWidth}
+      className="fixed left-0 top-0 z-40 h-screen border-r bg-background hidden md:block"
+      side="left"
+      onMouseEnter={() => expandOnHover && setIsHovering(true)}
+      onMouseLeave={() => expandOnHover && setIsHovering(false)}
+    >
+      {sidebarContent}
     </ResizableSidebar>
   )
 }

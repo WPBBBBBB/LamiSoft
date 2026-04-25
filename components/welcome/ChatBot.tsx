@@ -280,6 +280,19 @@ export default function ChatBot() {
 
   const showLogo = messages.length === 0
 
+  // Auto-hide sidebar on small screens
+  const [isMobileScreen, setIsMobileScreen] = useState(false)
+  useEffect(() => {
+    const check = () => {
+      const mobile = window.innerWidth < 640
+      setIsMobileScreen(mobile)
+      if (mobile) setIsSidebarOpen(false)
+    }
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   return (
     <>
       {/* Floating Button */}
@@ -290,15 +303,15 @@ export default function ChatBot() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             transition={{ type: "spring", stiffness: 260, damping: 20 }}
-            className="fixed bottom-6 right-6 z-50"
+            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50"
           >
             <Button
               size="lg"
-              className="h-14 w-14 rounded-full shadow-2xl"
+              className="h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-2xl"
               onClick={() => setIsOpen(true)}
               title={t("chatbotOpen", currentLanguage.code)}
             >
-              <MessageCircle className="h-6 w-6" />
+              <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6" />
             </Button>
           </motion.div>
         )}
@@ -315,15 +328,17 @@ export default function ChatBot() {
             className={`fixed z-50 ${
               isFullscreen 
                 ? "inset-0" 
-                : "bottom-6 right-6 w-[90vw] max-w-4xl"
+                : "inset-x-2 bottom-2 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[90vw] sm:max-w-4xl"
             }`}
           >
             <div className={`flex shadow-2xl rounded-lg overflow-hidden border-2 ${
-              isFullscreen ? "h-full" : "h-[600px]"
+              isFullscreen 
+                ? "h-full" 
+                : "h-[85dvh] sm:h-[600px] max-h-[700px]"
             }`}>
               {/* Sidebar */}
               <AnimatePresence>
-                {isSidebarOpen && (
+                {isSidebarOpen && !isMobileScreen && (
                   <motion.div
                     initial={{ width: 0, opacity: 0 }}
                     animate={{ width: "280px", opacity: 1 }}
@@ -393,7 +408,7 @@ export default function ChatBot() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 w-8 p-0"
+                      className="h-8 w-8 p-0 hidden sm:flex"
                       onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                     >
                       <Menu className="h-4 w-4" />
@@ -416,16 +431,16 @@ export default function ChatBot() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-8 px-3 text-xs gap-1.5"
+                      className="h-8 px-2 sm:px-3 text-xs gap-1.5"
                       onClick={handleNewChat}
                     >
                       <Plus className="h-3.5 w-3.5" />
-                      {t("chatbotNewChat", currentLanguage.code)}
+                      <span className="hidden sm:inline">{t("chatbotNewChat", currentLanguage.code)}</span>
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 w-8 p-0"
+                      className="h-8 w-8 p-0 hidden sm:flex"
                       onClick={() => setIsFullscreen(!isFullscreen)}
                       title={isFullscreen ? t("chatbotMinimize", currentLanguage.code) : t("chatbotMaximize", currentLanguage.code)}
                     >

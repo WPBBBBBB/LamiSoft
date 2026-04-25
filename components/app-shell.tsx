@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { usePathname } from "next/navigation"
 import { ThemeProvider } from "@/components/providers/theme-provider"
 import { SettingsProvider } from "@/components/providers/settings-provider"
@@ -33,6 +34,8 @@ export function AppShell({
   const isReminderLoginPage = pathname === "/reminder-login"
   const isReminderPage = pathname?.startsWith("/reminder")
 
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+
   return (
     <ThemeProvider
       attribute="class"
@@ -53,13 +56,15 @@ export function AppShell({
                       <main className="min-h-screen">{children}</main>
                     ) : (
                       <div className="relative flex min-h-screen">
-                        <Sidebar />
+                        <Sidebar
+                          mobileOpen={mobileSidebarOpen}
+                          onMobileClose={() => setMobileSidebarOpen(false)}
+                        />
                         <div
-                          className="flex-1"
-                          style={{ marginLeft: "var(--sidebar-width, 288px)" }}
+                          className="flex-1 min-w-0 md:ml-(--sidebar-width,288px)"
                         >
-                          <Header />
-                          <main className="container mx-auto p-6">{children}</main>
+                          <Header onMenuToggle={() => setMobileSidebarOpen(prev => !prev)} />
+                          <main className="container mx-auto p-4 md:p-6">{children}</main>
                         </div>
                       </div>
                     )}

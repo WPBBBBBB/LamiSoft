@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, LogIn } from "lucide-react"
+import { Bell, LogIn, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useNotifications } from "@/components/providers/notification-provider"
@@ -9,19 +9,30 @@ import { cn } from "@/lib/utils"
 import { useAuth } from "@/contexts/auth-context"
 import Link from "next/link"
 
-export default function Header() {
+export default function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const { unreadCount, togglePanel } = useNotifications()
   const { currentUser } = useAuth()
 
-  // التحقق من صلاحية عرض الإشعارات
   const canViewNotifications = currentUser?.permission_type === 'مدير' || 
     (currentUser?.permission_type === 'موظف' && currentUser?.permissions?.view_notifications)
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
-      <div className="flex h-14 items-center px-6">
+      <div className="flex h-14 items-center px-4 gap-2">
+        {/* Hamburger – mobile only, shown when user is logged in */}
+        {currentUser && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden shrink-0"
+            onClick={onMenuToggle}
+            aria-label="فتح القائمة"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
+
         <div className="flex-1">
-          {/* عرض أزرار التنقل فقط إذا كان المستخدم غير مسجل دخول */}
           {!currentUser && (
             <nav className="hidden md:flex items-center gap-4">
               <Link href="/welcome" className="text-sm font-semibold opacity-80 hover:opacity-100">التعريف</Link>
@@ -30,8 +41,8 @@ export default function Header() {
             </nav>
           )}
         </div>
+
         <div className="flex items-center gap-4">
-          {/* Login button when not authenticated */}
           {!currentUser && (
             <Link href="/login">
               <Button variant="ghost" size="sm" className="ml-2">
@@ -41,10 +52,6 @@ export default function Header() {
             </Link>
           )}
           
-          
-          {/* عرض زر الإشعارات فقط إذا كانت الصلاحية متاحة */}
-          
-          {/* عرض زر الإشعارات فقط إذا كانت الصلاحية متاحة */}
           {canViewNotifications && (
             <Button
               variant="ghost"
